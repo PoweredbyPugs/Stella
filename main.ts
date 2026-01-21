@@ -1,1123 +1,47 @@
 import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView, Modal, MarkdownRenderer, Menu, Notice } from 'obsidian';
 
-// Conversation interface
-interface Conversation {
-    id: string;
-    title: string;
-    messages: Array<{role: string, content: string, timestamp: number}>;
-    systemPrompt?: string;
-    systemPromptFilename?: string;
-    mentalModel?: string;
-    mentalModelFilename?: string;
-    mcpServers?: string[]; // Array of active MCP server names
-    createdAt: number;
-    updatedAt: number;
-}
-
-// MCP (Model Context Protocol) interfaces
-interface MCPServer {
-    id: string;
-    name: string;
-    transport: 'stdio' | 'http';
-    endpoint?: string;  // For HTTP transport (advanced users)
-    command?: string;   // For stdio transport (e.g., "npx")
-    args?: string[];    // For stdio transport (e.g., ["-y", "@modelcontextprotocol/server-github"])
-    env?: Record<string, string>;  // Environment variables (API keys, etc.)
-    capabilities?: MCPCapabilities;
-    connected: boolean;
-}
-
-interface MCPServerTemplate {
-    name: string;
-    description: string;
-    command: string;
-    args: string[];
-    envVariables: Array<{
-        key: string;
-        description: string;
-        required: boolean;
-        placeholder?: string;
-    }>;
-}
-
-interface MCPCapabilities {
-    resources?: boolean;
-    tools?: boolean;
-    prompts?: boolean;
-    sampling?: boolean;
-}
-
-interface MCPTool {
-    name: string;
-    description: string;
-    inputSchema: any;
-    serverId: string;
-}
-
-interface MCPResource {
-    uri: string;
-    name: string;
-    description?: string;
-    mimeType?: string;
-    serverId: string;
-}
-
-interface MCPPrompt {
-    name: string;
-    description?: string;
-    arguments?: any;
-    serverId: string;
-}
-
-interface MCPMessage {
-    jsonrpc: '2.0';
-    id?: string | number;
-    method?: string;
-    params?: any;
-    result?: any;
-    error?: {
-        code: number;
-        message: string;
-        data?: any;
-    };
-}
-
-// Plugin settings interface
-interface StellaSettings {
-    provider: string;
-    openaiApiKey: string;
-    anthropicApiKey: string;
-    googleApiKey: string;
-    ollamaBaseUrl: string;
-    lmStudioBaseUrl: string;
-    customApiUrl: string;
-    customApiKey: string;
-    model: string;
-    maxTokens: number;
-    temperature: number;
-    conversations: Conversation[];
-    currentConversationId: string | null;
-    systemPromptsPath: string;
-    mentalModelsPath: string;
-    backgroundImage: string;
-    backgroundMode: 'centered' | 'fill' | 'stretch';
-    backgroundOpacity: number;
-    autoHideHeader: boolean;
-    quickAddCommands: QuickAddCommand[];
-    showTokenCount: boolean;
-    // MCP Settings
-    mcpEnabled: boolean;
-    mcpServers: MCPServer[];
-    mcpAutoDiscovery: boolean;
-}
-
-interface QuickAddCommand {
-    id: string;
-    name: string;
-    description: string;
-}
-
-const DEFAULT_SETTINGS: StellaSettings = {
-    provider: 'anthropic',
-    openaiApiKey: '',
-    anthropicApiKey: '',
-    googleApiKey: '',
-    ollamaBaseUrl: 'http://localhost:11434',
-    lmStudioBaseUrl: 'http://localhost:1234',
-    customApiUrl: '',
-    customApiKey: '',
-    model: '',
-    maxTokens: 4000,
-    temperature: 0.7,
-    conversations: [],
-    currentConversationId: null,
-    systemPromptsPath: '',
-    mentalModelsPath: '',
-    backgroundImage: '',
-    backgroundMode: 'centered',
-    backgroundOpacity: 0.5,
-    autoHideHeader: false,
-    quickAddCommands: [
-        {
-            id: 'seed',
-            name: 'Seed',
-            description: 'Create a seed note from selected text'
-        }
-    ],
-    showTokenCount: false,
-    // MCP Default Settings
-    mcpEnabled: false,
-    mcpServers: [],
-    mcpAutoDiscovery: true
-};
-
-// MCP Server Templates (like Claude Desktop)
-const MCP_SERVER_TEMPLATES: MCPServerTemplate[] = [
-    {
-        name: "File System",
-        description: "Access and manage local files and directories",
-        command: "npx",
-        args: ["-y", "@modelcontextprotocol/server-filesystem"],
-        envVariables: []
-    },
-    {
-        name: "GitHub",
-        description: "Access GitHub repositories, issues, and code",
-        command: "npx",
-        args: ["-y", "@modelcontextprotocol/server-github"],
-        envVariables: [
-            {
-                key: "GITHUB_PERSONAL_ACCESS_TOKEN",
-                description: "GitHub Personal Access Token",
-                required: true,
-                placeholder: "ghp_xxxxxxxxxxxxxxxxxxxx"
-            }
-        ]
-    },
-    {
-        name: "Brave Search",
-        description: "Search the web using Brave Search API",
-        command: "npx",
-        args: ["-y", "@modelcontextprotocol/server-brave-search"],
-        envVariables: [
-            {
-                key: "BRAVE_API_KEY",
-                description: "Brave Search API Key",
-                required: true,
-                placeholder: "Your Brave API key"
-            }
-        ]
-    },
-    {
-        name: "Slack",
-        description: "Interact with Slack workspaces and channels",
-        command: "npx",
-        args: ["-y", "@modelcontextprotocol/server-slack"],
-        envVariables: [
-            {
-                key: "SLACK_BOT_TOKEN",
-                description: "Slack Bot Token",
-                required: true,
-                placeholder: "xoxb-your-bot-token"
-            }
-        ]
-    },
-    {
-        name: "PostgreSQL",
-        description: "Query and manage PostgreSQL databases",
-        command: "npx",
-        args: ["-y", "@modelcontextprotocol/server-postgres"],
-        envVariables: [
-            {
-                key: "POSTGRES_CONNECTION_STRING",
-                description: "PostgreSQL connection string",
-                required: true,
-                placeholder: "postgresql://user:pass@localhost:5432/dbname"
-            }
-        ]
-    },
-    {
-        name: "SQLite",
-        description: "Query and manage SQLite databases",
-        command: "npx",
-        args: ["-y", "@modelcontextprotocol/server-sqlite"],
-        envVariables: []
-    },
-    {
-        name: "Google Drive",
-        description: "Access and manage Google Drive files",
-        command: "npx",
-        args: ["-y", "@modelcontextprotocol/server-gdrive"],
-        envVariables: [
-            {
-                key: "GOOGLE_DRIVE_CREDENTIALS",
-                description: "Google Drive service account credentials (JSON)",
-                required: true,
-                placeholder: "Path to credentials.json file"
-            }
-        ]
-    }
-];
-
-// Enhanced Fetch with Compression Support
-class FetchManager {
-    static async enhancedFetch(url: string, options: RequestInit = {}): Promise<Response> {
-        // Ensure headers exist
-        const headers = new Headers(options.headers);
-
-        // Add compression support headers
-        headers.set('Accept-Encoding', 'gzip, deflate, br');
-
-        // Enhance existing headers if needed
-        if (!headers.has('Content-Type') && options.method === 'POST') {
-            headers.set('Content-Type', 'application/json');
-        }
-
-        // User agent for better API compatibility
-        headers.set('User-Agent', 'Stella-Obsidian-Plugin/1.0');
-
-        const enhancedOptions: RequestInit = {
-            ...options,
-            headers: headers
-        };
-
-        return await fetch(url, enhancedOptions);
-    }
-}
-
-// Client-side Cache Manager
-class CacheManager {
-    private cache: Map<string, {data: any, timestamp: number, ttl: number}> = new Map();
-    private readonly DEFAULT_TTL = 3600000; // 1 hour in milliseconds
-
-    constructor() {
-        this.loadFromLocalStorage();
-        // Clean expired entries every 5 minutes
-        setInterval(() => this.cleanExpiredEntries(), 300000);
-    }
-
-    set(key: string, data: any, ttlMs: number = this.DEFAULT_TTL): void {
-        const item = {
-            data: JSON.parse(JSON.stringify(data)), // Deep clone to avoid references
-            timestamp: Date.now(),
-            ttl: ttlMs
-        };
-
-        this.cache.set(key, item);
-
-        // Store in localStorage for persistence (with size limit)
-        try {
-            if (this.getDataSize(data) < 100000) { // 100KB limit for localStorage
-                localStorage.setItem(`stella_cache_${key}`, JSON.stringify(item));
-            }
-        } catch (error) {
-            console.warn('Failed to persist cache item to localStorage:', error);
-        }
-    }
-
-    get(key: string): any | null {
-        const item = this.cache.get(key);
-        if (!item) return null;
-
-        const now = Date.now();
-        if (now - item.timestamp > item.ttl) {
-            this.delete(key);
-            return null;
-        }
-
-        return item.data;
-    }
-
-    delete(key: string): void {
-        this.cache.delete(key);
-        localStorage.removeItem(`stella_cache_${key}`);
-    }
-
-    has(key: string): boolean {
-        const item = this.cache.get(key);
-        if (!item) return false;
-
-        const now = Date.now();
-        if (now - item.timestamp > item.ttl) {
-            this.delete(key);
-            return false;
-        }
-
-        return true;
-    }
-
-    clear(): void {
-        // Clear memory cache
-        this.cache.clear();
-
-        // Clear localStorage cache items
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith('stella_cache_')) {
-                keysToRemove.push(key);
-            }
-        }
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-    }
-
-    private loadFromLocalStorage(): void {
-        try {
-            const now = Date.now();
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith('stella_cache_')) {
-                    const rawData = localStorage.getItem(key);
-                    if (rawData) {
-                        const item = JSON.parse(rawData);
-                        const cacheKey = key.replace('stella_cache_', '');
-
-                        // Check if still valid
-                        if (now - item.timestamp <= item.ttl) {
-                            this.cache.set(cacheKey, item);
-                        } else {
-                            localStorage.removeItem(key);
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            console.warn('Failed to load cache from localStorage:', error);
-        }
-    }
-
-    private cleanExpiredEntries(): void {
-        const now = Date.now();
-        const expiredKeys: string[] = [];
-
-        this.cache.forEach((item, key) => {
-            if (now - item.timestamp > item.ttl) {
-                expiredKeys.push(key);
-            }
-        });
-
-        expiredKeys.forEach(key => this.delete(key));
-    }
-
-    private getDataSize(data: any): number {
-        return new Blob([JSON.stringify(data)]).size;
-    }
-
-    // Cache key generators for common use cases
-    static modelListKey(provider: string): string {
-        return `models_${provider}`;
-    }
-
-    static conversationMetaKey(): string {
-        return 'conversation_metadata';
-    }
-
-    static systemPromptsKey(): string {
-        return 'system_prompts_list';
-    }
-
-    static apiResponseKey(provider: string, modelName: string): string {
-        return `api_response_${provider}_${modelName}`;
-    }
-
-    // Cache invalidation methods
-    invalidateProviderCache(provider: string): void {
-        const modelKey = CacheManager.modelListKey(provider);
-        this.delete(modelKey);
-    }
-
-    invalidateAllModels(): void {
-        const providers = ['openai', 'anthropic', 'google', 'ollama', 'lmstudio'];
-        providers.forEach(provider => this.invalidateProviderCache(provider));
-    }
-
-    invalidateConversationData(): void {
-        this.delete(CacheManager.conversationMetaKey());
-    }
-
-    // Get cache statistics
-    getCacheStats(): {totalItems: number, totalSize: number, providers: string[]} {
-        let totalSize = 0;
-        const providers = new Set<string>();
-
-        this.cache.forEach((item, key) => {
-            totalSize += this.getDataSize(item.data);
-            if (key.startsWith('models_')) {
-                providers.add(key.replace('models_', ''));
-            }
-        });
-
-        return {
-            totalItems: this.cache.size,
-            totalSize,
-            providers: Array.from(providers)
-        };
-    }
-}
-
-// Asynchronous Logger Class
-class AsyncLogger {
-    private logQueue: Array<{level: string, message: string, timestamp: number, data?: any}> = [];
-    private isProcessing = false;
-    private flushInterval: NodeJS.Timeout;
-    private readonly FLUSH_INTERVAL = 1000; // Flush every 1 second
-    private readonly MAX_QUEUE_SIZE = 100; // Force flush at 100 messages
-
-    constructor() {
-        this.startPeriodicFlush();
-    }
-
-    private startPeriodicFlush() {
-        this.flushInterval = setInterval(() => {
-            this.flushLogs();
-        }, this.FLUSH_INTERVAL);
-    }
-
-    log(message: string, data?: any) {
-        this.addToQueue('log', message, data);
-    }
-
-    warn(message: string, data?: any) {
-        this.addToQueue('warn', message, data);
-    }
-
-    error(message: string, data?: any) {
-        this.addToQueue('error', message, data);
-    }
-
-    private addToQueue(level: string, message: string, data?: any) {
-        this.logQueue.push({
-            level,
-            message,
-            timestamp: Date.now(),
-            data
-        });
-
-        // Force flush if queue is getting too large
-        if (this.logQueue.length >= this.MAX_QUEUE_SIZE) {
-            this.flushLogs();
-        }
-    }
-
-    private async flushLogs() {
-        if (this.isProcessing || this.logQueue.length === 0) return;
-
-        this.isProcessing = true;
-        const logsToFlush = [...this.logQueue];
-        this.logQueue = [];
-
-        // Process logs asynchronously without blocking
-        setTimeout(() => {
-            try {
-                logsToFlush.forEach(log => {
-                    const timestamp = new Date(log.timestamp).toISOString();
-                    const logMessage = `[${timestamp}] ${log.message}`;
-
-                    switch (log.level) {
-                        case 'error':
-                            console.error(logMessage, log.data || '');
-                            break;
-                        case 'warn':
-                            console.warn(logMessage, log.data || '');
-                            break;
-                        default:
-                            console.log(logMessage, log.data || '');
-                            break;
-                    }
-                });
-            } catch (error) {
-                // Fallback to synchronous logging if async fails
-                console.error('AsyncLogger flush failed:', error);
-            } finally {
-                this.isProcessing = false;
-            }
-        }, 0);
-    }
-
-    destroy() {
-        if (this.flushInterval) {
-            clearInterval(this.flushInterval);
-        }
-        this.flushLogs(); // Final flush
-    }
-}
-
-// MCP (Model Context Protocol) Client Manager
-class MCPClientManager {
-    private servers: Map<string, MCPServer> = new Map();
-    private connections: Map<string, WebSocket | any> = new Map();
-    private tools: Map<string, MCPTool[]> = new Map();
-    private resources: Map<string, MCPResource[]> = new Map();
-    private prompts: Map<string, MCPPrompt[]> = new Map();
-    private messageId = 0;
-    private logger: AsyncLogger;
-    private pendingRequests: Map<string | number, (response: MCPMessage) => void> = new Map();
-
-    constructor(logger: AsyncLogger) {
-        this.logger = logger;
-    }
-
-    // Getters for accessing private properties
-    getServers(): Map<string, MCPServer> {
-        return this.servers;
-    }
-
-    getTools(): Map<string, MCPTool[]> {
-        return this.tools;
-    }
-
-    getPrompts(): Map<string, MCPPrompt[]> {
-        return this.prompts;
-    }
-
-    getResources(): Map<string, MCPResource[]> {
-        return this.resources;
-    }
-
-    // Public methods to force refresh tools and prompts
-    async refreshServerTools(serverId: string): Promise<void> {
-        const server = this.servers.get(serverId);
-        console.log(`MCP Debug - refreshServerTools called for ${serverId}, server exists: ${!!server}, connected: ${server?.connected}`);
-        if (server && server.connected) {
-            console.log(`MCP Debug - Discovering tools for server ${serverId}...`);
-            await this.discoverTools(serverId);
-            const tools = this.tools.get(serverId) || [];
-            console.log(`MCP Debug - After discovery, server ${serverId} has ${tools.length} tools:`, tools.map(t => t.name));
-        }
-    }
-
-    async refreshServerPrompts(serverId: string): Promise<void> {
-        const server = this.servers.get(serverId);
-        console.log(`MCP Debug - refreshServerPrompts called for ${serverId}, server exists: ${!!server}, connected: ${server?.connected}`);
-        if (server && server.connected) {
-            console.log(`MCP Debug - Discovering prompts for server ${serverId}...`);
-            await this.discoverPrompts(serverId);
-            const prompts = this.prompts.get(serverId) || [];
-            console.log(`MCP Debug - After discovery, server ${serverId} has ${prompts.length} prompts:`, prompts.map(p => p.name));
-        }
-    }
-
-    // Server Management
-    async addServer(server: MCPServer): Promise<boolean> {
-        this.logger.log(`Adding MCP server: ${server.name}`);
-        this.servers.set(server.id, server);
-        return this.connectToServer(server.id);
-    }
-
-    async removeServer(serverId: string): Promise<void> {
-        this.logger.log(`Removing MCP server: ${serverId}`);
-        await this.disconnectFromServer(serverId);
-        this.servers.delete(serverId);
-        this.tools.delete(serverId);
-        this.resources.delete(serverId);
-        this.prompts.delete(serverId);
-    }
-
-    async connectToServer(serverId: string): Promise<boolean> {
-        const server = this.servers.get(serverId);
-        if (!server) {
-            this.logger.error(`Server not found: ${serverId}`);
-            return false;
-        }
-
-        try {
-            if (server.transport === 'http') {
-                return await this.connectHTTP(server);
-            } else if (server.transport === 'stdio') {
-                return await this.connectStdio(server);
-            }
-        } catch (error) {
-            this.logger.error(`Failed to connect to server ${serverId}:`, error);
-            server.connected = false;
-            return false;
-        }
-        return false;
-    }
-
-    private async connectHTTP(server: MCPServer): Promise<boolean> {
-        if (!server.endpoint) {
-            this.logger.error(`HTTP server ${server.id} missing endpoint`);
-            return false;
-        }
-
-        try {
-            // Use WebSocket for persistent connection
-            const ws = new WebSocket(server.endpoint);
-
-            ws.onopen = () => {
-                this.logger.log(`Connected to MCP server: ${server.name}`);
-                server.connected = true;
-                this.initializeServerCapabilities(server.id);
-            };
-
-            ws.onmessage = (event) => {
-                this.handleMessage(server.id, JSON.parse(event.data));
-            };
-
-            ws.onclose = () => {
-                this.logger.log(`Disconnected from MCP server: ${server.name}`);
-                server.connected = false;
-            };
-
-            ws.onerror = (error) => {
-                this.logger.error(`WebSocket error for server ${server.name}:`, error);
-                server.connected = false;
-            };
-
-            this.connections.set(server.id, ws);
-            return true;
-        } catch (error) {
-            this.logger.error(`HTTP connection failed for server ${server.id}:`, error);
-            return false;
-        }
-    }
-
-    /**
-     * Fix command for Windows compatibility
-     * On Windows, many commands need .cmd extension to work properly
-     */
-    private fixWindowsCommand(command: string): string {
-        // Only apply fixes on Windows
-        if (process.platform !== 'win32') {
-            return command;
-        }
-
-        // Common commands that need .cmd extension on Windows
-        const windowsCommands = ['npm', 'npx', 'yarn', 'pnpm', 'node'];
-
-        // Check if command is one that needs .cmd extension
-        const baseCommand = command.split(' ')[0]; // Get just the command without args
-        if (windowsCommands.includes(baseCommand) && !baseCommand.endsWith('.cmd')) {
-            return command.replace(baseCommand, `${baseCommand}.cmd`);
-        }
-
-        return command;
-    }
-
-    private async connectStdio(server: MCPServer): Promise<boolean> {
-        if (!server.command) {
-            this.logger.error(`STDIO server ${server.id} missing command`);
-            return false;
-        }
-
-        try {
-            // In Obsidian/Electron, we can use Node.js child_process
-            const { spawn } = require('child_process');
-
-            const args = server.args || [];
-            const env = {
-                ...process.env,
-                ...(server.env || {})
-            };
-
-            // Fix command for Windows compatibility
-            const command = this.fixWindowsCommand(server.command);
-
-            this.logger.log(`Starting STDIO MCP server: ${command} ${args.join(' ')}`);
-
-            // Spawn the MCP server process with proper Windows handling
-            const spawnOptions: any = {
-                stdio: ['pipe', 'pipe', 'pipe'],
-                env: env
-            };
-
-            // On Windows, use shell option for .cmd files
-            if (process.platform === 'win32' && command.endsWith('.cmd')) {
-                spawnOptions.shell = true;
-            }
-
-            const childProcess = spawn(command, args, spawnOptions);
-
-            // Handle process errors
-            childProcess.on('error', (error) => {
-                this.logger.error(`STDIO server ${server.name} process error:`, error);
-                server.connected = false;
-            });
-
-            childProcess.on('exit', (code, signal) => {
-                this.logger.log(`STDIO server ${server.name} exited with code ${code}, signal ${signal}`);
-                server.connected = false;
-            });
-
-            // Handle stderr
-            childProcess.stderr.on('data', (data) => {
-                this.logger.warn(`STDIO server ${server.name} stderr: ${data.toString()}`);
-            });
-
-            // Set up JSON-RPC communication over stdin/stdout
-            let buffer = '';
-            childProcess.stdout.on('data', (data) => {
-                buffer += data.toString();
-
-                // Process complete JSON messages
-                let lines = buffer.split('\n');
-                buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-                for (const line of lines) {
-                    if (line.trim()) {
-                        try {
-                            const message = JSON.parse(line.trim());
-                            this.handleMessage(server.id, message);
-                        } catch (error) {
-                            this.logger.error(`Failed to parse JSON from ${server.name}:`, error);
-                            this.logger.error(`Raw line: ${line}`);
-                        }
-                    }
-                }
-            });
-
-            // Store the process
-            this.connections.set(server.id, childProcess);
-
-            // Mark as connected
-            server.connected = true;
-            this.logger.log(`Connected to STDIO MCP server: ${server.name}`);
-
-            // Initialize server capabilities
-            await this.initializeServerCapabilities(server.id);
-
-            return true;
-        } catch (error) {
-            this.logger.error(`STDIO connection failed for server ${server.id}:`, error);
-            return false;
-        }
-    }
-
-    private async disconnectFromServer(serverId: string): Promise<void> {
-        const connection = this.connections.get(serverId);
-        if (connection) {
-            if (connection instanceof WebSocket) {
-                connection.close();
-            } else if (connection && connection.kill) {
-                // STDIO transport - kill child process
-                connection.kill('SIGTERM');
-            }
-            this.connections.delete(serverId);
-        }
-
-        const server = this.servers.get(serverId);
-        if (server) {
-            server.connected = false;
-        }
-    }
-
-    // Protocol Message Handling
-    private async sendMessage(serverId: string, message: MCPMessage): Promise<any> {
-        try {
-            console.log(`MCP sendMessage: Sending to server ${serverId}:`, message);
-
-            const connection = this.connections.get(serverId);
-            if (!connection) {
-                throw new Error(`No connection to server: ${serverId}`);
-            }
-
-            // Add ID for tracking
-            if (message.method) {
-                message.id = ++this.messageId;
-                console.log(`MCP sendMessage: Added message ID: ${message.id}`);
-            }
-
-            return new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                    if (this.pendingRequests && this.pendingRequests.has(message.id!)) {
-                        this.pendingRequests.delete(message.id!);
-                    }
-                    reject(new Error('MCP request timeout'));
-                }, 10000);
-
-                // Store resolver for response handling
-                const responseHandler = (response: MCPMessage) => {
-                    try {
-                        console.log(`MCP sendMessage: Got response for message ${message.id}:`, response);
-                        clearTimeout(timeout);
-                        if (this.pendingRequests && this.pendingRequests.has(message.id!)) {
-                            this.pendingRequests.delete(message.id!);
-                        }
-                        if (response && response.error) {
-                            reject(new Error(`MCP Error: ${response.error.message}`));
-                        } else {
-                            resolve(response ? response.result : null);
-                        }
-                    } catch (handlerError) {
-                        console.error('MCP sendMessage: Error in response handler:', handlerError);
-                        reject(handlerError);
-                    }
-                };
-
-                // Store the response handler
-                if (!this.pendingRequests) {
-                    this.pendingRequests = new Map();
-                }
-                this.pendingRequests.set(message.id!, responseHandler);
-
-            // Send message
-            if (connection instanceof WebSocket) {
-                connection.send(JSON.stringify(message));
-            } else if (connection && connection.stdin) {
-                // STDIO transport - send to child process stdin
-                connection.stdin.write(JSON.stringify(message) + '\n');
-            }
-            });
-        } catch (sendError) {
-            console.error('MCP sendMessage: Error in sendMessage:', sendError);
-            throw sendError;
-        }
-    }
-
-    private handleMessage(serverId: string, message: MCPMessage): void {
-        try {
-            this.logger.log(`Received MCP message from ${serverId}:`, message);
-
-            if (!message) {
-                console.warn(`Received null/undefined message from server ${serverId}`);
-                return;
-            }
-
-            // Handle responses, notifications, and requests
-            if (message.method) {
-                // It's a request or notification from server
-                this.handleServerRequest(serverId, message);
-            } else if (message.result !== undefined || message.error !== undefined) {
-                // It's a response to our request
-                this.handleServerResponse(serverId, message);
-            } else {
-                console.log(`Unknown message type from server ${serverId}:`, message);
-            }
-        } catch (error) {
-            console.error(`Error handling message from server ${serverId}:`, error, message);
-        }
-    }
-
-    private handleServerRequest(serverId: string, message: MCPMessage): void {
-        // Handle server-initiated requests (like sampling)
-        this.logger.log(`Server ${serverId} sent request: ${message.method}`);
-    }
-
-    private handleServerResponse(serverId: string, message: MCPMessage): void {
-        try {
-            // Handle responses to our requests
-            const messageId = message?.id;
-            this.logger.log(`Server ${serverId} sent response to request ${messageId || 'unknown'}`);
-
-            if (messageId && this.pendingRequests && this.pendingRequests.has(messageId)) {
-                const responseHandler = this.pendingRequests.get(messageId);
-                if (responseHandler && typeof responseHandler === 'function') {
-                    responseHandler(message);
-                }
-                // Clean up the pending request
-                this.pendingRequests.delete(messageId);
-            } else {
-                console.log(`No pending request handler found for message ID: ${messageId}`);
-            }
-        } catch (error) {
-            console.error(`Error handling server response from ${serverId}:`, error, message);
-        }
-    }
-
-    // Server Initialization
-    private async initializeServerCapabilities(serverId: string): Promise<void> {
-        try {
-            // Initialize with handshake
-            await this.sendMessage(serverId, {
-                jsonrpc: '2.0',
-                method: 'initialize',
-                params: {
-                    protocolVersion: '2024-11-05',
-                    capabilities: {
-                        roots: {
-                            listChanged: true
-                        },
-                        sampling: {}
-                    },
-                    clientInfo: {
-                        name: 'stella-obsidian-plugin',
-                        version: '1.0.0'
-                    }
-                }
-            });
-
-            // Discover tools
-            await this.discoverTools(serverId);
-
-            // Discover resources
-            await this.discoverResources(serverId);
-
-            // Discover prompts
-            await this.discoverPrompts(serverId);
-
-        } catch (error) {
-            this.logger.error(`Failed to initialize server ${serverId}:`, error);
-        }
-    }
-
-    // Tool Discovery and Execution
-    private async discoverTools(serverId: string): Promise<void> {
-        try {
-            console.log(`MCP Debug - Discovering tools for server ${serverId}`);
-            const result = await this.sendMessage(serverId, {
-                jsonrpc: '2.0',
-                method: 'tools/list'
-            });
-
-            console.log(`MCP Debug - Tools/list result for ${serverId}:`, result);
-
-            if (result?.tools) {
-                const tools: MCPTool[] = result.tools.map((tool: any) => ({
-                    name: tool.name,
-                    description: tool.description,
-                    inputSchema: tool.inputSchema,
-                    serverId
-                }));
-
-                console.log(`MCP Debug - Mapped ${tools.length} tools for server ${serverId}:`, tools.map(t => t.name));
-                this.tools.set(serverId, tools);
-                this.logger.log(`Discovered ${tools.length} tools for server ${serverId}`);
-            }
-        } catch (error) {
-            this.logger.error(`Failed to discover tools for server ${serverId}:`, error);
-        }
-    }
-
-    async executeTool(serverId: string, toolName: string, arguments_: any): Promise<any> {
-        try {
-            console.log(`MCP executeTool: Starting execution of ${toolName} on server ${serverId}`);
-            console.log(`MCP executeTool: Arguments:`, arguments_);
-
-            // Ensure arguments is a proper object
-            const safeArguments = arguments_ || {};
-
-            const result = await this.sendMessage(serverId, {
-                jsonrpc: '2.0',
-                method: 'tools/call',
-                params: {
-                    name: toolName,
-                    arguments: safeArguments
-                }
-            });
-
-            console.log(`MCP executeTool: Got result for ${toolName}:`, result);
-            this.logger.log(`Executed tool ${toolName} on server ${serverId}`);
-            return result;
-        } catch (error) {
-            console.error(`MCP executeTool: Failed to execute tool ${toolName} on server ${serverId}:`, error);
-            this.logger.error(`Failed to execute tool ${toolName} on server ${serverId}:`, error);
-            throw error;
-        }
-    }
-
-    // Resource Discovery and Access
-    private async discoverResources(serverId: string): Promise<void> {
-        try {
-            const result = await this.sendMessage(serverId, {
-                jsonrpc: '2.0',
-                method: 'resources/list'
-            });
-
-            if (result?.resources) {
-                const resources: MCPResource[] = result.resources.map((resource: any) => ({
-                    uri: resource.uri,
-                    name: resource.name,
-                    description: resource.description,
-                    mimeType: resource.mimeType,
-                    serverId
-                }));
-
-                this.resources.set(serverId, resources);
-                this.logger.log(`Discovered ${resources.length} resources for server ${serverId}`);
-            }
-        } catch (error) {
-            this.logger.error(`Failed to discover resources for server ${serverId}:`, error);
-        }
-    }
-
-    async getResource(serverId: string, uri: string): Promise<any> {
-        try {
-            const result = await this.sendMessage(serverId, {
-                jsonrpc: '2.0',
-                method: 'resources/read',
-                params: { uri }
-            });
-
-            this.logger.log(`Retrieved resource ${uri} from server ${serverId}`);
-            return result;
-        } catch (error) {
-            this.logger.error(`Failed to get resource ${uri} from server ${serverId}:`, error);
-            throw error;
-        }
-    }
-
-    // Prompt Discovery and Usage
-    private async discoverPrompts(serverId: string): Promise<void> {
-        try {
-            console.log(`MCP Debug - Discovering prompts for server ${serverId}`);
-            const result = await this.sendMessage(serverId, {
-                jsonrpc: '2.0',
-                method: 'prompts/list'
-            });
-
-            console.log(`MCP Debug - Prompts/list result for ${serverId}:`, result);
-
-            if (result?.prompts) {
-                const prompts: MCPPrompt[] = result.prompts.map((prompt: any) => ({
-                    name: prompt.name,
-                    description: prompt.description,
-                    arguments: prompt.arguments,
-                    serverId
-                }));
-
-                console.log(`MCP Debug - Mapped ${prompts.length} prompts for server ${serverId}:`, prompts.map(p => p.name));
-                this.prompts.set(serverId, prompts);
-                this.logger.log(`Discovered ${prompts.length} prompts for server ${serverId}`);
-            }
-        } catch (error) {
-            this.logger.error(`Failed to discover prompts for server ${serverId}:`, error);
-        }
-    }
-
-    async getPrompt(serverId: string, promptName: string, arguments_?: any): Promise<any> {
-        try {
-            const result = await this.sendMessage(serverId, {
-                jsonrpc: '2.0',
-                method: 'prompts/get',
-                params: {
-                    name: promptName,
-                    arguments: arguments_
-                }
-            });
-
-            this.logger.log(`Retrieved prompt ${promptName} from server ${serverId}`);
-            return result;
-        } catch (error) {
-            this.logger.error(`Failed to get prompt ${promptName} from server ${serverId}:`, error);
-            throw error;
-        }
-    }
-
-    // Public API for UI
-    getConnectedServers(): MCPServer[] {
-        return Array.from(this.servers.values()).filter(server => server.connected);
-    }
-
-    getAllTools(): MCPTool[] {
-        const allTools: MCPTool[] = [];
-        for (const tools of this.tools.values()) {
-            allTools.push(...tools);
-        }
-        return allTools;
-    }
-
-    getAllResources(): MCPResource[] {
-        const allResources: MCPResource[] = [];
-        for (const resources of this.resources.values()) {
-            allResources.push(...resources);
-        }
-        return allResources;
-    }
-
-    getAllPrompts(): MCPPrompt[] {
-        const allPrompts: MCPPrompt[] = [];
-        for (const prompts of this.prompts.values()) {
-            allPrompts.push(...prompts);
-        }
-        return allPrompts;
-    }
-
-    destroy(): void {
-        this.logger.log('Destroying MCP Client Manager');
-
-        // Disconnect from all servers
-        for (const serverId of this.servers.keys()) {
-            this.disconnectFromServer(serverId);
-        }
-
-        this.servers.clear();
-        this.connections.clear();
-        this.tools.clear();
-        this.resources.clear();
-        this.prompts.clear();
-        this.pendingRequests.clear();
-    }
-}
+// Import types from modular structure
+import {
+    Conversation,
+    Message,
+    MCPServer,
+    MCPServerTemplate,
+    MCPCapabilities,
+    MCPTool,
+    MCPResource,
+    MCPPrompt,
+    MCPMessage,
+    StellaSettings,
+    QuickAddCommand,
+    ContextNote,
+    CommandDefinition,
+    DEFAULT_SETTINGS,
+    MCP_SERVER_TEMPLATES
+} from './src/types';
+
+// Import services from modular structure
+import { FetchManager } from './src/services/fetch';
+import { CacheManager } from './src/services/cache';
+import { AsyncLogger } from './src/services/logger';
+import { MCPClientManager } from './src/services/mcp/client';
+
+// Import views (modals)
+import {
+    ConversationHistoryModal,
+    NoteSelectorModal,
+    createSystemPromptModal,
+    createMentalModelModal
+} from './src/views';
+
+// Import providers
+import {
+    getProvider,
+    buildMessagesArray,
+    ProviderContext,
+    StreamCallbacks,
+    LLMProviderWithMCP,
+    MCPContext
+} from './src/providers';
 
 export default class StellaPlugin extends Plugin {
     settings: StellaSettings;
@@ -2382,30 +1306,7 @@ class StellaChatView extends ItemView {
 
         try {
             console.log(`Attempting streaming for provider: ${provider}`);
-
-            switch (provider) {
-                case 'openai':
-                    await this.streamOpenAI(message, updateContent, finalizeContent);
-                    break;
-                case 'anthropic':
-                    await this.streamAnthropic(message, updateContent, finalizeContent);
-                    break;
-                case 'google':
-                    // Google streaming has issues, force fallback to regular API
-                    console.log('Google streaming disabled, forcing fallback to regular API');
-                    throw new Error('Google streaming temporarily disabled');
-                case 'ollama':
-                    await this.streamOllama(message, updateContent, finalizeContent);
-                    break;
-                case 'lmstudio':
-                    await this.streamLMStudio(message, updateContent, finalizeContent);
-                    break;
-                case 'custom':
-                    await this.streamCustomAPI(message, updateContent, finalizeContent);
-                    break;
-                default:
-                    throw new Error(`Unsupported provider: ${provider}`);
-            }
+            await this.streamLLM(message, updateContent, finalizeContent);
         } catch (error) {
             console.error(`Streaming failed for ${provider}, falling back to regular API:`, error);
 
@@ -2445,25 +1346,104 @@ class StellaChatView extends ItemView {
         }
     }
 
-    async callLLM(message: string): Promise<string> {
-        const { provider } = this.plugin.settings;
+    // Build provider context from current view state
+    private buildProviderContext(message: string): ProviderContext {
+        const systemMessage = this.buildSystemMessage();
+        const messages = buildMessagesArray(
+            this.chatHistory,
+            message,
+            systemMessage || null
+        );
 
-        switch (provider) {
-            case 'openai':
-                return this.callOpenAI(message);
-            case 'anthropic':
-                return this.callAnthropic(message);
-            case 'google':
-                return this.callGoogle(message);
-            case 'ollama':
-                return this.callOllama(message);
-            case 'lmstudio':
-                return this.callLMStudio(message);
-            case 'custom':
-                return this.callCustomAPI(message);
-            default:
-                throw new Error(`Unsupported provider: ${provider}`);
+        return {
+            settings: this.plugin.settings,
+            messages,
+            systemMessage: systemMessage || null
+        };
+    }
+
+    async callLLM(message: string): Promise<string> {
+        const { provider: providerName } = this.plugin.settings;
+        const provider = getProvider(providerName);
+
+        if (!provider) {
+            throw new Error(`Unsupported provider: ${providerName}`);
         }
+
+        if (!provider.isConfigured(this.plugin.settings)) {
+            throw new Error(`Please configure ${providerName} in settings`);
+        }
+
+        const context = this.buildProviderContext(message);
+
+        // Special handling for Google with MCP
+        if (providerName === 'google' && this.activeMCPServers && this.activeMCPServers.length > 0) {
+            const mcpProvider = provider as LLMProviderWithMCP;
+            if (mcpProvider.callWithMCP) {
+                const mcpContext = this.buildMCPContext();
+                return mcpProvider.callWithMCP(context, mcpContext);
+            }
+        }
+
+        return provider.call(context);
+    }
+
+    // Build MCP context for providers that support tool calling
+    private buildMCPContext(): MCPContext {
+        const servers: Array<{ name: string; tools: Array<{ name: string; description: string; inputSchema: any }> }> = [];
+
+        // Use activeMCPServers which already has tools loaded
+        if (this.activeMCPServers && Array.isArray(this.activeMCPServers)) {
+            for (const activeServer of this.activeMCPServers) {
+                if (activeServer.tools && activeServer.tools.length > 0) {
+                    servers.push({
+                        name: activeServer.name,
+                        tools: activeServer.tools.map(tool => ({
+                            name: tool.name,
+                            description: tool.description || '',
+                            inputSchema: tool.inputSchema || {}
+                        }))
+                    });
+                }
+            }
+        }
+
+        return {
+            servers,
+            executeTool: async (functionName: string, args: any) => {
+                return this.executeMCPTool(functionName, args);
+            }
+        };
+    }
+
+    async streamLLM(
+        message: string,
+        updateContent: (text: string) => void,
+        finalizeContent: () => Promise<void>
+    ): Promise<void> {
+        const { provider: providerName } = this.plugin.settings;
+        const provider = getProvider(providerName);
+
+        if (!provider) {
+            throw new Error(`Unsupported provider: ${providerName}`);
+        }
+
+        if (!provider.isConfigured(this.plugin.settings)) {
+            throw new Error(`Please configure ${providerName} in settings`);
+        }
+
+        const context = this.buildProviderContext(message);
+        const callbacks: StreamCallbacks = {
+            onContent: updateContent,
+            onComplete: finalizeContent
+        };
+
+        // Google streaming is disabled, will throw and fall back to regular API
+        if (providerName === 'google') {
+            throw new Error('Google streaming temporarily disabled');
+        }
+
+        await provider.stream(context, callbacks);
     }
 
     async callOpenAI(message: string): Promise<string> {
@@ -3742,674 +2722,82 @@ class StellaChatView extends ItemView {
         // Save current conversation first
         this.saveCurrentConversation();
 
-        // Create a modal to show conversations
-        const modal = new Modal(this.app);
-        modal.titleEl.setText('Conversations');
-
-        // Make modal compact for conversation selection only
-        modal.modalEl.style.width = '400px';
-        modal.modalEl.style.height = '60vh';
-        modal.modalEl.style.minWidth = '400px';
-
-        const contentEl = modal.contentEl;
-        contentEl.empty();
-
-        if (this.plugin.settings.conversations.length === 0) {
-            contentEl.createEl('p', {
-                text: 'No conversations yet. Start chatting to create your first conversation.'
-            });
-        } else {
-            // Create container for side-by-side layout
-            const mainContainer = contentEl.createDiv({ cls: 'stella-modal-container' });
-            const leftPanel = mainContainer.createDiv({ cls: 'stella-modal-left-panel' });
-            const rightPanel = mainContainer.createDiv({ cls: 'stella-modal-right-panel' });
-
-            // Create preview panel (initially hidden)
-            const previewContainer = rightPanel.createDiv({ cls: 'stella-preview-container' });
-            const previewContent = previewContainer.createDiv({ cls: 'stella-preview-content' });
-            previewContent.textContent = 'Select a conversation and press → to preview';
-
-            // Pagination setup
-            const ITEMS_PER_PAGE = 20;
-            let currentPage = 0;
-            const totalConversations = this.plugin.settings.conversations.length;
-            const totalPages = Math.ceil(totalConversations / ITEMS_PER_PAGE);
-
-            // Create pagination header if needed
-            const headerContainer = leftPanel.createDiv({ cls: 'stella-pagination-header' });
-            if (totalPages > 1) {
-                const pageInfo = headerContainer.createDiv({
-                    cls: 'stella-page-info',
-                    text: `Page ${currentPage + 1} of ${totalPages} (${totalConversations} conversations)`
-                });
-
-                const paginationControls = headerContainer.createDiv({ cls: 'stella-pagination-controls' });
-                const prevBtn = paginationControls.createEl('button', {
-                    cls: 'stella-pagination-btn',
-                    text: '← Prev'
-                });
-                const nextBtn = paginationControls.createEl('button', {
-                    cls: 'stella-pagination-btn',
-                    text: 'Next →'
-                });
+        const modal = new ConversationHistoryModal(
+            this.app,
+            {
+                conversations: this.plugin.settings.conversations,
+                currentConversationId: this.currentConversationId
+            },
+            {
+                onSelect: (conversationId: string) => {
+                    this.loadConversation(conversationId);
+                },
+                onDelete: async (conversationId: string) => {
+                    await this.deleteConversation(conversationId);
+                }
             }
-
-            // Show the conversations list
-            const conversationsContainer = leftPanel.createDiv({ cls: 'stella-conversations-container' });
-            let selectedIndex = 0;
-            let previewVisible = false;
-
-            // Helper function to fix conversations container height
-            const fixConversationsHeight = () => {
-                setTimeout(() => {
-                    const modalHeight = modal.modalEl.clientHeight;
-                    const titleHeight = modal.titleEl.offsetHeight;
-                    const headerHeight = headerContainer.offsetHeight || 0;
-                    const padding = 40; // approximate padding and margins
-
-                    const availableHeight = modalHeight - titleHeight - headerHeight - padding;
-                    conversationsContainer.style.height = `${availableHeight}px`;
-                    conversationsContainer.style.maxHeight = `${availableHeight}px`;
-                    conversationsContainer.style.overflow = 'auto';
-                }, 50);
-            };
-
-            // Function to render current page of conversations
-            const renderConversationPage = () => {
-                conversationsContainer.empty();
-                const startIndex = currentPage * ITEMS_PER_PAGE;
-                const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalConversations);
-                const pageConversations = this.plugin.settings.conversations.slice(startIndex, endIndex);
-
-                pageConversations.forEach((conversation, relativeIndex) => {
-                    const convEl = conversationsContainer.createDiv({
-                        cls: 'stella-conversation-item'
-                    });
-
-                    if (conversation.id === this.currentConversationId) {
-                        convEl.classList.add('stella-conversation-current');
-                    }
-
-                    // Set initial selection
-                    if (relativeIndex === selectedIndex) {
-                        convEl.classList.add('selected');
-                    }
-
-                    const titleEl = convEl.createDiv({ cls: 'stella-conversation-title' });
-                    titleEl.textContent = conversation.title;
-
-                    const metaEl = convEl.createDiv({ cls: 'stella-conversation-meta' });
-                    const messageCount = conversation.messages.length;
-                    const lastUpdate = new Date(conversation.updatedAt).toLocaleDateString();
-                    metaEl.textContent = `${messageCount} messages • Last updated ${lastUpdate}`;
-
-                    // Add delete button
-                    const deleteBtn = convEl.createEl('div', {
-                        cls: 'stella-conversation-delete',
-                        attr: { title: 'Delete conversation' }
-                    });
-                    deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 21,6"></polyline><path d="M8,6V4c0-1,1-2,2-2h4c0,0,1,1,2,2v2M10,11v6M14,11v6"></path><path d="M5,6l1,14c0,1,1,2,2,2h8c1,0,2-1,2-2l1-14"></path></svg>';
-
-                    deleteBtn.addEventListener('click', async (e) => {
-                        e.stopPropagation(); // Prevent conversation loading
-                        await this.deleteConversation(conversation.id);
-                        modal.close();
-                        // Reopen the modal to refresh the list
-                        setTimeout(() => this.showChatHistory(), 100);
-                    });
-
-                    // Click to load conversation (excluding delete button)
-                    convEl.addEventListener('click', (e) => {
-                        if (!(e.target as Element).closest('.stella-conversation-delete')) {
-                            this.loadConversation(conversation.id);
-                            modal.close();
-                        }
-                    });
-                });
-
-                fixConversationsHeight();
-
-                // Update pagination controls if they exist
-                if (totalPages > 1) {
-                    const prevBtn = headerContainer.querySelector('.stella-pagination-btn:first-of-type') as HTMLButtonElement;
-                    const nextBtn = headerContainer.querySelector('.stella-pagination-btn:last-of-type') as HTMLButtonElement;
-                    const pageInfo = headerContainer.querySelector('.stella-page-info') as HTMLElement;
-
-                    if (prevBtn && nextBtn && pageInfo) {
-                        prevBtn.disabled = currentPage === 0;
-                        nextBtn.disabled = currentPage === totalPages - 1;
-                        pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages} (${totalConversations} conversations)`;
-
-                        // Remove old event listeners and add new ones
-                        prevBtn.replaceWith(prevBtn.cloneNode(true));
-                        nextBtn.replaceWith(nextBtn.cloneNode(true));
-
-                        const newPrevBtn = headerContainer.querySelector('.stella-pagination-btn:first-of-type') as HTMLButtonElement;
-                        const newNextBtn = headerContainer.querySelector('.stella-pagination-btn:last-of-type') as HTMLButtonElement;
-
-                        newPrevBtn.addEventListener('click', () => {
-                            if (currentPage > 0) {
-                                currentPage--;
-                                selectedIndex = 0;
-                                renderConversationPage();
-                            }
-                        });
-
-                        newNextBtn.addEventListener('click', () => {
-                            if (currentPage < totalPages - 1) {
-                                currentPage++;
-                                selectedIndex = 0;
-                                renderConversationPage();
-                            }
-                        });
-                    }
-                }
-            };
-
-            // Initial render
-            renderConversationPage();
-
-            // Preview functionality
-            const showPreview = (conversation: any) => {
-                try {
-                    previewContent.empty();
-
-                    // Create conversation summary
-                    const summaryDiv = previewContent.createDiv({ cls: 'stella-conversation-summary' });
-
-                    const infoDiv = summaryDiv.createDiv({ cls: 'stella-conversation-info' });
-                    infoDiv.innerHTML = `
-                        <div><strong>Messages:</strong> ${conversation.messages.length}</div>
-                        <div><strong>Created:</strong> ${new Date(conversation.createdAt).toLocaleString()}</div>
-                        <div><strong>Updated:</strong> ${new Date(conversation.updatedAt).toLocaleString()}</div>
-                    `;
-
-                    if (conversation.systemPrompt) {
-                        const sysPromptDiv = summaryDiv.createDiv({ cls: 'stella-system-prompt-preview' });
-                        sysPromptDiv.createEl('h4', { text: 'System Prompt:' });
-                        const promptContent = sysPromptDiv.createDiv({ cls: 'stella-prompt-content' });
-                        promptContent.textContent = conversation.systemPrompt.substring(0, 200) + (conversation.systemPrompt.length > 200 ? '...' : '');
-                    }
-
-                    // Show first few messages
-                    if (conversation.messages.length > 0) {
-                        const messagesDiv = summaryDiv.createDiv({ cls: 'stella-messages-preview' });
-                        messagesDiv.createEl('h4', { text: 'Messages Preview:' });
-
-                        conversation.messages.slice(0, 4).forEach((msg: any, index: number) => {
-                            const msgDiv = messagesDiv.createDiv({ cls: `stella-preview-message stella-preview-${msg.role}` });
-                            const roleSpan = msgDiv.createEl('span', { cls: 'stella-preview-role' });
-                            roleSpan.textContent = msg.role === 'user' ? '👤' : '🤖';
-
-                            const contentDiv = msgDiv.createDiv({ cls: 'stella-preview-content' });
-                            const truncated = msg.content.length > 150 ? msg.content.substring(0, 150) + '...' : msg.content;
-                            contentDiv.textContent = truncated;
-                        });
-
-                        if (conversation.messages.length > 4) {
-                            const moreDiv = messagesDiv.createDiv({ cls: 'stella-preview-more' });
-                            moreDiv.textContent = `... and ${conversation.messages.length - 4} more messages`;
-                        }
-                    }
-
-                    rightPanel.style.display = 'block';
-                    previewVisible = true;
-
-                    // Expand modal width for preview (30% smaller than original = 60vw, 980px)
-                    modal.modalEl.style.width = '60vw';
-                    modal.modalEl.style.maxWidth = '980px';
-                    leftPanel.style.width = '50%';
-                    rightPanel.style.width = '50%';
-
-                    // Recalculate conversations height after width change
-                    fixConversationsHeight();
-                } catch (error) {
-                    previewContent.textContent = `Error loading preview: ${error.message}`;
-                }
-            };
-
-            const hidePreview = () => {
-                rightPanel.style.display = 'none';
-                leftPanel.style.width = '100%';
-                previewVisible = false;
-
-                // Shrink modal back to compact size
-                modal.modalEl.style.width = '400px';
-                modal.modalEl.style.maxWidth = 'none';
-
-                // Recalculate conversations height after width change
-                fixConversationsHeight();
-            };
-
-            // Initially hide preview panel
-            hidePreview();
-
-            // Add keyboard navigation
-            const handleKeydown = async (e: KeyboardEvent) => {
-                const items = conversationsContainer.querySelectorAll('.stella-conversation-item');
-                const startIndex = currentPage * ITEMS_PER_PAGE;
-                const pageConversations = this.plugin.settings.conversations.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    items[selectedIndex]?.classList.remove('selected');
-                    if (selectedIndex < items.length - 1) {
-                        selectedIndex++;
-                    } else if (currentPage < totalPages - 1) {
-                        // Move to next page
-                        currentPage++;
-                        selectedIndex = 0;
-                        renderConversationPage();
-                        return; // Exit early to avoid preview update with old data
-                    }
-                    items[selectedIndex]?.classList.add('selected');
-                    items[selectedIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-                    // Update preview if visible
-                    if (previewVisible && pageConversations[selectedIndex]) {
-                        showPreview(pageConversations[selectedIndex]);
-                    }
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    items[selectedIndex]?.classList.remove('selected');
-                    if (selectedIndex > 0) {
-                        selectedIndex--;
-                    } else if (currentPage > 0) {
-                        // Move to previous page, select last item
-                        currentPage--;
-                        selectedIndex = Math.min(ITEMS_PER_PAGE - 1, this.plugin.settings.conversations.slice(currentPage * ITEMS_PER_PAGE).length - 1);
-                        renderConversationPage();
-                        return; // Exit early to avoid preview update with old data
-                    }
-                    items[selectedIndex]?.classList.add('selected');
-                    items[selectedIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-                    // Update preview if visible
-                    if (previewVisible && pageConversations[selectedIndex]) {
-                        showPreview(pageConversations[selectedIndex]);
-                    }
-                } else if (e.key === 'ArrowRight') {
-                    e.preventDefault();
-                    if (!previewVisible && pageConversations[selectedIndex]) {
-                        showPreview(pageConversations[selectedIndex]);
-                    }
-                } else if (e.key === 'ArrowLeft') {
-                    e.preventDefault();
-                    if (previewVisible) {
-                        hidePreview();
-                    }
-                } else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const selectedConversation = pageConversations[selectedIndex];
-                    if (selectedConversation) {
-                        this.loadConversation(selectedConversation.id);
-                        modal.close();
-                    }
-                } else if (e.key === 'Delete' || e.key === 'Backspace') {
-                    e.preventDefault();
-                    const selectedConversation = pageConversations[selectedIndex];
-                    if (selectedConversation) {
-                        await this.deleteConversation(selectedConversation.id);
-                        modal.close();
-                        // Reopen the modal to refresh the list
-                        setTimeout(() => this.showChatHistory(), 100);
-                    }
-                } else if (e.key === 'PageDown' || e.key === 'PageUp') {
-                    e.preventDefault();
-                    if (e.key === 'PageDown' && currentPage < totalPages - 1) {
-                        currentPage++;
-                        selectedIndex = 0;
-                        renderConversationPage();
-                    } else if (e.key === 'PageUp' && currentPage > 0) {
-                        currentPage--;
-                        selectedIndex = 0;
-                        renderConversationPage();
-                    }
-                } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    modal.close();
-                }
-            };
-
-            // Add event listener to modal and make it focusable
-            modal.containerEl.setAttribute('tabindex', '0');
-            modal.containerEl.addEventListener('keydown', handleKeydown);
-
-            // Focus the modal so it can receive keyboard events
-            setTimeout(() => modal.containerEl.focus(), 100);
-
-            // Fix conversations container height after modal is fully rendered
-            fixConversationsHeight();
-
-            // Remove event listener when modal closes
-            const originalClose = modal.close.bind(modal);
-            modal.close = () => {
-                modal.containerEl.removeEventListener('keydown', handleKeydown);
-                originalClose();
-            };
-        }
-
-        // Add close button
-        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-        const closeBtn = buttonContainer.createEl('button', {
-            text: 'Close',
-            cls: 'mod-cta'
-        });
-        closeBtn.onclick = () => modal.close();
-
+        );
         modal.open();
-
-        // Fix conversations container height for empty state too
-        if (this.plugin.settings.conversations.length === 0) {
-            setTimeout(() => {
-                const modalHeight = modal.modalEl.clientHeight;
-                const titleHeight = modal.titleEl.offsetHeight;
-                const buttonHeight = buttonContainer.offsetHeight + 16; // include margin
-                const padding = 40;
-
-                const availableHeight = modalHeight - titleHeight - buttonHeight - padding;
-                const emptyStateP = contentEl.querySelector('p');
-                if (emptyStateP) {
-                    (emptyStateP as HTMLElement).style.height = `${availableHeight}px`;
-                    (emptyStateP as HTMLElement).style.display = 'flex';
-                    (emptyStateP as HTMLElement).style.alignItems = 'center';
-                    (emptyStateP as HTMLElement).style.justifyContent = 'center';
-                }
-            }, 50);
-        }
     }
 
     async showSystemPromptSelector() {
-        // Create and open modal first
-        const modal = new Modal(this.app);
-        modal.titleEl.setText('Select System Prompt');
+        // Resolve the system prompts path
+        const resolvedPath = this.resolveVaultPath(this.plugin.settings.systemPromptsPath);
 
-        // Make modal compact for system prompt selection only
-        modal.modalEl.style.width = '400px';
-        modal.modalEl.style.height = '60vh';
-        modal.modalEl.style.minWidth = '400px';
-
-        const contentEl = modal.contentEl;
-        contentEl.empty();
-
-        // Open modal immediately so user sees it
-        modal.open();
-
-        // Now populate the content
-        try {
-            // Get the system prompts directory path from settings
-            let systemPromptsPath = this.plugin.settings.systemPromptsPath;
-
-            // Check if path is absolute (Windows: C:\, D:\ etc, or Unix: /)
-            const isAbsolutePath = systemPromptsPath.startsWith('/') || /^[A-Za-z]:[\\/]/.test(systemPromptsPath);
-
-            console.log('Path check - Original:', systemPromptsPath, 'Is absolute:', isAbsolutePath);
-
-            if (systemPromptsPath && !isAbsolutePath) {
-                // Try different ways to get vault path
-                console.log('Attempting to resolve vault-relative path:', systemPromptsPath);
-
-                let vaultPath = null;
-
-                // Try to get vault path from different sources
-                const adapter = this.app.vault.adapter as any;
-                if (adapter.path) {
-                    vaultPath = adapter.path;
-                } else if (adapter.basePath) {
-                    vaultPath = adapter.basePath;
-                } else if (adapter.getBasePath) {
-                    vaultPath = adapter.getBasePath();
-                }
-
-                console.log('Found vault path:', vaultPath, 'type:', typeof vaultPath);
-
-                if (vaultPath && typeof vaultPath === 'string') {
-                    const path = require('path');
-                    systemPromptsPath = path.join(vaultPath, systemPromptsPath);
-                    console.log('Resolved vault-relative path to:', systemPromptsPath);
-                } else {
-                    console.log('Could not get vault path as string, trying vault name approach...');
-                    // Fallback: use current working directory + vault name
-                    const vaultName = this.app.vault.getName();
-                    if (vaultName) {
-                        const path = require('path');
-                        const process = require('process');
-                        systemPromptsPath = path.join(process.cwd(), vaultName, systemPromptsPath);
-                        console.log('Fallback path resolution:', systemPromptsPath);
-                    }
-                }
-            }
-
-            if (!systemPromptsPath) {
-                contentEl.createEl('p', {
-                    text: 'System prompts directory not configured. Please set it in plugin settings.'
-                });
-                // Add button to open settings
-                const settingsBtn = contentEl.createEl('button', {
-                    text: 'Open Settings',
-                    cls: 'mod-cta'
-                });
-                settingsBtn.onclick = () => {
-                    modal.close();
-                    this.openSettings();
-                };
-                return;
-            }
-
-            // Get list of .md files in the directory
-            const fs = require('fs');
-            const path = require('path');
-
-            if (!fs.existsSync(systemPromptsPath)) {
-                contentEl.createEl('p', {
-                    text: `System prompts directory not found: ${systemPromptsPath}`
-                });
-                contentEl.createEl('p', {
-                    text: 'Please check the path in plugin settings.'
-                });
-                return;
-            }
-
-            const files = fs.readdirSync(systemPromptsPath)
-                .filter((file: string) => file.endsWith('.md'))
-                .sort();
-
-            if (files.length === 0) {
-                contentEl.createEl('p', {
-                    text: 'No .md files found in SystemPrompts directory.'
-                });
-            } else {
-                // Create container for side-by-side layout
-                const mainContainer = contentEl.createDiv({ cls: 'stella-modal-container' });
-                const leftPanel = mainContainer.createDiv({ cls: 'stella-modal-left-panel' });
-                const rightPanel = mainContainer.createDiv({ cls: 'stella-modal-right-panel' });
-
-                // Create preview panel (initially hidden)
-                const previewContainer = rightPanel.createDiv({ cls: 'stella-preview-container' });
-                const previewContent = previewContainer.createDiv({ cls: 'stella-preview-content' });
-                previewContent.textContent = 'Select a system prompt and press → to preview';
-
-                const fileList = leftPanel.createDiv({ cls: 'stella-system-prompts-list' });
-                let selectedIndex = 0;
-                let previewVisible = false;
-
-                // Helper function to fix file list height
-                const fixFileListHeight = () => {
-                    setTimeout(() => {
-                        const modalHeight = modal.modalEl.clientHeight;
-                        const titleHeight = modal.titleEl.offsetHeight;
-                        const padding = 40; // approximate padding and margins
-
-                        const availableHeight = modalHeight - titleHeight - padding;
-                        fileList.style.height = `${availableHeight}px`;
-                        fileList.style.maxHeight = `${availableHeight}px`;
-                        fileList.style.overflow = 'auto';
-                    }, 50);
-                };
-
-                files.forEach((filename: string, index: number) => {
-                    const fileItem = fileList.createDiv({
-                        cls: 'stella-system-prompt-item'
-                    });
-
-                    const titleEl = fileItem.createDiv({ cls: 'stella-system-prompt-title' });
-                    titleEl.textContent = filename.replace('.md', '');
-
-                    fileItem.addEventListener('click', async () => {
-                        await this.loadSystemPrompt(path.join(systemPromptsPath, filename));
-                        modal.close();
-                        // Return focus to chat input after selection
-                        setTimeout(() => {
-                            this.chatInput.focus();
-                        }, 100);
-                    });
-
-                    // Set initial selection
-                    if (index === 0) {
-                        fileItem.classList.add('selected');
-                    }
-                });
-
-                // Preview functionality
-                const showPreview = async (filename: string) => {
-                    try {
-                        const fs = require('fs');
-                        const filePath = path.join(systemPromptsPath, filename);
-                        const content = fs.readFileSync(filePath, 'utf8');
-
-                        previewContent.empty();
-
-                        // Render markdown content
-                        await this.renderMarkdown(previewContent, content);
-
-                        rightPanel.style.display = 'block';
-                        previewVisible = true;
-
-                        // Expand modal width for preview (30% smaller than original = 60vw, 980px)
-                        modal.modalEl.style.width = '60vw';
-                        modal.modalEl.style.maxWidth = '980px';
-                        leftPanel.style.width = '50%';
-                        rightPanel.style.width = '50%';
-
-                        // Recalculate file list height after width change
-                        fixFileListHeight();
-                    } catch (error) {
-                        previewContent.textContent = `Error loading preview: ${error.message}`;
-                    }
-                };
-
-                const hidePreview = () => {
-                    rightPanel.style.display = 'none';
-                    leftPanel.style.width = '100%';
-                    previewVisible = false;
-
-                    // Shrink modal back to compact size
-                    modal.modalEl.style.width = '400px';
-                    modal.modalEl.style.maxWidth = 'none';
-
-                    // Recalculate file list height after width change
-                    fixFileListHeight();
-                };
-
-                // Add keyboard navigation
-                const handleKeydown = (e: KeyboardEvent) => {
-                    const items = fileList.querySelectorAll('.stella-system-prompt-item');
-
-                    if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        items[selectedIndex]?.classList.remove('selected');
-                        selectedIndex = (selectedIndex + 1) % items.length;
-                        items[selectedIndex]?.classList.add('selected');
-                        items[selectedIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-                        // Update preview if visible
-                        if (previewVisible) {
-                            showPreview(files[selectedIndex]);
-                        }
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        items[selectedIndex]?.classList.remove('selected');
-                        selectedIndex = selectedIndex === 0 ? items.length - 1 : selectedIndex - 1;
-                        items[selectedIndex]?.classList.add('selected');
-                        items[selectedIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-                        // Update preview if visible
-                        if (previewVisible) {
-                            showPreview(files[selectedIndex]);
-                        }
-                    } else if (e.key === 'ArrowRight') {
-                        e.preventDefault();
-                        if (!previewVisible) {
-                            showPreview(files[selectedIndex]);
-                        }
-                    } else if (e.key === 'ArrowLeft') {
-                        e.preventDefault();
-                        if (previewVisible) {
-                            hidePreview();
-                        }
-                    } else if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const selectedFilename = files[selectedIndex];
-                        if (selectedFilename) {
-                            this.loadSystemPrompt(path.join(systemPromptsPath, selectedFilename));
-                            modal.close();
-                            setTimeout(() => {
-                                this.chatInput.focus();
-                            }, 100);
-                        }
-                    } else if (e.key === 'Escape') {
-                        e.preventDefault();
-                        modal.close();
-                    }
-                };
-
-                // Initially hide preview panel
-                hidePreview();
-
-                // Add event listener to modal and make it focusable
-                modal.containerEl.setAttribute('tabindex', '0');
-                modal.containerEl.addEventListener('keydown', handleKeydown);
-
-                // Focus the modal so it can receive keyboard events
-                setTimeout(() => modal.containerEl.focus(), 100);
-
-                // Fix file list height after modal is fully rendered
-                fixFileListHeight();
-
-                // Remove event listener when modal closes
-                const originalClose = modal.close.bind(modal);
-                modal.close = () => {
-                    modal.containerEl.removeEventListener('keydown', handleKeydown);
-                    originalClose();
-                };
-            }
-        } catch (error) {
-            contentEl.createEl('p', {
-                text: `Error reading system prompts: ${error.message}`
-            });
-            console.error('Error reading system prompts:', error);
+        if (!resolvedPath) {
+            new Notice('System prompts directory not configured. Please set it in plugin settings.');
+            return;
         }
 
-        // Add close button at the end
-        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-        const closeBtn = buttonContainer.createEl('button', {
-            text: 'Close',
-            cls: 'mod-cta'
-        });
-        closeBtn.onclick = () => {
-            modal.close();
-            // Return focus to chat input after modal closes
-            setTimeout(() => {
-                this.chatInput.focus();
-            }, 100);
-        };
+        const modal = createSystemPromptModal(
+            this.app,
+            resolvedPath,
+            {
+                onSelect: async (filePath: string, _filename: string) => {
+                    await this.loadSystemPrompt(filePath);
+                },
+                onClose: () => {
+                    setTimeout(() => this.chatInput.focus(), 100);
+                }
+            }
+        );
+        modal.open();
+    }
 
-        // Also add proper cleanup when modal closes naturally
-        modal.onClose = () => {
-            setTimeout(() => {
-                this.chatInput.focus();
-            }, 100);
-        };
+    // Helper method to resolve vault-relative paths to absolute paths
+    private resolveVaultPath(inputPath: string): string | null {
+        if (!inputPath) return null;
+
+        // Check if path is already absolute (Windows: C:\, D:\ etc, or Unix: /)
+        const isAbsolutePath = inputPath.startsWith('/') || /^[A-Za-z]:[\\/]/.test(inputPath);
+        if (isAbsolutePath) return inputPath;
+
+        // Try to get vault path from different sources
+        const adapter = this.app.vault.adapter as any;
+        let vaultPath: string | null = null;
+
+        if (adapter.path) {
+            vaultPath = adapter.path;
+        } else if (adapter.basePath) {
+            vaultPath = adapter.basePath;
+        } else if (adapter.getBasePath) {
+            vaultPath = adapter.getBasePath();
+        }
+
+        if (vaultPath && typeof vaultPath === 'string') {
+            const path = require('path');
+            return path.join(vaultPath, inputPath);
+        }
+
+        // Fallback: use current working directory + vault name
+        const vaultName = this.app.vault.getName();
+        if (vaultName) {
+            const path = require('path');
+            const process = require('process');
+            return path.join(process.cwd(), vaultName, inputPath);
+        }
+
+        return null;
     }
 
     async loadSystemPrompt(filepath: string) {
@@ -4469,230 +2857,21 @@ class StellaChatView extends ItemView {
     }
 
     async showNoteSelector() {
-        // Create and open modal first
-        const modal = new Modal(this.app);
-        modal.titleEl.setText('Add Note Context');
-
-        // Make modal compact for note selection only
-        modal.modalEl.style.width = '400px';
-        modal.modalEl.style.height = '60vh';
-        modal.modalEl.style.minWidth = '400px';
-
-        const contentEl = modal.contentEl;
-        contentEl.empty();
-
-        // Search input
-        const searchInput = contentEl.createEl('input', {
-            type: 'text',
-            placeholder: 'Search notes...',
-            cls: 'stella-note-search'
-        });
-
-        // Create container for side-by-side layout
-        const mainContainer = contentEl.createDiv({ cls: 'stella-modal-container' });
-        const leftPanel = mainContainer.createDiv({ cls: 'stella-modal-left-panel' });
-        const rightPanel = mainContainer.createDiv({ cls: 'stella-modal-right-panel' });
-
-        // Create preview panel (initially hidden)
-        const previewContainer = rightPanel.createDiv({ cls: 'stella-preview-container' });
-        const previewContent = previewContainer.createDiv({ cls: 'stella-preview-content' });
-        previewContent.textContent = 'Select a note and press → to preview';
-
-        // Notes container
-        const notesContainer = leftPanel.createDiv({ cls: 'stella-notes-container' });
-
-        // Get all markdown files
-        const files = this.app.vault.getMarkdownFiles();
-
-        let filteredFiles = files;
-        let selectedIndex = 0;
-        let previewVisible = false;
-
-        const renderFiles = (filesToRender: any[]) => {
-            notesContainer.empty();
-            // Reset selection when re-rendering but keep it within bounds
-            if (selectedIndex >= filesToRender.length) {
-                selectedIndex = Math.max(0, filesToRender.length - 1);
-            }
-
-            filesToRender.slice(0, 50).forEach((file, index) => { // Limit to 50 results
-                const noteItem = notesContainer.createDiv({
-                    cls: 'stella-note-item'
-                });
-
-                const titleEl = noteItem.createDiv({ cls: 'stella-note-title' });
-                titleEl.textContent = file.basename;
-
-                const pathEl = noteItem.createDiv({ cls: 'stella-note-path' });
-                pathEl.textContent = file.path;
-
-                noteItem.addEventListener('click', async () => {
-                    await this.addNoteContext(file);
-                    modal.close();
-                });
-
-                // Set selection based on current selectedIndex
-                if (index === selectedIndex) {
-                    noteItem.classList.add('selected');
-                }
-            });
-        };
-
-        // Initial render
-        renderFiles(filteredFiles);
-
-        // Helper function to fix notes container height
-        const fixNotesHeight = () => {
-            setTimeout(() => {
-                const modalHeight = modal.modalEl.clientHeight;
-                const searchInputHeight = searchInput.offsetHeight + 16; // include margin
-                const titleHeight = modal.titleEl.offsetHeight;
-                const padding = 40; // approximate padding and margins
-
-                const availableHeight = modalHeight - titleHeight - searchInputHeight - padding;
-                notesContainer.style.height = `${availableHeight}px`;
-                notesContainer.style.maxHeight = `${availableHeight}px`;
-                notesContainer.style.overflow = 'auto';
-            }, 50);
-        };
-
-        // Search functionality
-        searchInput.addEventListener('input', (e) => {
-            const query = (e.target as HTMLInputElement).value.toLowerCase();
-
-            if (query === '') {
-                filteredFiles = files;
-            } else {
-                filteredFiles = files.filter(file =>
-                    file.basename.toLowerCase().includes(query) ||
-                    file.path.toLowerCase().includes(query)
-                );
-            }
-
-            // Reset selection to first item when search changes
-            selectedIndex = 0;
-            renderFiles(filteredFiles);
-        });
-
-        // Preview functionality
-        const showPreview = async (file: any) => {
-            try {
-                const content = await this.app.vault.read(file);
-
-                previewContent.empty();
-
-                // Render markdown content
-                await this.renderMarkdown(previewContent, content);
-
-                rightPanel.style.display = 'block';
-                previewVisible = true;
-
-                // Expand modal width by 30% less (85vw * 0.7 = 60vw, 1400px * 0.7 = 980px)
-                modal.modalEl.style.width = '60vw';
-                modal.modalEl.style.maxWidth = '980px';
-                leftPanel.style.width = '50%';
-                rightPanel.style.width = '50%';
-
-                // Recalculate notes height after width change
-                fixNotesHeight();
-            } catch (error) {
-                previewContent.textContent = `Error loading preview: ${error.message}`;
-            }
-        };
-
-        const hidePreview = () => {
-            rightPanel.style.display = 'none';
-            leftPanel.style.width = '100%';
-            previewVisible = false;
-
-            // Shrink modal back to compact note selection size
-            modal.modalEl.style.width = '400px';
-            modal.modalEl.style.maxWidth = 'none';
-
-            // Recalculate notes height after width change
-            fixNotesHeight();
-        };
-
-        // Initially hide preview panel
-        hidePreview();
-
-        // Add keyboard navigation
-        const handleKeydown = (e: KeyboardEvent) => {
-            const items = notesContainer.querySelectorAll('.stella-note-item');
-            const currentFilteredFiles = filteredFiles.slice(0, 50); // Match the render limit
-
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                items[selectedIndex]?.classList.remove('selected');
-                selectedIndex = (selectedIndex + 1) % items.length;
-                items[selectedIndex]?.classList.add('selected');
-                items[selectedIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-                // Update preview if visible
-                if (previewVisible && currentFilteredFiles[selectedIndex]) {
-                    showPreview(currentFilteredFiles[selectedIndex]);
-                }
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                items[selectedIndex]?.classList.remove('selected');
-                selectedIndex = selectedIndex === 0 ? items.length - 1 : selectedIndex - 1;
-                items[selectedIndex]?.classList.add('selected');
-                items[selectedIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-                // Update preview if visible
-                if (previewVisible && currentFilteredFiles[selectedIndex]) {
-                    showPreview(currentFilteredFiles[selectedIndex]);
-                }
-            } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                if (!previewVisible && currentFilteredFiles[selectedIndex]) {
-                    showPreview(currentFilteredFiles[selectedIndex]);
-                }
-            } else if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                if (previewVisible) {
-                    hidePreview();
-                }
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                const selectedFile = currentFilteredFiles[selectedIndex];
-                if (selectedFile) {
-                    this.addNoteContext(selectedFile);
-                    modal.close();
-                }
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                modal.close();
-            } else if (e.key === 'Tab') {
-                e.preventDefault();
-                // Toggle focus between search input and list
-                if (document.activeElement === searchInput) {
-                    notesContainer.focus();
-                } else {
-                    searchInput.focus();
+        const modal = new NoteSelectorModal(
+            this.app,
+            {
+                onSelect: (filename: string, content: string) => {
+                    // Add to context notes directly (content already read by modal)
+                    this.contextNotes.push({ name: filename, content });
+                    this.updateContextIndicator();
+                    console.log(`Added note context: ${filename}`);
+                },
+                onClose: () => {
+                    // Focus handled by modal
                 }
             }
-        };
-
-        // Add event listeners and make modal focusable
-        modal.containerEl.setAttribute('tabindex', '0');
-        modal.containerEl.addEventListener('keydown', handleKeydown);
-        // Arrow keys are handled by the main modal keydown listener now
-
-        // Focus search input initially
-        setTimeout(() => searchInput.focus(), 100);
-
-        // Remove event listener when modal closes
-        const originalClose = modal.close.bind(modal);
-        modal.close = () => {
-            modal.containerEl.removeEventListener('keydown', handleKeydown);
-            originalClose();
-        };
-
+        );
         modal.open();
-
-        // Fix notes container height after modal is opened
-        fixNotesHeight();
     }
 
     async addNoteContext(file: any) {
@@ -5101,248 +3280,27 @@ class StellaChatView extends ItemView {
     }
 
     async showMentalModelSelector() {
-        const modal = new Modal(this.app);
-        modal.titleEl.setText('Select Mental Model');
-        modal.modalEl.style.width = '400px';
-        modal.modalEl.style.height = '60vh';
-        modal.modalEl.style.minWidth = '400px';
+        // Resolve the mental models path
+        const resolvedPath = this.resolveVaultPath(this.plugin.settings.mentalModelsPath);
 
-        const contentEl = modal.contentEl;
-        contentEl.empty();
-
-        modal.open();
-
-        try {
-            let mentalModelsPath = this.plugin.settings.mentalModelsPath;
-            const isAbsolutePath = mentalModelsPath.startsWith('/') || /^[A-Za-z]:[\\/]/.test(mentalModelsPath);
-            console.log('Mental Model Path check - Original:', mentalModelsPath, 'Is absolute:', isAbsolutePath);
-
-            if (mentalModelsPath && !isAbsolutePath) {
-                console.log('Attempting to resolve vault-relative path:', mentalModelsPath);
-                let vaultPath: any = null;
-                const adapter = this.app.vault.adapter as any;
-
-                if (adapter.path) {
-                    vaultPath = adapter.path;
-                } else if (adapter.basePath) {
-                    vaultPath = adapter.basePath;
-                } else if (adapter.getBasePath) {
-                    vaultPath = adapter.getBasePath();
-                }
-
-                console.log('Found vault path:', vaultPath, 'type:', typeof vaultPath);
-
-                if (vaultPath && typeof vaultPath === 'string') {
-                    const path = require('path');
-                    mentalModelsPath = path.join(vaultPath, mentalModelsPath);
-                    console.log('Resolved vault-relative path to:', mentalModelsPath);
-                } else {
-                    console.log('Could not get vault path as string, trying vault name approach...');
-                    const vaultName = this.app.vault.getName();
-                    if (vaultName) {
-                        const path = require('path');
-                        const process = require('process');
-                        mentalModelsPath = path.join(process.cwd(), vaultName, mentalModelsPath);
-                        console.log('Fallback path resolution:', mentalModelsPath);
-                    }
-                }
-            }
-
-            if (!mentalModelsPath) {
-                contentEl.createEl('p', {
-                    text: 'Mental models directory not configured. Please set it in plugin settings.'
-                });
-                const settingsBtn = contentEl.createEl('button', {
-                    text: 'Open Settings',
-                    cls: 'mod-cta'
-                });
-                settingsBtn.onclick = () => {
-                    modal.close();
-                    this.openSettings();
-                };
-                return;
-            }
-
-            const fs = require('fs');
-            const path = require('path');
-
-            if (!fs.existsSync(mentalModelsPath)) {
-                contentEl.createEl('p', {
-                    text: `Mental models directory not found: ${mentalModelsPath}`
-                });
-                contentEl.createEl('p', {
-                    text: 'Please check the path in plugin settings.'
-                });
-                return;
-            }
-
-            const files = fs.readdirSync(mentalModelsPath).filter((file: string) => file.endsWith('.md')).sort();
-
-            if (files.length === 0) {
-                contentEl.createEl('p', {
-                    text: 'No .md files found in Mental Models directory.'
-                });
-            } else {
-                const mainContainer = contentEl.createDiv({ cls: 'stella-modal-container' });
-                const leftPanel = mainContainer.createDiv({ cls: 'stella-modal-left-panel' });
-                const rightPanel = mainContainer.createDiv({ cls: 'stella-modal-right-panel' });
-
-                const previewContainer = rightPanel.createDiv({ cls: 'stella-preview-container' });
-                const previewContent = previewContainer.createDiv({ cls: 'stella-preview-content' });
-                previewContent.textContent = 'Select a mental model and press → to preview';
-
-                const fileList = leftPanel.createDiv({ cls: 'stella-mental-models-list' });
-                let selectedIndex = 0;
-                let previewVisible = false;
-
-                const fixFileListHeight = () => {
-                    setTimeout(() => {
-                        const modalHeight = modal.modalEl.clientHeight;
-                        const titleHeight = modal.titleEl.offsetHeight;
-                        const padding = 40;
-                        const availableHeight = modalHeight - titleHeight - padding;
-
-                        fileList.style.height = `${availableHeight}px`;
-                        fileList.style.maxHeight = `${availableHeight}px`;
-                        fileList.style.overflow = 'auto';
-                    }, 50);
-                };
-
-                files.forEach((filename: string, index: number) => {
-                    const fileItem = fileList.createDiv({
-                        cls: 'stella-mental-model-item'
-                    });
-
-                    const titleEl = fileItem.createDiv({ cls: 'stella-mental-model-title' });
-                    titleEl.textContent = filename.replace('.md', '');
-
-                    fileItem.addEventListener('click', async () => {
-                        await this.loadMentalModel(path.join(mentalModelsPath, filename));
-                        modal.close();
-                        setTimeout(() => {
-                            this.chatInput.focus();
-                        }, 100);
-                    });
-
-                    if (index === 0) {
-                        fileItem.classList.add('selected');
-                    }
-                });
-
-                const showPreview = async (filename: string) => {
-                    try {
-                        const fs = require('fs');
-                        const filePath = path.join(mentalModelsPath, filename);
-                        const content = fs.readFileSync(filePath, 'utf8');
-
-                        previewContent.empty();
-                        await this.renderMarkdown(previewContent, content);
-
-                        rightPanel.style.display = 'block';
-                        previewVisible = true;
-                        modal.modalEl.style.width = '60vw';
-                        modal.modalEl.style.maxWidth = '980px';
-                        leftPanel.style.width = '50%';
-                        rightPanel.style.width = '50%';
-                        fixFileListHeight();
-                    } catch (error) {
-                        previewContent.textContent = `Error loading preview: ${error.message}`;
-                    }
-                };
-
-                const hidePreview = () => {
-                    rightPanel.style.display = 'none';
-                    leftPanel.style.width = '100%';
-                    previewVisible = false;
-                    modal.modalEl.style.width = '400px';
-                    modal.modalEl.style.maxWidth = 'none';
-                    fixFileListHeight();
-                };
-
-                const handleKeydown = (e: KeyboardEvent) => {
-                    const items = fileList.querySelectorAll('.stella-mental-model-item');
-
-                    if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        items[selectedIndex]?.classList.remove('selected');
-                        selectedIndex = (selectedIndex + 1) % items.length;
-                        items[selectedIndex]?.classList.add('selected');
-                        items[selectedIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        if (previewVisible) {
-                            showPreview(files[selectedIndex]);
-                        }
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        items[selectedIndex]?.classList.remove('selected');
-                        selectedIndex = selectedIndex === 0 ? items.length - 1 : selectedIndex - 1;
-                        items[selectedIndex]?.classList.add('selected');
-                        items[selectedIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        if (previewVisible) {
-                            showPreview(files[selectedIndex]);
-                        }
-                    } else if (e.key === 'ArrowRight') {
-                        e.preventDefault();
-                        if (!previewVisible) {
-                            showPreview(files[selectedIndex]);
-                        }
-                    } else if (e.key === 'ArrowLeft') {
-                        e.preventDefault();
-                        if (previewVisible) {
-                            hidePreview();
-                        }
-                    } else if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const selectedFilename = files[selectedIndex];
-                        if (selectedFilename) {
-                            this.loadMentalModel(path.join(mentalModelsPath, selectedFilename));
-                            modal.close();
-                            setTimeout(() => {
-                                this.chatInput.focus();
-                            }, 100);
-                        }
-                    } else if (e.key === 'Escape') {
-                        e.preventDefault();
-                        modal.close();
-                    }
-                };
-
-                hidePreview();
-
-                modal.containerEl.setAttribute('tabindex', '0');
-                modal.containerEl.addEventListener('keydown', handleKeydown);
-                setTimeout(() => modal.containerEl.focus(), 100);
-                fixFileListHeight();
-
-                const originalClose = modal.close.bind(modal);
-                modal.close = () => {
-                    modal.containerEl.removeEventListener('keydown', handleKeydown);
-                    originalClose();
-                };
-            }
-        } catch (error) {
-            contentEl.createEl('p', {
-                text: `Error reading mental models: ${error.message}`
-            });
-            console.error('Error reading mental models:', error);
+        if (!resolvedPath) {
+            new Notice('Mental models directory not configured. Please set it in plugin settings.');
+            return;
         }
 
-        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-        const closeBtn = buttonContainer.createEl('button', {
-            text: 'Close',
-            cls: 'mod-cta'
-        });
-        closeBtn.onclick = () => {
-            modal.close();
-            setTimeout(() => {
-                this.chatInput.focus();
-            }, 100);
-        };
-
-        modal.onClose = () => {
-            setTimeout(() => {
-                this.chatInput.focus();
-            }, 100);
-        };
+        const modal = createMentalModelModal(
+            this.app,
+            resolvedPath,
+            {
+                onSelect: async (filePath: string, _filename: string) => {
+                    await this.loadMentalModel(filePath);
+                },
+                onClose: () => {
+                    setTimeout(() => this.chatInput.focus(), 100);
+                }
+            }
+        );
+        modal.open();
     }
 
     async loadMentalModel(filepath: string) {

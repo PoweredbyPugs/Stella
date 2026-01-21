@@ -1,1 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output (main.js is generated from main.ts)
+# Uncomment if you don't want to track the built file:
+# main.js
+# main.js.map
+
+# Obsidian data
 data.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Optional: TypeScript cache
+*.tsbuildinfo

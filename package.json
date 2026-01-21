@@ -4,9 +4,9 @@
   "description": "Advanced AI chat with LLM integration, semantic search, and MCP support",
   "main": "main.js",
   "scripts": {
-    "dev": "node.cmd esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node.cmd esbuild.config.mjs production",
-    "version": "node.cmd version-bump.mjs && git add manifest.json versions.json"
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [],
   "author": "PoweredbyPugs",

@@ -27,7 +27,9 @@ __export(main_exports, {
   default: () => StellaPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian = require("obsidian");
+var import_obsidian3 = require("obsidian");
+
+// src/types/index.ts
 var DEFAULT_SETTINGS = {
   provider: "anthropic",
   openaiApiKey: "",
@@ -56,11 +58,12 @@ var DEFAULT_SETTINGS = {
     }
   ],
   showTokenCount: false,
-  // MCP Default Settings
   mcpEnabled: false,
   mcpServers: [],
   mcpAutoDiscovery: true
 };
+
+// src/services/fetch.ts
 var FetchManager = class {
   static async enhancedFetch(url, options = {}) {
     const headers = new Headers(options.headers);
@@ -76,6 +79,8 @@ var FetchManager = class {
     return await fetch(url, enhancedOptions);
   }
 };
+
+// src/services/cache.ts
 var CacheManager = class {
   // 1 hour in milliseconds
   constructor() {
@@ -191,8 +196,8 @@ var CacheManager = class {
     this.delete(modelKey);
   }
   invalidateAllModels() {
-    const providers = ["openai", "anthropic", "google", "ollama", "lmstudio"];
-    providers.forEach((provider) => this.invalidateProviderCache(provider));
+    const providers2 = ["openai", "anthropic", "google", "ollama", "lmstudio"];
+    providers2.forEach((provider) => this.invalidateProviderCache(provider));
   }
   invalidateConversationData() {
     this.delete(CacheManager.conversationMetaKey());
@@ -200,25 +205,28 @@ var CacheManager = class {
   // Get cache statistics
   getCacheStats() {
     let totalSize = 0;
-    const providers = /* @__PURE__ */ new Set();
+    const providers2 = /* @__PURE__ */ new Set();
     this.cache.forEach((item, key) => {
       totalSize += this.getDataSize(item.data);
       if (key.startsWith("models_")) {
-        providers.add(key.replace("models_", ""));
+        providers2.add(key.replace("models_", ""));
       }
     });
     return {
       totalItems: this.cache.size,
       totalSize,
-      providers: Array.from(providers)
+      providers: Array.from(providers2)
     };
   }
 };
+
+// src/services/logger.ts
 var AsyncLogger = class {
   // Force flush at 100 messages
   constructor() {
     this.logQueue = [];
     this.isProcessing = false;
+    this.flushInterval = null;
     this.FLUSH_INTERVAL = 1e3;
     // Flush every 1 second
     this.MAX_QUEUE_SIZE = 100;
@@ -286,6 +294,8 @@ var AsyncLogger = class {
     this.flushLogs();
   }
 };
+
+// src/services/mcp/client.ts
 var MCPClientManager = class {
   constructor(logger) {
     this.servers = /* @__PURE__ */ new Map();
@@ -396,7 +406,6 @@ var MCPClientManager = class {
   }
   /**
    * Fix command for Windows compatibility
-   * On Windows, many commands need .cmd extension to work properly
    */
   fixWindowsCommand(command) {
     if (process.platform !== "win32") {
@@ -582,9 +591,7 @@ var MCPClientManager = class {
         params: {
           protocolVersion: "2024-11-05",
           capabilities: {
-            roots: {
-              listChanged: true
-            },
+            roots: { listChanged: true },
             sampling: {}
           },
           clientInfo: {
@@ -761,7 +768,1289 @@ var MCPClientManager = class {
     this.pendingRequests.clear();
   }
 };
-var StellaPlugin = class extends import_obsidian.Plugin {
+
+// src/views/modals/base.ts
+var import_obsidian = require("obsidian");
+var StellaModal = class extends import_obsidian.Modal {
+  constructor(app, config) {
+    super(app);
+    this.config = config;
+  }
+  onOpen() {
+    this.titleEl.setText(this.config.title);
+    this.modalEl.style.width = this.config.width || "400px";
+    this.modalEl.style.height = this.config.height || "60vh";
+    this.modalEl.style.minWidth = this.config.width || "400px";
+    this.contentEl.empty();
+    this.buildContent();
+  }
+  // Helper to create a two-panel layout (list + preview)
+  createTwoPanelLayout() {
+    const mainContainer = this.contentEl.createDiv({ cls: "stella-modal-container" });
+    const leftPanel = mainContainer.createDiv({ cls: "stella-modal-left-panel" });
+    const rightPanel = mainContainer.createDiv({ cls: "stella-modal-right-panel" });
+    const previewContainer = rightPanel.createDiv({ cls: "stella-preview-container" });
+    const previewContent = previewContainer.createDiv({ cls: "stella-preview-content" });
+    return { mainContainer, leftPanel, rightPanel, previewContainer, previewContent };
+  }
+  // Helper to fix list container height
+  fixListHeight(listEl, headerEl) {
+    setTimeout(() => {
+      const modalHeight = this.modalEl.clientHeight;
+      const titleHeight = this.titleEl.offsetHeight;
+      const headerHeight = (headerEl == null ? void 0 : headerEl.offsetHeight) || 0;
+      const padding = 40;
+      const availableHeight = modalHeight - titleHeight - headerHeight - padding;
+      listEl.style.height = `${availableHeight}px`;
+      listEl.style.maxHeight = `${availableHeight}px`;
+      listEl.style.overflow = "auto";
+    }, 50);
+  }
+  // Helper to setup keyboard navigation
+  setupKeyboardNavigation(items, onSelect, options) {
+    let selectedIndex = 0;
+    const updateSelection = (newIndex) => {
+      var _a, _b, _c;
+      if (newIndex < 0 || newIndex >= items.length)
+        return;
+      (_a = items[selectedIndex]) == null ? void 0 : _a.classList.remove("selected");
+      selectedIndex = newIndex;
+      (_b = items[selectedIndex]) == null ? void 0 : _b.classList.add("selected");
+      (_c = items[selectedIndex]) == null ? void 0 : _c.scrollIntoView({ block: "nearest" });
+    };
+    if (items.length > 0) {
+      items[0].classList.add("selected");
+    }
+    this.modalEl.addEventListener("keydown", (e) => {
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          updateSelection(selectedIndex + 1);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          updateSelection(selectedIndex - 1);
+          break;
+        case "ArrowRight":
+          if (options == null ? void 0 : options.onPreview) {
+            e.preventDefault();
+            options.onPreview(selectedIndex);
+          }
+          break;
+        case "Enter":
+          e.preventDefault();
+          onSelect(selectedIndex);
+          break;
+        case "Escape":
+          e.preventDefault();
+          if (options == null ? void 0 : options.onEscape) {
+            options.onEscape();
+          } else {
+            this.close();
+          }
+          break;
+      }
+    });
+  }
+};
+
+// src/views/modals/file-selector.ts
+var FileSelectorModal = class extends StellaModal {
+  constructor(app, config, callbacks) {
+    super(app, { title: config.title });
+    this.files = [];
+    this.selectedIndex = 0;
+    this.previewVisible = false;
+    this.directoryPath = config.directoryPath;
+    this.fileExtension = config.fileExtension || ".md";
+    this.callbacks = callbacks;
+    this.emptyMessage = config.emptyMessage || `No ${this.fileExtension} files found.`;
+    this.notFoundMessage = config.notFoundMessage || "Directory not found.";
+    this.previewHint = config.previewHint || "Select a file and press \u2192 to preview";
+  }
+  buildContent() {
+    if (!this.directoryPath) {
+      this.contentEl.createEl("p", {
+        text: "Directory path not configured. Please check settings."
+      });
+      return;
+    }
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      if (!fs.existsSync(this.directoryPath)) {
+        this.contentEl.createEl("p", {
+          text: `${this.notFoundMessage}: ${this.directoryPath}`
+        });
+        return;
+      }
+      this.files = fs.readdirSync(this.directoryPath).filter((file) => file.endsWith(this.fileExtension)).sort();
+      if (this.files.length === 0) {
+        this.contentEl.createEl("p", { text: this.emptyMessage });
+        return;
+      }
+      this.buildFileList();
+    } catch (error) {
+      this.contentEl.createEl("p", {
+        text: `Error reading directory: ${error}`
+      });
+    }
+  }
+  buildFileList() {
+    const fs = require("fs");
+    const path = require("path");
+    const { leftPanel, previewContent } = this.createTwoPanelLayout();
+    previewContent.textContent = this.previewHint;
+    const fileList = leftPanel.createDiv({ cls: "stella-system-prompts-list" });
+    const items = [];
+    this.files.forEach((filename, index) => {
+      const fileItem = fileList.createDiv({ cls: "stella-system-prompt-item" });
+      items.push(fileItem);
+      const titleEl = fileItem.createDiv({ cls: "stella-system-prompt-title" });
+      titleEl.textContent = filename.replace(this.fileExtension, "");
+      fileItem.addEventListener("click", () => {
+        this.selectFile(index);
+      });
+      fileItem.addEventListener("dblclick", () => {
+        this.confirmSelection(index);
+      });
+    });
+    this.fixListHeight(fileList);
+    this.setupKeyboardNavigation(
+      items,
+      (index) => this.confirmSelection(index),
+      {
+        onPreview: (index) => this.showPreview(index, previewContent),
+        onEscape: () => {
+          if (this.previewVisible) {
+            this.hidePreview(previewContent);
+          } else {
+            this.close();
+          }
+        }
+      }
+    );
+  }
+  selectFile(index) {
+    var _a, _b;
+    const items = this.contentEl.querySelectorAll(".stella-system-prompt-item");
+    (_a = items[this.selectedIndex]) == null ? void 0 : _a.classList.remove("selected");
+    this.selectedIndex = index;
+    (_b = items[this.selectedIndex]) == null ? void 0 : _b.classList.add("selected");
+  }
+  async confirmSelection(index) {
+    var _a, _b;
+    const path = require("path");
+    const filename = this.files[index];
+    const filePath = path.join(this.directoryPath, filename);
+    await this.callbacks.onSelect(filePath, filename);
+    this.close();
+    (_b = (_a = this.callbacks).onClose) == null ? void 0 : _b.call(_a);
+  }
+  showPreview(index, previewContent) {
+    const fs = require("fs");
+    const path = require("path");
+    try {
+      const filename = this.files[index];
+      const filePath = path.join(this.directoryPath, filename);
+      const content = fs.readFileSync(filePath, "utf-8");
+      previewContent.empty();
+      previewContent.createEl("h4", { text: filename.replace(this.fileExtension, "") });
+      previewContent.createEl("pre", {
+        cls: "stella-preview-text",
+        text: content.substring(0, 1e3) + (content.length > 1e3 ? "..." : "")
+      });
+      this.previewVisible = true;
+      this.modalEl.style.width = "700px";
+    } catch (error) {
+      previewContent.textContent = `Error loading preview: ${error}`;
+    }
+  }
+  hidePreview(previewContent) {
+    previewContent.textContent = this.previewHint;
+    this.previewVisible = false;
+    this.modalEl.style.width = "400px";
+  }
+};
+function createSystemPromptModal(app, directoryPath, callbacks) {
+  return new FileSelectorModal(app, {
+    title: "Select System Prompt",
+    directoryPath,
+    fileExtension: ".md",
+    emptyMessage: "No .md files found in SystemPrompts directory.",
+    notFoundMessage: "System prompts directory not found",
+    previewHint: "Select a system prompt and press \u2192 to preview"
+  }, callbacks);
+}
+function createMentalModelModal(app, directoryPath, callbacks) {
+  return new FileSelectorModal(app, {
+    title: "Select Mental Model",
+    directoryPath,
+    fileExtension: ".md",
+    emptyMessage: "No .md files found in MentalModels directory.",
+    notFoundMessage: "Mental models directory not found",
+    previewHint: "Select a mental model and press \u2192 to preview"
+  }, callbacks);
+}
+
+// src/views/modals/note-selector.ts
+var import_obsidian2 = require("obsidian");
+var NoteSelectorModal = class extends StellaModal {
+  constructor(app, callbacks) {
+    super(app, { title: "Add Note Context" });
+    this.files = [];
+    this.filteredFiles = [];
+    this.selectedIndex = 0;
+    this.previewVisible = false;
+    this.notesContainer = null;
+    this.leftPanel = null;
+    this.rightPanel = null;
+    this.previewContent = null;
+    this.searchInput = null;
+    this.callbacks = callbacks;
+  }
+  buildContent() {
+    this.searchInput = this.contentEl.createEl("input", {
+      type: "text",
+      placeholder: "Search notes...",
+      cls: "stella-note-search"
+    });
+    const mainContainer = this.contentEl.createDiv({ cls: "stella-modal-container" });
+    this.leftPanel = mainContainer.createDiv({ cls: "stella-modal-left-panel" });
+    this.rightPanel = mainContainer.createDiv({ cls: "stella-modal-right-panel" });
+    const previewContainer = this.rightPanel.createDiv({ cls: "stella-preview-container" });
+    this.previewContent = previewContainer.createDiv({ cls: "stella-preview-content" });
+    this.previewContent.textContent = "Select a note and press \u2192 to preview";
+    this.notesContainer = this.leftPanel.createDiv({ cls: "stella-notes-container" });
+    this.files = this.app.vault.getMarkdownFiles();
+    this.filteredFiles = this.files;
+    this.renderFiles();
+    this.hidePreview();
+    this.searchInput.addEventListener("input", (e) => {
+      const query = e.target.value.toLowerCase();
+      if (query === "") {
+        this.filteredFiles = this.files;
+      } else {
+        this.filteredFiles = this.files.filter(
+          (file) => file.basename.toLowerCase().includes(query) || file.path.toLowerCase().includes(query)
+        );
+      }
+      this.selectedIndex = 0;
+      this.renderFiles();
+    });
+    this.modalEl.addEventListener("keydown", (e) => this.handleKeydown(e));
+    setTimeout(() => {
+      var _a;
+      return (_a = this.searchInput) == null ? void 0 : _a.focus();
+    }, 50);
+  }
+  renderFiles() {
+    if (!this.notesContainer)
+      return;
+    this.notesContainer.empty();
+    if (this.selectedIndex >= this.filteredFiles.length) {
+      this.selectedIndex = Math.max(0, this.filteredFiles.length - 1);
+    }
+    this.filteredFiles.slice(0, 50).forEach((file, index) => {
+      const noteItem = this.notesContainer.createDiv({ cls: "stella-note-item" });
+      const titleEl = noteItem.createDiv({ cls: "stella-note-title" });
+      titleEl.textContent = file.basename;
+      const pathEl = noteItem.createDiv({ cls: "stella-note-path" });
+      pathEl.textContent = file.path;
+      noteItem.addEventListener("click", () => {
+        this.selectedIndex = index;
+        this.updateSelection();
+      });
+      noteItem.addEventListener("dblclick", () => {
+        this.confirmSelection();
+      });
+      if (index === this.selectedIndex) {
+        noteItem.classList.add("selected");
+      }
+    });
+    this.fixNotesHeight();
+  }
+  updateSelection() {
+    var _a;
+    const items = (_a = this.notesContainer) == null ? void 0 : _a.querySelectorAll(".stella-note-item");
+    items == null ? void 0 : items.forEach((item, i) => {
+      item.classList.toggle("selected", i === this.selectedIndex);
+    });
+  }
+  async confirmSelection() {
+    var _a, _b;
+    const file = this.filteredFiles[this.selectedIndex];
+    if (!file)
+      return;
+    try {
+      const content = await this.app.vault.read(file);
+      this.callbacks.onSelect(file.basename, content);
+      this.close();
+      (_b = (_a = this.callbacks).onClose) == null ? void 0 : _b.call(_a);
+    } catch (error) {
+      console.error("Error reading file:", error);
+    }
+  }
+  async showPreview() {
+    const file = this.filteredFiles[this.selectedIndex];
+    if (!file || !this.previewContent || !this.leftPanel || !this.rightPanel)
+      return;
+    try {
+      const content = await this.app.vault.read(file);
+      this.previewContent.empty();
+      await import_obsidian2.MarkdownRenderer.render(
+        this.app,
+        content.substring(0, 2e3) + (content.length > 2e3 ? "\n\n..." : ""),
+        this.previewContent,
+        file.path,
+        this
+      );
+      this.rightPanel.style.display = "block";
+      this.previewVisible = true;
+      this.modalEl.style.width = "60vw";
+      this.modalEl.style.maxWidth = "980px";
+      this.leftPanel.style.width = "50%";
+      this.rightPanel.style.width = "50%";
+      this.fixNotesHeight();
+    } catch (error) {
+      this.previewContent.textContent = `Error loading preview: ${error.message}`;
+    }
+  }
+  hidePreview() {
+    if (!this.leftPanel || !this.rightPanel || !this.previewContent)
+      return;
+    this.rightPanel.style.display = "none";
+    this.leftPanel.style.width = "100%";
+    this.previewVisible = false;
+    this.modalEl.style.width = "400px";
+    this.modalEl.style.maxWidth = "none";
+    this.previewContent.textContent = "Select a note and press \u2192 to preview";
+    this.fixNotesHeight();
+  }
+  fixNotesHeight() {
+    if (!this.notesContainer || !this.searchInput)
+      return;
+    setTimeout(() => {
+      const modalHeight = this.modalEl.clientHeight;
+      const searchInputHeight = this.searchInput.offsetHeight + 16;
+      const titleHeight = this.titleEl.offsetHeight;
+      const padding = 40;
+      const availableHeight = modalHeight - titleHeight - searchInputHeight - padding;
+      this.notesContainer.style.height = `${availableHeight}px`;
+      this.notesContainer.style.maxHeight = `${availableHeight}px`;
+      this.notesContainer.style.overflow = "auto";
+    }, 50);
+  }
+  handleKeydown(e) {
+    if (e.target === this.searchInput && e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Enter" && e.key !== "Escape") {
+      return;
+    }
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        if (this.selectedIndex < Math.min(this.filteredFiles.length - 1, 49)) {
+          this.selectedIndex++;
+          this.updateSelection();
+          this.scrollToSelected();
+        }
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (this.selectedIndex > 0) {
+          this.selectedIndex--;
+          this.updateSelection();
+          this.scrollToSelected();
+        }
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        this.showPreview();
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        if (this.previewVisible) {
+          this.hidePreview();
+        }
+        break;
+      case "Enter":
+        e.preventDefault();
+        this.confirmSelection();
+        break;
+      case "Escape":
+        e.preventDefault();
+        if (this.previewVisible) {
+          this.hidePreview();
+        } else {
+          this.close();
+        }
+        break;
+    }
+  }
+  scrollToSelected() {
+    var _a, _b;
+    const items = (_a = this.notesContainer) == null ? void 0 : _a.querySelectorAll(".stella-note-item");
+    (_b = items == null ? void 0 : items[this.selectedIndex]) == null ? void 0 : _b.scrollIntoView({ block: "nearest" });
+  }
+};
+
+// src/views/modals/conversation-history.ts
+var ConversationHistoryModal = class extends StellaModal {
+  constructor(app, config, callbacks) {
+    super(app, { title: "Conversations" });
+    this.ITEMS_PER_PAGE = 20;
+    this.currentPage = 0;
+    this.selectedIndex = 0;
+    this.previewVisible = false;
+    this.leftPanel = null;
+    this.rightPanel = null;
+    this.previewContent = null;
+    this.conversationsContainer = null;
+    this.headerContainer = null;
+    this.conversations = config.conversations;
+    this.currentConversationId = config.currentConversationId;
+    this.callbacks = callbacks;
+  }
+  buildContent() {
+    if (this.conversations.length === 0) {
+      this.contentEl.createEl("p", {
+        text: "No conversations yet. Start chatting to create your first conversation."
+      });
+      return;
+    }
+    const { leftPanel, rightPanel, previewContent } = this.createTwoPanelLayout();
+    this.leftPanel = leftPanel;
+    this.rightPanel = rightPanel;
+    this.previewContent = previewContent;
+    previewContent.textContent = "Select a conversation and press \u2192 to preview";
+    const totalPages = Math.ceil(this.conversations.length / this.ITEMS_PER_PAGE);
+    this.headerContainer = leftPanel.createDiv({ cls: "stella-pagination-header" });
+    if (totalPages > 1) {
+      this.renderPaginationHeader();
+    }
+    this.conversationsContainer = leftPanel.createDiv({ cls: "stella-conversations-container" });
+    this.renderConversationPage();
+    this.hidePreview();
+    this.modalEl.addEventListener("keydown", (e) => this.handleKeydown(e));
+  }
+  renderPaginationHeader() {
+    if (!this.headerContainer)
+      return;
+    this.headerContainer.empty();
+    const totalPages = Math.ceil(this.conversations.length / this.ITEMS_PER_PAGE);
+    this.headerContainer.createDiv({
+      cls: "stella-page-info",
+      text: `Page ${this.currentPage + 1} of ${totalPages} (${this.conversations.length} conversations)`
+    });
+    const paginationControls = this.headerContainer.createDiv({ cls: "stella-pagination-controls" });
+    const prevBtn = paginationControls.createEl("button", {
+      cls: "stella-pagination-btn",
+      text: "\u2190 Prev"
+    });
+    prevBtn.disabled = this.currentPage === 0;
+    prevBtn.addEventListener("click", () => this.prevPage());
+    const nextBtn = paginationControls.createEl("button", {
+      cls: "stella-pagination-btn",
+      text: "Next \u2192"
+    });
+    nextBtn.disabled = this.currentPage === totalPages - 1;
+    nextBtn.addEventListener("click", () => this.nextPage());
+  }
+  renderConversationPage() {
+    if (!this.conversationsContainer)
+      return;
+    this.conversationsContainer.empty();
+    const startIndex = this.currentPage * this.ITEMS_PER_PAGE;
+    const endIndex = Math.min(startIndex + this.ITEMS_PER_PAGE, this.conversations.length);
+    const pageConversations = this.conversations.slice(startIndex, endIndex);
+    pageConversations.forEach((conversation, relativeIndex) => {
+      const convEl = this.conversationsContainer.createDiv({ cls: "stella-conversation-item" });
+      if (conversation.id === this.currentConversationId) {
+        convEl.classList.add("stella-conversation-current");
+      }
+      if (relativeIndex === this.selectedIndex) {
+        convEl.classList.add("selected");
+      }
+      const titleEl = convEl.createDiv({ cls: "stella-conversation-title" });
+      titleEl.textContent = conversation.title;
+      const metaEl = convEl.createDiv({ cls: "stella-conversation-meta" });
+      const messageCount = conversation.messages.length;
+      const lastUpdate = new Date(conversation.updatedAt).toLocaleDateString();
+      metaEl.textContent = `${messageCount} messages \u2022 Last updated ${lastUpdate}`;
+      const deleteBtn = convEl.createEl("div", {
+        cls: "stella-conversation-delete",
+        attr: { title: "Delete conversation" }
+      });
+      deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"></polyline><path d="M8,6V4c0-1,1-2,2-2h4c1,0,2-1,2-2v2M10,11v6M14,11v6"></path><path d="M5,6l1,14c0,1,1,2,2,2h8c1,0,2-1,2-2l1-14"></path></svg>';
+      deleteBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        await this.callbacks.onDelete(conversation.id);
+        this.conversations = this.conversations.filter((c) => c.id !== conversation.id);
+        if (this.selectedIndex >= pageConversations.length - 1) {
+          this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+        }
+        this.renderConversationPage();
+        this.renderPaginationHeader();
+      });
+      convEl.addEventListener("click", (e) => {
+        if (!e.target.closest(".stella-conversation-delete")) {
+          this.callbacks.onSelect(conversation.id);
+          this.close();
+        }
+      });
+    });
+    this.fixConversationsHeight();
+  }
+  prevPage() {
+    if (this.currentPage > 0) {
+      this.currentPage--;
+      this.selectedIndex = 0;
+      this.renderConversationPage();
+      this.renderPaginationHeader();
+    }
+  }
+  nextPage() {
+    const totalPages = Math.ceil(this.conversations.length / this.ITEMS_PER_PAGE);
+    if (this.currentPage < totalPages - 1) {
+      this.currentPage++;
+      this.selectedIndex = 0;
+      this.renderConversationPage();
+      this.renderPaginationHeader();
+    }
+  }
+  showPreview() {
+    const startIndex = this.currentPage * this.ITEMS_PER_PAGE;
+    const conversation = this.conversations[startIndex + this.selectedIndex];
+    if (!conversation || !this.previewContent || !this.leftPanel || !this.rightPanel)
+      return;
+    this.previewContent.empty();
+    const summaryDiv = this.previewContent.createDiv({ cls: "stella-conversation-summary" });
+    const infoDiv = summaryDiv.createDiv({ cls: "stella-conversation-info" });
+    infoDiv.innerHTML = `
+            <div><strong>Messages:</strong> ${conversation.messages.length}</div>
+            <div><strong>Created:</strong> ${new Date(conversation.createdAt).toLocaleString()}</div>
+            <div><strong>Updated:</strong> ${new Date(conversation.updatedAt).toLocaleString()}</div>
+        `;
+    if (conversation.systemPrompt) {
+      const sysPromptDiv = summaryDiv.createDiv({ cls: "stella-system-prompt-preview" });
+      sysPromptDiv.createEl("h4", { text: "System Prompt:" });
+      const promptContent = sysPromptDiv.createDiv({ cls: "stella-prompt-content" });
+      promptContent.textContent = conversation.systemPrompt.substring(0, 200) + (conversation.systemPrompt.length > 200 ? "..." : "");
+    }
+    if (conversation.messages.length > 0) {
+      const messagesDiv = summaryDiv.createDiv({ cls: "stella-messages-preview" });
+      messagesDiv.createEl("h4", { text: "Messages Preview:" });
+      conversation.messages.slice(0, 4).forEach((msg) => {
+        const msgDiv = messagesDiv.createDiv({
+          cls: `stella-preview-message stella-preview-${msg.role}`
+        });
+        const roleSpan = msgDiv.createEl("span", { cls: "stella-preview-role" });
+        roleSpan.textContent = msg.role === "user" ? "\u{1F464}" : "\u{1F916}";
+        const contentDiv = msgDiv.createDiv({ cls: "stella-preview-content" });
+        contentDiv.textContent = msg.content.length > 150 ? msg.content.substring(0, 150) + "..." : msg.content;
+      });
+      if (conversation.messages.length > 4) {
+        const moreDiv = messagesDiv.createDiv({ cls: "stella-preview-more" });
+        moreDiv.textContent = `... and ${conversation.messages.length - 4} more messages`;
+      }
+    }
+    this.rightPanel.style.display = "block";
+    this.previewVisible = true;
+    this.modalEl.style.width = "60vw";
+    this.modalEl.style.maxWidth = "980px";
+    this.leftPanel.style.width = "50%";
+    this.rightPanel.style.width = "50%";
+    this.fixConversationsHeight();
+  }
+  hidePreview() {
+    if (!this.leftPanel || !this.rightPanel)
+      return;
+    this.rightPanel.style.display = "none";
+    this.leftPanel.style.width = "100%";
+    this.previewVisible = false;
+    this.modalEl.style.width = "400px";
+    this.modalEl.style.maxWidth = "none";
+    this.fixConversationsHeight();
+  }
+  fixConversationsHeight() {
+    if (!this.conversationsContainer || !this.headerContainer)
+      return;
+    setTimeout(() => {
+      var _a;
+      const modalHeight = this.modalEl.clientHeight;
+      const titleHeight = this.titleEl.offsetHeight;
+      const headerHeight = ((_a = this.headerContainer) == null ? void 0 : _a.offsetHeight) || 0;
+      const padding = 40;
+      const availableHeight = modalHeight - titleHeight - headerHeight - padding;
+      this.conversationsContainer.style.height = `${availableHeight}px`;
+      this.conversationsContainer.style.maxHeight = `${availableHeight}px`;
+      this.conversationsContainer.style.overflow = "auto";
+    }, 50);
+  }
+  updateSelection() {
+    var _a;
+    const items = (_a = this.conversationsContainer) == null ? void 0 : _a.querySelectorAll(".stella-conversation-item");
+    items == null ? void 0 : items.forEach((item, i) => {
+      item.classList.toggle("selected", i === this.selectedIndex);
+    });
+  }
+  handleKeydown(e) {
+    const startIndex = this.currentPage * this.ITEMS_PER_PAGE;
+    const pageSize = Math.min(this.ITEMS_PER_PAGE, this.conversations.length - startIndex);
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        if (this.selectedIndex < pageSize - 1) {
+          this.selectedIndex++;
+          this.updateSelection();
+          this.scrollToSelected();
+        }
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (this.selectedIndex > 0) {
+          this.selectedIndex--;
+          this.updateSelection();
+          this.scrollToSelected();
+        }
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        this.showPreview();
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        if (this.previewVisible) {
+          this.hidePreview();
+        }
+        break;
+      case "Enter":
+        e.preventDefault();
+        const conversation = this.conversations[startIndex + this.selectedIndex];
+        if (conversation) {
+          this.callbacks.onSelect(conversation.id);
+          this.close();
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        if (this.previewVisible) {
+          this.hidePreview();
+        } else {
+          this.close();
+        }
+        break;
+      case "PageDown":
+        e.preventDefault();
+        this.nextPage();
+        break;
+      case "PageUp":
+        e.preventDefault();
+        this.prevPage();
+        break;
+    }
+  }
+  scrollToSelected() {
+    var _a, _b;
+    const items = (_a = this.conversationsContainer) == null ? void 0 : _a.querySelectorAll(".stella-conversation-item");
+    (_b = items == null ? void 0 : items[this.selectedIndex]) == null ? void 0 : _b.scrollIntoView({ block: "nearest" });
+  }
+};
+
+// src/providers/types.ts
+function buildMessagesArray(chatHistory, currentMessage, systemMessage) {
+  const messages = [];
+  if (systemMessage) {
+    messages.push({ role: "system", content: systemMessage });
+  }
+  chatHistory.forEach((msg) => {
+    messages.push({
+      role: msg.role,
+      content: msg.content
+    });
+  });
+  messages.push({ role: "user", content: currentMessage });
+  return messages;
+}
+
+// src/providers/openai.ts
+var OpenAIProvider = class {
+  constructor() {
+    this.name = "openai";
+  }
+  isConfigured(settings) {
+    return !!settings.openaiApiKey;
+  }
+  async call(context) {
+    const { settings, messages } = context;
+    if (!settings.openaiApiKey) {
+      throw new Error("Please set your OpenAI API key in settings");
+    }
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${settings.openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        messages,
+        max_tokens: settings.maxTokens,
+        temperature: settings.temperature
+      })
+    });
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data.choices[0].message.content;
+  }
+  async stream(context, callbacks) {
+    var _a, _b, _c;
+    const { settings, messages } = context;
+    if (!settings.openaiApiKey) {
+      throw new Error("Please set your OpenAI API key in settings");
+    }
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${settings.openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        messages,
+        max_tokens: settings.maxTokens,
+        temperature: settings.temperature,
+        stream: true
+      })
+    });
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`OpenAI API error: ${error}`);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done)
+          break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") {
+              await callbacks.onComplete();
+              return;
+            }
+            try {
+              const parsed = JSON.parse(data);
+              const content = (_c = (_b = (_a = parsed.choices) == null ? void 0 : _a[0]) == null ? void 0 : _b.delta) == null ? void 0 : _c.content;
+              if (content) {
+                callbacks.onContent(content);
+              }
+            } catch (e) {
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    await callbacks.onComplete();
+  }
+};
+
+// src/providers/anthropic.ts
+var AnthropicProvider = class {
+  constructor() {
+    this.name = "anthropic";
+  }
+  isConfigured(settings) {
+    return !!settings.anthropicApiKey;
+  }
+  // Anthropic doesn't include system in messages array - filter it out
+  filterSystemMessages(messages) {
+    return messages.filter((m) => m.role !== "system");
+  }
+  async call(context) {
+    const { settings, messages, systemMessage } = context;
+    if (!settings.anthropicApiKey) {
+      throw new Error("Please set your Anthropic API key in settings");
+    }
+    const requestBody = {
+      model: settings.model,
+      max_tokens: settings.maxTokens,
+      temperature: settings.temperature,
+      messages: this.filterSystemMessages(messages)
+    };
+    if (systemMessage) {
+      requestBody.system = systemMessage;
+    }
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": settings.anthropicApiKey,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify(requestBody)
+    });
+    if (!response.ok) {
+      throw new Error(`Anthropic API error: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data.content[0].text;
+  }
+  async stream(context, callbacks) {
+    var _a;
+    const { settings, messages, systemMessage } = context;
+    if (!settings.anthropicApiKey) {
+      throw new Error("Please set your Anthropic API key in settings");
+    }
+    const requestBody = {
+      model: settings.model,
+      max_tokens: settings.maxTokens,
+      temperature: settings.temperature,
+      messages: this.filterSystemMessages(messages),
+      stream: true
+    };
+    if (systemMessage) {
+      requestBody.system = systemMessage;
+    }
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": settings.anthropicApiKey,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify(requestBody)
+    });
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Anthropic API error: ${error}`);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done)
+          break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") {
+              await callbacks.onComplete();
+              return;
+            }
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.type === "content_block_delta") {
+                const content = (_a = parsed.delta) == null ? void 0 : _a.text;
+                if (content) {
+                  callbacks.onContent(content);
+                }
+              }
+            } catch (e) {
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    await callbacks.onComplete();
+  }
+};
+
+// src/providers/google.ts
+var GoogleProvider = class {
+  constructor() {
+    this.name = "google";
+  }
+  isConfigured(settings) {
+    return !!settings.googleApiKey;
+  }
+  // Convert standard messages to Google format
+  toGoogleContents(messages) {
+    const contents = [];
+    for (const msg of messages) {
+      if (msg.role === "system")
+        continue;
+      contents.push({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }]
+      });
+    }
+    return contents;
+  }
+  // Build function declarations from MCP servers
+  buildFunctionDeclarations(mcpContext) {
+    const functionDeclarations = [];
+    for (const server of mcpContext.servers) {
+      for (const tool of server.tools) {
+        let cleanedSchema = tool.inputSchema || {
+          type: "object",
+          properties: {},
+          required: []
+        };
+        if (cleanedSchema && typeof cleanedSchema === "object") {
+          const { $schema, additionalProperties, ...googleCompatibleSchema } = cleanedSchema;
+          cleanedSchema = googleCompatibleSchema;
+        }
+        functionDeclarations.push({
+          name: `${server.name}_${tool.name}`,
+          description: tool.description || `Execute ${tool.name} from ${server.name}`,
+          parameters: cleanedSchema
+        });
+      }
+    }
+    return functionDeclarations;
+  }
+  async call(context) {
+    return this.callWithMCP(context, { servers: [], executeTool: async () => null });
+  }
+  async callWithMCP(context, mcpContext, retryCount = 0) {
+    var _a, _b, _c;
+    const { settings, messages, systemMessage } = context;
+    if (!settings.googleApiKey) {
+      throw new Error("Please set your Google API key in settings");
+    }
+    const contents = this.toGoogleContents(messages);
+    const requestBody = {
+      contents,
+      generationConfig: {
+        temperature: settings.temperature,
+        maxOutputTokens: settings.maxTokens
+      }
+    };
+    if (systemMessage) {
+      requestBody.systemInstruction = { parts: [{ text: systemMessage }] };
+    }
+    const functionDeclarations = this.buildFunctionDeclarations(mcpContext);
+    if (functionDeclarations.length > 0) {
+      requestBody.tools = [{ functionDeclarations }];
+    }
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${settings.model}:generateContent?key=${settings.googleApiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody)
+      }
+    );
+    if (!response.ok) {
+      const errorText = await response.text();
+      if (response.status === 503 && retryCount < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 1e3 * (retryCount + 1)));
+        return this.callWithMCP(context, mcpContext, retryCount + 1);
+      }
+      throw new Error(`Google API error (${response.status}): ${response.statusText}. ${errorText}`);
+    }
+    const data = await response.json();
+    const candidate = (_a = data == null ? void 0 : data.candidates) == null ? void 0 : _a[0];
+    if (!candidate) {
+      throw new Error("No candidate in Google API response");
+    }
+    const functionCall = (_c = (_b = candidate.content) == null ? void 0 : _b.parts) == null ? void 0 : _c.find((part) => part.functionCall);
+    if ((functionCall == null ? void 0 : functionCall.functionCall) && mcpContext.executeTool) {
+      const { name, args } = functionCall.functionCall;
+      if (!name) {
+        throw new Error("Function call missing name");
+      }
+      try {
+        const result = await mcpContext.executeTool(name, args || {});
+        const followUpContents = [...contents, {
+          role: "function",
+          parts: [{
+            functionResponse: { name, response: result }
+          }]
+        }];
+        const followUpResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${settings.model}:generateContent?key=${settings.googleApiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...requestBody, contents: followUpContents })
+          }
+        );
+        if (followUpResponse.ok) {
+          const followUpData = await followUpResponse.json();
+          return followUpData.candidates[0].content.parts[0].text;
+        }
+      } catch (error) {
+        return `Error executing tool ${name}: ${error.message}`;
+      }
+    }
+    return candidate.content.parts[0].text;
+  }
+  async stream(context, callbacks) {
+    return this.streamWithMCP(context, callbacks, { servers: [], executeTool: async () => null });
+  }
+  async streamWithMCP(context, callbacks, mcpContext) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
+    const { settings, messages, systemMessage } = context;
+    if (!settings.googleApiKey) {
+      throw new Error("Please set your Google API key in settings");
+    }
+    const contents = this.toGoogleContents(messages);
+    const requestBody = {
+      contents,
+      generationConfig: {
+        temperature: settings.temperature,
+        maxOutputTokens: settings.maxTokens
+      }
+    };
+    if (systemMessage) {
+      requestBody.systemInstruction = { parts: [{ text: systemMessage }] };
+    }
+    const functionDeclarations = this.buildFunctionDeclarations(mcpContext);
+    if (functionDeclarations.length > 0) {
+      requestBody.tools = [{ functionDeclarations }];
+    }
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${settings.model}:streamGenerateContent?key=${settings.googleApiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody)
+      }
+    );
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Google API error: ${error}`);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done)
+          break;
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (line.trim() === "")
+            continue;
+          try {
+            let jsonLine = line.trim();
+            if (jsonLine.startsWith("data: ")) {
+              jsonLine = jsonLine.slice(6).trim();
+            }
+            if (jsonLine === "[" || jsonLine === "]" || jsonLine === "")
+              continue;
+            if (jsonLine.endsWith(","))
+              jsonLine = jsonLine.slice(0, -1);
+            const parsed = JSON.parse(jsonLine);
+            const candidates = Array.isArray(parsed) ? parsed : [parsed];
+            for (const item of candidates) {
+              const functionCall = (_e = (_d = (_c = (_b = (_a = item.candidates) == null ? void 0 : _a[0]) == null ? void 0 : _b.content) == null ? void 0 : _c.parts) == null ? void 0 : _d[0]) == null ? void 0 : _e.functionCall;
+              if (functionCall && mcpContext.executeTool) {
+                const { name, args } = functionCall;
+                if (name) {
+                  try {
+                    await mcpContext.executeTool(name, args || {});
+                  } catch (error) {
+                    console.error("MCP tool execution error:", error);
+                  }
+                }
+              }
+              const content = (_j = (_i = (_h = (_g = (_f = item.candidates) == null ? void 0 : _f[0]) == null ? void 0 : _g.content) == null ? void 0 : _h.parts) == null ? void 0 : _i[0]) == null ? void 0 : _j.text;
+              if (content) {
+                callbacks.onContent(content);
+              }
+            }
+          } catch (e) {
+          }
+        }
+      }
+      if (buffer.trim()) {
+        try {
+          const parsed = JSON.parse(buffer);
+          const content = (_o = (_n = (_m = (_l = (_k = parsed.candidates) == null ? void 0 : _k[0]) == null ? void 0 : _l.content) == null ? void 0 : _m.parts) == null ? void 0 : _n[0]) == null ? void 0 : _o.text;
+          if (content) {
+            callbacks.onContent(content);
+          }
+        } catch (e) {
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    await callbacks.onComplete();
+  }
+};
+
+// src/providers/ollama.ts
+var OllamaProvider = class {
+  constructor() {
+    this.name = "ollama";
+  }
+  isConfigured(settings) {
+    return !!settings.ollamaBaseUrl;
+  }
+  // Ollama uses a different prompt format
+  buildPrompt(messages, systemMessage) {
+    let prompt = "";
+    if (systemMessage) {
+      prompt += systemMessage + "\n\n";
+    }
+    for (const msg of messages) {
+      if (msg.role === "system")
+        continue;
+      const role = msg.role === "user" ? "User" : "Assistant";
+      prompt += `${role}: ${msg.content}
+`;
+    }
+    prompt += "Assistant:";
+    return prompt;
+  }
+  async call(context) {
+    const { settings, messages, systemMessage } = context;
+    const prompt = this.buildPrompt(messages, systemMessage);
+    const response = await fetch(`${settings.ollamaBaseUrl}/api/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        prompt,
+        stream: false,
+        options: {
+          temperature: settings.temperature,
+          num_predict: settings.maxTokens
+        }
+      })
+    });
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data.response;
+  }
+  async stream(context, callbacks) {
+    const response = await this.call(context);
+    const words = response.split(" ");
+    for (let i = 0; i < words.length; i++) {
+      const chunk = i === 0 ? words[i] : " " + words[i];
+      callbacks.onContent(chunk);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    await callbacks.onComplete();
+  }
+};
+
+// src/providers/lmstudio.ts
+var LMStudioProvider = class {
+  constructor() {
+    this.name = "lmstudio";
+  }
+  isConfigured(settings) {
+    return !!settings.lmStudioBaseUrl;
+  }
+  async call(context) {
+    const { settings, messages } = context;
+    const response = await fetch(`${settings.lmStudioBaseUrl}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        messages,
+        max_tokens: settings.maxTokens,
+        temperature: settings.temperature
+      })
+    });
+    if (!response.ok) {
+      throw new Error(`LM Studio API error: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data.choices[0].message.content;
+  }
+  async stream(context, callbacks) {
+    const response = await this.call(context);
+    const words = response.split(" ");
+    for (let i = 0; i < words.length; i++) {
+      const chunk = i === 0 ? words[i] : " " + words[i];
+      callbacks.onContent(chunk);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    await callbacks.onComplete();
+  }
+};
+
+// src/providers/custom.ts
+var CustomAPIProvider = class {
+  constructor() {
+    this.name = "custom";
+  }
+  isConfigured(settings) {
+    return !!settings.customApiUrl;
+  }
+  async call(context) {
+    const { settings, messages } = context;
+    if (!settings.customApiUrl) {
+      throw new Error("Please set your custom API URL in settings");
+    }
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (settings.customApiKey) {
+      headers["Authorization"] = `Bearer ${settings.customApiKey}`;
+    }
+    const response = await fetch(settings.customApiUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model: settings.model,
+        messages,
+        max_tokens: settings.maxTokens,
+        temperature: settings.temperature
+      })
+    });
+    if (!response.ok) {
+      throw new Error(`Custom API error: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data.choices[0].message.content;
+  }
+  async stream(context, callbacks) {
+    const response = await this.call(context);
+    const words = response.split(" ");
+    for (let i = 0; i < words.length; i++) {
+      const chunk = i === 0 ? words[i] : " " + words[i];
+      callbacks.onContent(chunk);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    await callbacks.onComplete();
+  }
+};
+
+// src/providers/index.ts
+var providers = {
+  openai: new OpenAIProvider(),
+  anthropic: new AnthropicProvider(),
+  google: new GoogleProvider(),
+  ollama: new OllamaProvider(),
+  lmstudio: new LMStudioProvider(),
+  custom: new CustomAPIProvider()
+};
+function getProvider(name) {
+  return providers[name];
+}
+
+// main.ts
+var StellaPlugin = class extends import_obsidian3.Plugin {
   get cache() {
     return this.cacheManager;
   }
@@ -865,7 +2154,7 @@ var StellaPlugin = class extends import_obsidian.Plugin {
   }
 };
 var CHAT_VIEW_TYPE = "stella-mcp-chat-view";
-var StellaChatView = class extends import_obsidian.ItemView {
+var StellaChatView = class extends import_obsidian3.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.conversations = [];
@@ -1288,7 +2577,7 @@ var StellaChatView = class extends import_obsidian.ItemView {
     });
   }
   showQuickAddContextMenu(event, selectedText) {
-    const menu = new import_obsidian.Menu();
+    const menu = new import_obsidian3.Menu();
     this.plugin.settings.quickAddCommands.forEach((command) => {
       menu.addItem(
         (item) => item.setTitle(command.name).setIcon("plus-circle").onClick(() => {
@@ -1309,13 +2598,13 @@ var StellaChatView = class extends import_obsidian.ItemView {
       const plugins = this.app.plugins;
       const quickAddPlugin = (_a = plugins == null ? void 0 : plugins.plugins) == null ? void 0 : _a["quickadd"];
       if (!quickAddPlugin) {
-        new import_obsidian.Notice("QuickAdd plugin is not installed or enabled");
+        new import_obsidian3.Notice("QuickAdd plugin is not installed or enabled");
         return;
       }
       window.stellaSelectedText = selectedText;
       const commands = this.app.commands;
       if (!commands) {
-        new import_obsidian.Notice("Commands system not available");
+        new import_obsidian3.Notice("Commands system not available");
         return;
       }
       const allCommands = commands.listCommands();
@@ -1341,7 +2630,7 @@ var StellaChatView = class extends import_obsidian.ItemView {
           if (foundCommand) {
             console.log(`Found QuickAdd command: ${foundCommand.id} (${foundCommand.name})`);
             commands.executeCommandById(foundCommand.id);
-            new import_obsidian.Notice(`Executed QuickAdd command: ${foundCommand.name}`);
+            new import_obsidian3.Notice(`Executed QuickAdd command: ${foundCommand.name}`);
             commandExecuted = true;
             break;
           }
@@ -1353,19 +2642,19 @@ var StellaChatView = class extends import_obsidian.ItemView {
         const quickAddCommands = allCommands.filter((cmd) => cmd.id.includes("quickadd"));
         console.log("Available QuickAdd commands:", quickAddCommands.map((cmd) => ({ id: cmd.id, name: cmd.name })));
         if (quickAddCommands.length > 0) {
-          new import_obsidian.Notice(`QuickAdd command '${commandId}' not found. Available commands: ${quickAddCommands.map((cmd) => cmd.name).join(", ")}`);
+          new import_obsidian3.Notice(`QuickAdd command '${commandId}' not found. Available commands: ${quickAddCommands.map((cmd) => cmd.name).join(", ")}`);
         } else {
-          new import_obsidian.Notice("No QuickAdd commands found. Make sure QuickAdd is properly configured.");
+          new import_obsidian3.Notice("No QuickAdd commands found. Make sure QuickAdd is properly configured.");
         }
       }
     } catch (error) {
-      new import_obsidian.Notice("Failed to execute QuickAdd command");
+      new import_obsidian3.Notice("Failed to execute QuickAdd command");
       console.error("QuickAdd execution error:", error);
     }
   }
   async renderMarkdown(container, content) {
     try {
-      await import_obsidian.MarkdownRenderer.renderMarkdown(content, container, "", this);
+      await import_obsidian3.MarkdownRenderer.renderMarkdown(content, container, "", this);
     } catch (error) {
       console.error("Error rendering markdown:", error);
       container.textContent = content;
@@ -1647,28 +2936,7 @@ var StellaChatView = class extends import_obsidian.ItemView {
     };
     try {
       console.log(`Attempting streaming for provider: ${provider}`);
-      switch (provider) {
-        case "openai":
-          await this.streamOpenAI(message, updateContent, finalizeContent);
-          break;
-        case "anthropic":
-          await this.streamAnthropic(message, updateContent, finalizeContent);
-          break;
-        case "google":
-          console.log("Google streaming disabled, forcing fallback to regular API");
-          throw new Error("Google streaming temporarily disabled");
-        case "ollama":
-          await this.streamOllama(message, updateContent, finalizeContent);
-          break;
-        case "lmstudio":
-          await this.streamLMStudio(message, updateContent, finalizeContent);
-          break;
-        case "custom":
-          await this.streamCustomAPI(message, updateContent, finalizeContent);
-          break;
-        default:
-          throw new Error(`Unsupported provider: ${provider}`);
-      }
+      await this.streamLLM(message, updateContent, finalizeContent);
     } catch (error) {
       console.error(`Streaming failed for ${provider}, falling back to regular API:`, error);
       if (!streamingSucceeded) {
@@ -1696,24 +2964,81 @@ var StellaChatView = class extends import_obsidian.ItemView {
       }
     }
   }
+  // Build provider context from current view state
+  buildProviderContext(message) {
+    const systemMessage = this.buildSystemMessage();
+    const messages = buildMessagesArray(
+      this.chatHistory,
+      message,
+      systemMessage || null
+    );
+    return {
+      settings: this.plugin.settings,
+      messages,
+      systemMessage: systemMessage || null
+    };
+  }
   async callLLM(message) {
-    const { provider } = this.plugin.settings;
-    switch (provider) {
-      case "openai":
-        return this.callOpenAI(message);
-      case "anthropic":
-        return this.callAnthropic(message);
-      case "google":
-        return this.callGoogle(message);
-      case "ollama":
-        return this.callOllama(message);
-      case "lmstudio":
-        return this.callLMStudio(message);
-      case "custom":
-        return this.callCustomAPI(message);
-      default:
-        throw new Error(`Unsupported provider: ${provider}`);
+    const { provider: providerName } = this.plugin.settings;
+    const provider = getProvider(providerName);
+    if (!provider) {
+      throw new Error(`Unsupported provider: ${providerName}`);
     }
+    if (!provider.isConfigured(this.plugin.settings)) {
+      throw new Error(`Please configure ${providerName} in settings`);
+    }
+    const context = this.buildProviderContext(message);
+    if (providerName === "google" && this.activeMCPServers && this.activeMCPServers.length > 0) {
+      const mcpProvider = provider;
+      if (mcpProvider.callWithMCP) {
+        const mcpContext = this.buildMCPContext();
+        return mcpProvider.callWithMCP(context, mcpContext);
+      }
+    }
+    return provider.call(context);
+  }
+  // Build MCP context for providers that support tool calling
+  buildMCPContext() {
+    const servers = [];
+    if (this.activeMCPServers && Array.isArray(this.activeMCPServers)) {
+      for (const activeServer of this.activeMCPServers) {
+        if (activeServer.tools && activeServer.tools.length > 0) {
+          servers.push({
+            name: activeServer.name,
+            tools: activeServer.tools.map((tool) => ({
+              name: tool.name,
+              description: tool.description || "",
+              inputSchema: tool.inputSchema || {}
+            }))
+          });
+        }
+      }
+    }
+    return {
+      servers,
+      executeTool: async (functionName, args) => {
+        return this.executeMCPTool(functionName, args);
+      }
+    };
+  }
+  async streamLLM(message, updateContent, finalizeContent) {
+    const { provider: providerName } = this.plugin.settings;
+    const provider = getProvider(providerName);
+    if (!provider) {
+      throw new Error(`Unsupported provider: ${providerName}`);
+    }
+    if (!provider.isConfigured(this.plugin.settings)) {
+      throw new Error(`Please configure ${providerName} in settings`);
+    }
+    const context = this.buildProviderContext(message);
+    const callbacks = {
+      onContent: updateContent,
+      onComplete: finalizeContent
+    };
+    if (providerName === "google") {
+      throw new Error("Google streaming temporarily disabled");
+    }
+    await provider.stream(context, callbacks);
   }
   async callOpenAI(message) {
     if (!this.plugin.settings.openaiApiKey) {
@@ -2693,506 +4018,70 @@ Assistant:`;
   }
   showChatHistory() {
     this.saveCurrentConversation();
-    const modal = new import_obsidian.Modal(this.app);
-    modal.titleEl.setText("Conversations");
-    modal.modalEl.style.width = "400px";
-    modal.modalEl.style.height = "60vh";
-    modal.modalEl.style.minWidth = "400px";
-    const contentEl = modal.contentEl;
-    contentEl.empty();
-    if (this.plugin.settings.conversations.length === 0) {
-      contentEl.createEl("p", {
-        text: "No conversations yet. Start chatting to create your first conversation."
-      });
-    } else {
-      const mainContainer = contentEl.createDiv({ cls: "stella-modal-container" });
-      const leftPanel = mainContainer.createDiv({ cls: "stella-modal-left-panel" });
-      const rightPanel = mainContainer.createDiv({ cls: "stella-modal-right-panel" });
-      const previewContainer = rightPanel.createDiv({ cls: "stella-preview-container" });
-      const previewContent = previewContainer.createDiv({ cls: "stella-preview-content" });
-      previewContent.textContent = "Select a conversation and press \u2192 to preview";
-      const ITEMS_PER_PAGE = 20;
-      let currentPage = 0;
-      const totalConversations = this.plugin.settings.conversations.length;
-      const totalPages = Math.ceil(totalConversations / ITEMS_PER_PAGE);
-      const headerContainer = leftPanel.createDiv({ cls: "stella-pagination-header" });
-      if (totalPages > 1) {
-        const pageInfo = headerContainer.createDiv({
-          cls: "stella-page-info",
-          text: `Page ${currentPage + 1} of ${totalPages} (${totalConversations} conversations)`
-        });
-        const paginationControls = headerContainer.createDiv({ cls: "stella-pagination-controls" });
-        const prevBtn = paginationControls.createEl("button", {
-          cls: "stella-pagination-btn",
-          text: "\u2190 Prev"
-        });
-        const nextBtn = paginationControls.createEl("button", {
-          cls: "stella-pagination-btn",
-          text: "Next \u2192"
-        });
+    const modal = new ConversationHistoryModal(
+      this.app,
+      {
+        conversations: this.plugin.settings.conversations,
+        currentConversationId: this.currentConversationId
+      },
+      {
+        onSelect: (conversationId) => {
+          this.loadConversation(conversationId);
+        },
+        onDelete: async (conversationId) => {
+          await this.deleteConversation(conversationId);
+        }
       }
-      const conversationsContainer = leftPanel.createDiv({ cls: "stella-conversations-container" });
-      let selectedIndex = 0;
-      let previewVisible = false;
-      const fixConversationsHeight = () => {
-        setTimeout(() => {
-          const modalHeight = modal.modalEl.clientHeight;
-          const titleHeight = modal.titleEl.offsetHeight;
-          const headerHeight = headerContainer.offsetHeight || 0;
-          const padding = 40;
-          const availableHeight = modalHeight - titleHeight - headerHeight - padding;
-          conversationsContainer.style.height = `${availableHeight}px`;
-          conversationsContainer.style.maxHeight = `${availableHeight}px`;
-          conversationsContainer.style.overflow = "auto";
-        }, 50);
-      };
-      const renderConversationPage = () => {
-        conversationsContainer.empty();
-        const startIndex = currentPage * ITEMS_PER_PAGE;
-        const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalConversations);
-        const pageConversations = this.plugin.settings.conversations.slice(startIndex, endIndex);
-        pageConversations.forEach((conversation, relativeIndex) => {
-          const convEl = conversationsContainer.createDiv({
-            cls: "stella-conversation-item"
-          });
-          if (conversation.id === this.currentConversationId) {
-            convEl.classList.add("stella-conversation-current");
-          }
-          if (relativeIndex === selectedIndex) {
-            convEl.classList.add("selected");
-          }
-          const titleEl = convEl.createDiv({ cls: "stella-conversation-title" });
-          titleEl.textContent = conversation.title;
-          const metaEl = convEl.createDiv({ cls: "stella-conversation-meta" });
-          const messageCount = conversation.messages.length;
-          const lastUpdate = new Date(conversation.updatedAt).toLocaleDateString();
-          metaEl.textContent = `${messageCount} messages \u2022 Last updated ${lastUpdate}`;
-          const deleteBtn = convEl.createEl("div", {
-            cls: "stella-conversation-delete",
-            attr: { title: "Delete conversation" }
-          });
-          deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 21,6"></polyline><path d="M8,6V4c0-1,1-2,2-2h4c0,0,1,1,2,2v2M10,11v6M14,11v6"></path><path d="M5,6l1,14c0,1,1,2,2,2h8c1,0,2-1,2-2l1-14"></path></svg>';
-          deleteBtn.addEventListener("click", async (e) => {
-            e.stopPropagation();
-            await this.deleteConversation(conversation.id);
-            modal.close();
-            setTimeout(() => this.showChatHistory(), 100);
-          });
-          convEl.addEventListener("click", (e) => {
-            if (!e.target.closest(".stella-conversation-delete")) {
-              this.loadConversation(conversation.id);
-              modal.close();
-            }
-          });
-        });
-        fixConversationsHeight();
-        if (totalPages > 1) {
-          const prevBtn = headerContainer.querySelector(".stella-pagination-btn:first-of-type");
-          const nextBtn = headerContainer.querySelector(".stella-pagination-btn:last-of-type");
-          const pageInfo = headerContainer.querySelector(".stella-page-info");
-          if (prevBtn && nextBtn && pageInfo) {
-            prevBtn.disabled = currentPage === 0;
-            nextBtn.disabled = currentPage === totalPages - 1;
-            pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages} (${totalConversations} conversations)`;
-            prevBtn.replaceWith(prevBtn.cloneNode(true));
-            nextBtn.replaceWith(nextBtn.cloneNode(true));
-            const newPrevBtn = headerContainer.querySelector(".stella-pagination-btn:first-of-type");
-            const newNextBtn = headerContainer.querySelector(".stella-pagination-btn:last-of-type");
-            newPrevBtn.addEventListener("click", () => {
-              if (currentPage > 0) {
-                currentPage--;
-                selectedIndex = 0;
-                renderConversationPage();
-              }
-            });
-            newNextBtn.addEventListener("click", () => {
-              if (currentPage < totalPages - 1) {
-                currentPage++;
-                selectedIndex = 0;
-                renderConversationPage();
-              }
-            });
-          }
-        }
-      };
-      renderConversationPage();
-      const showPreview = (conversation) => {
-        try {
-          previewContent.empty();
-          const summaryDiv = previewContent.createDiv({ cls: "stella-conversation-summary" });
-          const infoDiv = summaryDiv.createDiv({ cls: "stella-conversation-info" });
-          infoDiv.innerHTML = `
-                        <div><strong>Messages:</strong> ${conversation.messages.length}</div>
-                        <div><strong>Created:</strong> ${new Date(conversation.createdAt).toLocaleString()}</div>
-                        <div><strong>Updated:</strong> ${new Date(conversation.updatedAt).toLocaleString()}</div>
-                    `;
-          if (conversation.systemPrompt) {
-            const sysPromptDiv = summaryDiv.createDiv({ cls: "stella-system-prompt-preview" });
-            sysPromptDiv.createEl("h4", { text: "System Prompt:" });
-            const promptContent = sysPromptDiv.createDiv({ cls: "stella-prompt-content" });
-            promptContent.textContent = conversation.systemPrompt.substring(0, 200) + (conversation.systemPrompt.length > 200 ? "..." : "");
-          }
-          if (conversation.messages.length > 0) {
-            const messagesDiv = summaryDiv.createDiv({ cls: "stella-messages-preview" });
-            messagesDiv.createEl("h4", { text: "Messages Preview:" });
-            conversation.messages.slice(0, 4).forEach((msg, index) => {
-              const msgDiv = messagesDiv.createDiv({ cls: `stella-preview-message stella-preview-${msg.role}` });
-              const roleSpan = msgDiv.createEl("span", { cls: "stella-preview-role" });
-              roleSpan.textContent = msg.role === "user" ? "\u{1F464}" : "\u{1F916}";
-              const contentDiv = msgDiv.createDiv({ cls: "stella-preview-content" });
-              const truncated = msg.content.length > 150 ? msg.content.substring(0, 150) + "..." : msg.content;
-              contentDiv.textContent = truncated;
-            });
-            if (conversation.messages.length > 4) {
-              const moreDiv = messagesDiv.createDiv({ cls: "stella-preview-more" });
-              moreDiv.textContent = `... and ${conversation.messages.length - 4} more messages`;
-            }
-          }
-          rightPanel.style.display = "block";
-          previewVisible = true;
-          modal.modalEl.style.width = "60vw";
-          modal.modalEl.style.maxWidth = "980px";
-          leftPanel.style.width = "50%";
-          rightPanel.style.width = "50%";
-          fixConversationsHeight();
-        } catch (error) {
-          previewContent.textContent = `Error loading preview: ${error.message}`;
-        }
-      };
-      const hidePreview = () => {
-        rightPanel.style.display = "none";
-        leftPanel.style.width = "100%";
-        previewVisible = false;
-        modal.modalEl.style.width = "400px";
-        modal.modalEl.style.maxWidth = "none";
-        fixConversationsHeight();
-      };
-      hidePreview();
-      const handleKeydown = async (e) => {
-        var _a, _b, _c, _d, _e, _f;
-        const items = conversationsContainer.querySelectorAll(".stella-conversation-item");
-        const startIndex = currentPage * ITEMS_PER_PAGE;
-        const pageConversations = this.plugin.settings.conversations.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          (_a = items[selectedIndex]) == null ? void 0 : _a.classList.remove("selected");
-          if (selectedIndex < items.length - 1) {
-            selectedIndex++;
-          } else if (currentPage < totalPages - 1) {
-            currentPage++;
-            selectedIndex = 0;
-            renderConversationPage();
-            return;
-          }
-          (_b = items[selectedIndex]) == null ? void 0 : _b.classList.add("selected");
-          (_c = items[selectedIndex]) == null ? void 0 : _c.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          if (previewVisible && pageConversations[selectedIndex]) {
-            showPreview(pageConversations[selectedIndex]);
-          }
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          (_d = items[selectedIndex]) == null ? void 0 : _d.classList.remove("selected");
-          if (selectedIndex > 0) {
-            selectedIndex--;
-          } else if (currentPage > 0) {
-            currentPage--;
-            selectedIndex = Math.min(ITEMS_PER_PAGE - 1, this.plugin.settings.conversations.slice(currentPage * ITEMS_PER_PAGE).length - 1);
-            renderConversationPage();
-            return;
-          }
-          (_e = items[selectedIndex]) == null ? void 0 : _e.classList.add("selected");
-          (_f = items[selectedIndex]) == null ? void 0 : _f.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          if (previewVisible && pageConversations[selectedIndex]) {
-            showPreview(pageConversations[selectedIndex]);
-          }
-        } else if (e.key === "ArrowRight") {
-          e.preventDefault();
-          if (!previewVisible && pageConversations[selectedIndex]) {
-            showPreview(pageConversations[selectedIndex]);
-          }
-        } else if (e.key === "ArrowLeft") {
-          e.preventDefault();
-          if (previewVisible) {
-            hidePreview();
-          }
-        } else if (e.key === "Enter") {
-          e.preventDefault();
-          const selectedConversation = pageConversations[selectedIndex];
-          if (selectedConversation) {
-            this.loadConversation(selectedConversation.id);
-            modal.close();
-          }
-        } else if (e.key === "Delete" || e.key === "Backspace") {
-          e.preventDefault();
-          const selectedConversation = pageConversations[selectedIndex];
-          if (selectedConversation) {
-            await this.deleteConversation(selectedConversation.id);
-            modal.close();
-            setTimeout(() => this.showChatHistory(), 100);
-          }
-        } else if (e.key === "PageDown" || e.key === "PageUp") {
-          e.preventDefault();
-          if (e.key === "PageDown" && currentPage < totalPages - 1) {
-            currentPage++;
-            selectedIndex = 0;
-            renderConversationPage();
-          } else if (e.key === "PageUp" && currentPage > 0) {
-            currentPage--;
-            selectedIndex = 0;
-            renderConversationPage();
-          }
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          modal.close();
-        }
-      };
-      modal.containerEl.setAttribute("tabindex", "0");
-      modal.containerEl.addEventListener("keydown", handleKeydown);
-      setTimeout(() => modal.containerEl.focus(), 100);
-      fixConversationsHeight();
-      const originalClose = modal.close.bind(modal);
-      modal.close = () => {
-        modal.containerEl.removeEventListener("keydown", handleKeydown);
-        originalClose();
-      };
-    }
-    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
-    const closeBtn = buttonContainer.createEl("button", {
-      text: "Close",
-      cls: "mod-cta"
-    });
-    closeBtn.onclick = () => modal.close();
+    );
     modal.open();
-    if (this.plugin.settings.conversations.length === 0) {
-      setTimeout(() => {
-        const modalHeight = modal.modalEl.clientHeight;
-        const titleHeight = modal.titleEl.offsetHeight;
-        const buttonHeight = buttonContainer.offsetHeight + 16;
-        const padding = 40;
-        const availableHeight = modalHeight - titleHeight - buttonHeight - padding;
-        const emptyStateP = contentEl.querySelector("p");
-        if (emptyStateP) {
-          emptyStateP.style.height = `${availableHeight}px`;
-          emptyStateP.style.display = "flex";
-          emptyStateP.style.alignItems = "center";
-          emptyStateP.style.justifyContent = "center";
-        }
-      }, 50);
-    }
   }
   async showSystemPromptSelector() {
-    const modal = new import_obsidian.Modal(this.app);
-    modal.titleEl.setText("Select System Prompt");
-    modal.modalEl.style.width = "400px";
-    modal.modalEl.style.height = "60vh";
-    modal.modalEl.style.minWidth = "400px";
-    const contentEl = modal.contentEl;
-    contentEl.empty();
-    modal.open();
-    try {
-      let systemPromptsPath = this.plugin.settings.systemPromptsPath;
-      const isAbsolutePath = systemPromptsPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(systemPromptsPath);
-      console.log("Path check - Original:", systemPromptsPath, "Is absolute:", isAbsolutePath);
-      if (systemPromptsPath && !isAbsolutePath) {
-        console.log("Attempting to resolve vault-relative path:", systemPromptsPath);
-        let vaultPath = null;
-        const adapter = this.app.vault.adapter;
-        if (adapter.path) {
-          vaultPath = adapter.path;
-        } else if (adapter.basePath) {
-          vaultPath = adapter.basePath;
-        } else if (adapter.getBasePath) {
-          vaultPath = adapter.getBasePath();
-        }
-        console.log("Found vault path:", vaultPath, "type:", typeof vaultPath);
-        if (vaultPath && typeof vaultPath === "string") {
-          const path2 = require("path");
-          systemPromptsPath = path2.join(vaultPath, systemPromptsPath);
-          console.log("Resolved vault-relative path to:", systemPromptsPath);
-        } else {
-          console.log("Could not get vault path as string, trying vault name approach...");
-          const vaultName = this.app.vault.getName();
-          if (vaultName) {
-            const path2 = require("path");
-            const process2 = require("process");
-            systemPromptsPath = path2.join(process2.cwd(), vaultName, systemPromptsPath);
-            console.log("Fallback path resolution:", systemPromptsPath);
-          }
-        }
-      }
-      if (!systemPromptsPath) {
-        contentEl.createEl("p", {
-          text: "System prompts directory not configured. Please set it in plugin settings."
-        });
-        const settingsBtn = contentEl.createEl("button", {
-          text: "Open Settings",
-          cls: "mod-cta"
-        });
-        settingsBtn.onclick = () => {
-          modal.close();
-          this.openSettings();
-        };
-        return;
-      }
-      const fs = require("fs");
-      const path = require("path");
-      if (!fs.existsSync(systemPromptsPath)) {
-        contentEl.createEl("p", {
-          text: `System prompts directory not found: ${systemPromptsPath}`
-        });
-        contentEl.createEl("p", {
-          text: "Please check the path in plugin settings."
-        });
-        return;
-      }
-      const files = fs.readdirSync(systemPromptsPath).filter((file) => file.endsWith(".md")).sort();
-      if (files.length === 0) {
-        contentEl.createEl("p", {
-          text: "No .md files found in SystemPrompts directory."
-        });
-      } else {
-        const mainContainer = contentEl.createDiv({ cls: "stella-modal-container" });
-        const leftPanel = mainContainer.createDiv({ cls: "stella-modal-left-panel" });
-        const rightPanel = mainContainer.createDiv({ cls: "stella-modal-right-panel" });
-        const previewContainer = rightPanel.createDiv({ cls: "stella-preview-container" });
-        const previewContent = previewContainer.createDiv({ cls: "stella-preview-content" });
-        previewContent.textContent = "Select a system prompt and press \u2192 to preview";
-        const fileList = leftPanel.createDiv({ cls: "stella-system-prompts-list" });
-        let selectedIndex = 0;
-        let previewVisible = false;
-        const fixFileListHeight = () => {
-          setTimeout(() => {
-            const modalHeight = modal.modalEl.clientHeight;
-            const titleHeight = modal.titleEl.offsetHeight;
-            const padding = 40;
-            const availableHeight = modalHeight - titleHeight - padding;
-            fileList.style.height = `${availableHeight}px`;
-            fileList.style.maxHeight = `${availableHeight}px`;
-            fileList.style.overflow = "auto";
-          }, 50);
-        };
-        files.forEach((filename, index) => {
-          const fileItem = fileList.createDiv({
-            cls: "stella-system-prompt-item"
-          });
-          const titleEl = fileItem.createDiv({ cls: "stella-system-prompt-title" });
-          titleEl.textContent = filename.replace(".md", "");
-          fileItem.addEventListener("click", async () => {
-            await this.loadSystemPrompt(path.join(systemPromptsPath, filename));
-            modal.close();
-            setTimeout(() => {
-              this.chatInput.focus();
-            }, 100);
-          });
-          if (index === 0) {
-            fileItem.classList.add("selected");
-          }
-        });
-        const showPreview = async (filename) => {
-          try {
-            const fs2 = require("fs");
-            const filePath = path.join(systemPromptsPath, filename);
-            const content = fs2.readFileSync(filePath, "utf8");
-            previewContent.empty();
-            await this.renderMarkdown(previewContent, content);
-            rightPanel.style.display = "block";
-            previewVisible = true;
-            modal.modalEl.style.width = "60vw";
-            modal.modalEl.style.maxWidth = "980px";
-            leftPanel.style.width = "50%";
-            rightPanel.style.width = "50%";
-            fixFileListHeight();
-          } catch (error) {
-            previewContent.textContent = `Error loading preview: ${error.message}`;
-          }
-        };
-        const hidePreview = () => {
-          rightPanel.style.display = "none";
-          leftPanel.style.width = "100%";
-          previewVisible = false;
-          modal.modalEl.style.width = "400px";
-          modal.modalEl.style.maxWidth = "none";
-          fixFileListHeight();
-        };
-        const handleKeydown = (e) => {
-          var _a, _b, _c, _d, _e, _f;
-          const items = fileList.querySelectorAll(".stella-system-prompt-item");
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            (_a = items[selectedIndex]) == null ? void 0 : _a.classList.remove("selected");
-            selectedIndex = (selectedIndex + 1) % items.length;
-            (_b = items[selectedIndex]) == null ? void 0 : _b.classList.add("selected");
-            (_c = items[selectedIndex]) == null ? void 0 : _c.scrollIntoView({ behavior: "smooth", block: "nearest" });
-            if (previewVisible) {
-              showPreview(files[selectedIndex]);
-            }
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            (_d = items[selectedIndex]) == null ? void 0 : _d.classList.remove("selected");
-            selectedIndex = selectedIndex === 0 ? items.length - 1 : selectedIndex - 1;
-            (_e = items[selectedIndex]) == null ? void 0 : _e.classList.add("selected");
-            (_f = items[selectedIndex]) == null ? void 0 : _f.scrollIntoView({ behavior: "smooth", block: "nearest" });
-            if (previewVisible) {
-              showPreview(files[selectedIndex]);
-            }
-          } else if (e.key === "ArrowRight") {
-            e.preventDefault();
-            if (!previewVisible) {
-              showPreview(files[selectedIndex]);
-            }
-          } else if (e.key === "ArrowLeft") {
-            e.preventDefault();
-            if (previewVisible) {
-              hidePreview();
-            }
-          } else if (e.key === "Enter") {
-            e.preventDefault();
-            const selectedFilename = files[selectedIndex];
-            if (selectedFilename) {
-              this.loadSystemPrompt(path.join(systemPromptsPath, selectedFilename));
-              modal.close();
-              setTimeout(() => {
-                this.chatInput.focus();
-              }, 100);
-            }
-          } else if (e.key === "Escape") {
-            e.preventDefault();
-            modal.close();
-          }
-        };
-        hidePreview();
-        modal.containerEl.setAttribute("tabindex", "0");
-        modal.containerEl.addEventListener("keydown", handleKeydown);
-        setTimeout(() => modal.containerEl.focus(), 100);
-        fixFileListHeight();
-        const originalClose = modal.close.bind(modal);
-        modal.close = () => {
-          modal.containerEl.removeEventListener("keydown", handleKeydown);
-          originalClose();
-        };
-      }
-    } catch (error) {
-      contentEl.createEl("p", {
-        text: `Error reading system prompts: ${error.message}`
-      });
-      console.error("Error reading system prompts:", error);
+    const resolvedPath = this.resolveVaultPath(this.plugin.settings.systemPromptsPath);
+    if (!resolvedPath) {
+      new import_obsidian3.Notice("System prompts directory not configured. Please set it in plugin settings.");
+      return;
     }
-    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
-    const closeBtn = buttonContainer.createEl("button", {
-      text: "Close",
-      cls: "mod-cta"
-    });
-    closeBtn.onclick = () => {
-      modal.close();
-      setTimeout(() => {
-        this.chatInput.focus();
-      }, 100);
-    };
-    modal.onClose = () => {
-      setTimeout(() => {
-        this.chatInput.focus();
-      }, 100);
-    };
+    const modal = createSystemPromptModal(
+      this.app,
+      resolvedPath,
+      {
+        onSelect: async (filePath, _filename) => {
+          await this.loadSystemPrompt(filePath);
+        },
+        onClose: () => {
+          setTimeout(() => this.chatInput.focus(), 100);
+        }
+      }
+    );
+    modal.open();
+  }
+  // Helper method to resolve vault-relative paths to absolute paths
+  resolveVaultPath(inputPath) {
+    if (!inputPath)
+      return null;
+    const isAbsolutePath = inputPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(inputPath);
+    if (isAbsolutePath)
+      return inputPath;
+    const adapter = this.app.vault.adapter;
+    let vaultPath = null;
+    if (adapter.path) {
+      vaultPath = adapter.path;
+    } else if (adapter.basePath) {
+      vaultPath = adapter.basePath;
+    } else if (adapter.getBasePath) {
+      vaultPath = adapter.getBasePath();
+    }
+    if (vaultPath && typeof vaultPath === "string") {
+      const path = require("path");
+      return path.join(vaultPath, inputPath);
+    }
+    const vaultName = this.app.vault.getName();
+    if (vaultName) {
+      const path = require("path");
+      const process2 = require("process");
+      return path.join(process2.cwd(), vaultName, inputPath);
+    }
+    return null;
   }
   async loadSystemPrompt(filepath) {
     try {
@@ -3235,162 +4124,19 @@ Assistant:`;
     this.updateSystemPromptIndicator();
   }
   async showNoteSelector() {
-    const modal = new import_obsidian.Modal(this.app);
-    modal.titleEl.setText("Add Note Context");
-    modal.modalEl.style.width = "400px";
-    modal.modalEl.style.height = "60vh";
-    modal.modalEl.style.minWidth = "400px";
-    const contentEl = modal.contentEl;
-    contentEl.empty();
-    const searchInput = contentEl.createEl("input", {
-      type: "text",
-      placeholder: "Search notes...",
-      cls: "stella-note-search"
-    });
-    const mainContainer = contentEl.createDiv({ cls: "stella-modal-container" });
-    const leftPanel = mainContainer.createDiv({ cls: "stella-modal-left-panel" });
-    const rightPanel = mainContainer.createDiv({ cls: "stella-modal-right-panel" });
-    const previewContainer = rightPanel.createDiv({ cls: "stella-preview-container" });
-    const previewContent = previewContainer.createDiv({ cls: "stella-preview-content" });
-    previewContent.textContent = "Select a note and press \u2192 to preview";
-    const notesContainer = leftPanel.createDiv({ cls: "stella-notes-container" });
-    const files = this.app.vault.getMarkdownFiles();
-    let filteredFiles = files;
-    let selectedIndex = 0;
-    let previewVisible = false;
-    const renderFiles = (filesToRender) => {
-      notesContainer.empty();
-      if (selectedIndex >= filesToRender.length) {
-        selectedIndex = Math.max(0, filesToRender.length - 1);
-      }
-      filesToRender.slice(0, 50).forEach((file, index) => {
-        const noteItem = notesContainer.createDiv({
-          cls: "stella-note-item"
-        });
-        const titleEl = noteItem.createDiv({ cls: "stella-note-title" });
-        titleEl.textContent = file.basename;
-        const pathEl = noteItem.createDiv({ cls: "stella-note-path" });
-        pathEl.textContent = file.path;
-        noteItem.addEventListener("click", async () => {
-          await this.addNoteContext(file);
-          modal.close();
-        });
-        if (index === selectedIndex) {
-          noteItem.classList.add("selected");
-        }
-      });
-    };
-    renderFiles(filteredFiles);
-    const fixNotesHeight = () => {
-      setTimeout(() => {
-        const modalHeight = modal.modalEl.clientHeight;
-        const searchInputHeight = searchInput.offsetHeight + 16;
-        const titleHeight = modal.titleEl.offsetHeight;
-        const padding = 40;
-        const availableHeight = modalHeight - titleHeight - searchInputHeight - padding;
-        notesContainer.style.height = `${availableHeight}px`;
-        notesContainer.style.maxHeight = `${availableHeight}px`;
-        notesContainer.style.overflow = "auto";
-      }, 50);
-    };
-    searchInput.addEventListener("input", (e) => {
-      const query = e.target.value.toLowerCase();
-      if (query === "") {
-        filteredFiles = files;
-      } else {
-        filteredFiles = files.filter(
-          (file) => file.basename.toLowerCase().includes(query) || file.path.toLowerCase().includes(query)
-        );
-      }
-      selectedIndex = 0;
-      renderFiles(filteredFiles);
-    });
-    const showPreview = async (file) => {
-      try {
-        const content = await this.app.vault.read(file);
-        previewContent.empty();
-        await this.renderMarkdown(previewContent, content);
-        rightPanel.style.display = "block";
-        previewVisible = true;
-        modal.modalEl.style.width = "60vw";
-        modal.modalEl.style.maxWidth = "980px";
-        leftPanel.style.width = "50%";
-        rightPanel.style.width = "50%";
-        fixNotesHeight();
-      } catch (error) {
-        previewContent.textContent = `Error loading preview: ${error.message}`;
-      }
-    };
-    const hidePreview = () => {
-      rightPanel.style.display = "none";
-      leftPanel.style.width = "100%";
-      previewVisible = false;
-      modal.modalEl.style.width = "400px";
-      modal.modalEl.style.maxWidth = "none";
-      fixNotesHeight();
-    };
-    hidePreview();
-    const handleKeydown = (e) => {
-      var _a, _b, _c, _d, _e, _f;
-      const items = notesContainer.querySelectorAll(".stella-note-item");
-      const currentFilteredFiles = filteredFiles.slice(0, 50);
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        (_a = items[selectedIndex]) == null ? void 0 : _a.classList.remove("selected");
-        selectedIndex = (selectedIndex + 1) % items.length;
-        (_b = items[selectedIndex]) == null ? void 0 : _b.classList.add("selected");
-        (_c = items[selectedIndex]) == null ? void 0 : _c.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        if (previewVisible && currentFilteredFiles[selectedIndex]) {
-          showPreview(currentFilteredFiles[selectedIndex]);
-        }
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        (_d = items[selectedIndex]) == null ? void 0 : _d.classList.remove("selected");
-        selectedIndex = selectedIndex === 0 ? items.length - 1 : selectedIndex - 1;
-        (_e = items[selectedIndex]) == null ? void 0 : _e.classList.add("selected");
-        (_f = items[selectedIndex]) == null ? void 0 : _f.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        if (previewVisible && currentFilteredFiles[selectedIndex]) {
-          showPreview(currentFilteredFiles[selectedIndex]);
-        }
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        if (!previewVisible && currentFilteredFiles[selectedIndex]) {
-          showPreview(currentFilteredFiles[selectedIndex]);
-        }
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        if (previewVisible) {
-          hidePreview();
-        }
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        const selectedFile = currentFilteredFiles[selectedIndex];
-        if (selectedFile) {
-          this.addNoteContext(selectedFile);
-          modal.close();
-        }
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        modal.close();
-      } else if (e.key === "Tab") {
-        e.preventDefault();
-        if (document.activeElement === searchInput) {
-          notesContainer.focus();
-        } else {
-          searchInput.focus();
+    const modal = new NoteSelectorModal(
+      this.app,
+      {
+        onSelect: (filename, content) => {
+          this.contextNotes.push({ name: filename, content });
+          this.updateContextIndicator();
+          console.log(`Added note context: ${filename}`);
+        },
+        onClose: () => {
         }
       }
-    };
-    modal.containerEl.setAttribute("tabindex", "0");
-    modal.containerEl.addEventListener("keydown", handleKeydown);
-    setTimeout(() => searchInput.focus(), 100);
-    const originalClose = modal.close.bind(modal);
-    modal.close = () => {
-      modal.containerEl.removeEventListener("keydown", handleKeydown);
-      originalClose();
-    };
+    );
     modal.open();
-    fixNotesHeight();
   }
   async addNoteContext(file) {
     try {
@@ -3413,7 +4159,7 @@ Assistant:`;
     }
   }
   showNoteContextManager() {
-    const modal = new import_obsidian.Modal(this.app);
+    const modal = new import_obsidian3.Modal(this.app);
     modal.titleEl.setText("Manage Note Context");
     const container = modal.contentEl.createDiv({ cls: "stella-note-manager-container" });
     if (this.contextNotes.length === 0) {
@@ -3707,218 +4453,24 @@ ${note.content}
     });
   }
   async showMentalModelSelector() {
-    const modal = new import_obsidian.Modal(this.app);
-    modal.titleEl.setText("Select Mental Model");
-    modal.modalEl.style.width = "400px";
-    modal.modalEl.style.height = "60vh";
-    modal.modalEl.style.minWidth = "400px";
-    const contentEl = modal.contentEl;
-    contentEl.empty();
-    modal.open();
-    try {
-      let mentalModelsPath = this.plugin.settings.mentalModelsPath;
-      const isAbsolutePath = mentalModelsPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(mentalModelsPath);
-      console.log("Mental Model Path check - Original:", mentalModelsPath, "Is absolute:", isAbsolutePath);
-      if (mentalModelsPath && !isAbsolutePath) {
-        console.log("Attempting to resolve vault-relative path:", mentalModelsPath);
-        let vaultPath = null;
-        const adapter = this.app.vault.adapter;
-        if (adapter.path) {
-          vaultPath = adapter.path;
-        } else if (adapter.basePath) {
-          vaultPath = adapter.basePath;
-        } else if (adapter.getBasePath) {
-          vaultPath = adapter.getBasePath();
-        }
-        console.log("Found vault path:", vaultPath, "type:", typeof vaultPath);
-        if (vaultPath && typeof vaultPath === "string") {
-          const path2 = require("path");
-          mentalModelsPath = path2.join(vaultPath, mentalModelsPath);
-          console.log("Resolved vault-relative path to:", mentalModelsPath);
-        } else {
-          console.log("Could not get vault path as string, trying vault name approach...");
-          const vaultName = this.app.vault.getName();
-          if (vaultName) {
-            const path2 = require("path");
-            const process2 = require("process");
-            mentalModelsPath = path2.join(process2.cwd(), vaultName, mentalModelsPath);
-            console.log("Fallback path resolution:", mentalModelsPath);
-          }
-        }
-      }
-      if (!mentalModelsPath) {
-        contentEl.createEl("p", {
-          text: "Mental models directory not configured. Please set it in plugin settings."
-        });
-        const settingsBtn = contentEl.createEl("button", {
-          text: "Open Settings",
-          cls: "mod-cta"
-        });
-        settingsBtn.onclick = () => {
-          modal.close();
-          this.openSettings();
-        };
-        return;
-      }
-      const fs = require("fs");
-      const path = require("path");
-      if (!fs.existsSync(mentalModelsPath)) {
-        contentEl.createEl("p", {
-          text: `Mental models directory not found: ${mentalModelsPath}`
-        });
-        contentEl.createEl("p", {
-          text: "Please check the path in plugin settings."
-        });
-        return;
-      }
-      const files = fs.readdirSync(mentalModelsPath).filter((file) => file.endsWith(".md")).sort();
-      if (files.length === 0) {
-        contentEl.createEl("p", {
-          text: "No .md files found in Mental Models directory."
-        });
-      } else {
-        const mainContainer = contentEl.createDiv({ cls: "stella-modal-container" });
-        const leftPanel = mainContainer.createDiv({ cls: "stella-modal-left-panel" });
-        const rightPanel = mainContainer.createDiv({ cls: "stella-modal-right-panel" });
-        const previewContainer = rightPanel.createDiv({ cls: "stella-preview-container" });
-        const previewContent = previewContainer.createDiv({ cls: "stella-preview-content" });
-        previewContent.textContent = "Select a mental model and press \u2192 to preview";
-        const fileList = leftPanel.createDiv({ cls: "stella-mental-models-list" });
-        let selectedIndex = 0;
-        let previewVisible = false;
-        const fixFileListHeight = () => {
-          setTimeout(() => {
-            const modalHeight = modal.modalEl.clientHeight;
-            const titleHeight = modal.titleEl.offsetHeight;
-            const padding = 40;
-            const availableHeight = modalHeight - titleHeight - padding;
-            fileList.style.height = `${availableHeight}px`;
-            fileList.style.maxHeight = `${availableHeight}px`;
-            fileList.style.overflow = "auto";
-          }, 50);
-        };
-        files.forEach((filename, index) => {
-          const fileItem = fileList.createDiv({
-            cls: "stella-mental-model-item"
-          });
-          const titleEl = fileItem.createDiv({ cls: "stella-mental-model-title" });
-          titleEl.textContent = filename.replace(".md", "");
-          fileItem.addEventListener("click", async () => {
-            await this.loadMentalModel(path.join(mentalModelsPath, filename));
-            modal.close();
-            setTimeout(() => {
-              this.chatInput.focus();
-            }, 100);
-          });
-          if (index === 0) {
-            fileItem.classList.add("selected");
-          }
-        });
-        const showPreview = async (filename) => {
-          try {
-            const fs2 = require("fs");
-            const filePath = path.join(mentalModelsPath, filename);
-            const content = fs2.readFileSync(filePath, "utf8");
-            previewContent.empty();
-            await this.renderMarkdown(previewContent, content);
-            rightPanel.style.display = "block";
-            previewVisible = true;
-            modal.modalEl.style.width = "60vw";
-            modal.modalEl.style.maxWidth = "980px";
-            leftPanel.style.width = "50%";
-            rightPanel.style.width = "50%";
-            fixFileListHeight();
-          } catch (error) {
-            previewContent.textContent = `Error loading preview: ${error.message}`;
-          }
-        };
-        const hidePreview = () => {
-          rightPanel.style.display = "none";
-          leftPanel.style.width = "100%";
-          previewVisible = false;
-          modal.modalEl.style.width = "400px";
-          modal.modalEl.style.maxWidth = "none";
-          fixFileListHeight();
-        };
-        const handleKeydown = (e) => {
-          var _a, _b, _c, _d, _e, _f;
-          const items = fileList.querySelectorAll(".stella-mental-model-item");
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            (_a = items[selectedIndex]) == null ? void 0 : _a.classList.remove("selected");
-            selectedIndex = (selectedIndex + 1) % items.length;
-            (_b = items[selectedIndex]) == null ? void 0 : _b.classList.add("selected");
-            (_c = items[selectedIndex]) == null ? void 0 : _c.scrollIntoView({ behavior: "smooth", block: "nearest" });
-            if (previewVisible) {
-              showPreview(files[selectedIndex]);
-            }
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            (_d = items[selectedIndex]) == null ? void 0 : _d.classList.remove("selected");
-            selectedIndex = selectedIndex === 0 ? items.length - 1 : selectedIndex - 1;
-            (_e = items[selectedIndex]) == null ? void 0 : _e.classList.add("selected");
-            (_f = items[selectedIndex]) == null ? void 0 : _f.scrollIntoView({ behavior: "smooth", block: "nearest" });
-            if (previewVisible) {
-              showPreview(files[selectedIndex]);
-            }
-          } else if (e.key === "ArrowRight") {
-            e.preventDefault();
-            if (!previewVisible) {
-              showPreview(files[selectedIndex]);
-            }
-          } else if (e.key === "ArrowLeft") {
-            e.preventDefault();
-            if (previewVisible) {
-              hidePreview();
-            }
-          } else if (e.key === "Enter") {
-            e.preventDefault();
-            const selectedFilename = files[selectedIndex];
-            if (selectedFilename) {
-              this.loadMentalModel(path.join(mentalModelsPath, selectedFilename));
-              modal.close();
-              setTimeout(() => {
-                this.chatInput.focus();
-              }, 100);
-            }
-          } else if (e.key === "Escape") {
-            e.preventDefault();
-            modal.close();
-          }
-        };
-        hidePreview();
-        modal.containerEl.setAttribute("tabindex", "0");
-        modal.containerEl.addEventListener("keydown", handleKeydown);
-        setTimeout(() => modal.containerEl.focus(), 100);
-        fixFileListHeight();
-        const originalClose = modal.close.bind(modal);
-        modal.close = () => {
-          modal.containerEl.removeEventListener("keydown", handleKeydown);
-          originalClose();
-        };
-      }
-    } catch (error) {
-      contentEl.createEl("p", {
-        text: `Error reading mental models: ${error.message}`
-      });
-      console.error("Error reading mental models:", error);
+    const resolvedPath = this.resolveVaultPath(this.plugin.settings.mentalModelsPath);
+    if (!resolvedPath) {
+      new import_obsidian3.Notice("Mental models directory not configured. Please set it in plugin settings.");
+      return;
     }
-    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
-    const closeBtn = buttonContainer.createEl("button", {
-      text: "Close",
-      cls: "mod-cta"
-    });
-    closeBtn.onclick = () => {
-      modal.close();
-      setTimeout(() => {
-        this.chatInput.focus();
-      }, 100);
-    };
-    modal.onClose = () => {
-      setTimeout(() => {
-        this.chatInput.focus();
-      }, 100);
-    };
+    const modal = createMentalModelModal(
+      this.app,
+      resolvedPath,
+      {
+        onSelect: async (filePath, _filename) => {
+          await this.loadMentalModel(filePath);
+        },
+        onClose: () => {
+          setTimeout(() => this.chatInput.focus(), 100);
+        }
+      }
+    );
+    modal.open();
   }
   async loadMentalModel(filepath) {
     try {
@@ -3961,7 +4513,7 @@ ${note.content}
     this.updateMentalModelIndicator();
   }
   async showMCPSelector() {
-    const modal = new import_obsidian.Modal(this.app);
+    const modal = new import_obsidian3.Modal(this.app);
     modal.titleEl.setText("Select MCP Server");
     modal.modalEl.style.width = "70vw";
     modal.modalEl.style.height = "70vh";
@@ -4567,7 +5119,7 @@ ${prompt.description || ""}`;
     }
   }
   showNameInput() {
-    const modal = new import_obsidian.Modal(this.app);
+    const modal = new import_obsidian3.Modal(this.app);
     modal.setTitle("Rename Conversation");
     const currentConversation = this.plugin.settings.conversations.find((c) => c.id === this.currentConversationId);
     const currentName = currentConversation ? currentConversation.title : "";
@@ -4639,7 +5191,7 @@ ${prompt.description || ""}`;
     }
   }
 };
-var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
+var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -4647,7 +5199,7 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian.Setting(containerEl).setName("AI Provider").setDesc("Select your AI provider").addDropdown((dropdown) => dropdown.addOption("anthropic", "Anthropic (Claude)").addOption("openai", "OpenAI (GPT)").addOption("google", "Google (Gemini)").addOption("ollama", "Ollama (Local)").addOption("lmstudio", "LM Studio (Local)").addOption("custom", "Custom API").setValue(this.plugin.settings.provider).onChange(async (value) => {
+    new import_obsidian3.Setting(containerEl).setName("AI Provider").setDesc("Select your AI provider").addDropdown((dropdown) => dropdown.addOption("anthropic", "Anthropic (Claude)").addOption("openai", "OpenAI (GPT)").addOption("google", "Google (Gemini)").addOption("ollama", "Ollama (Local)").addOption("lmstudio", "LM Studio (Local)").addOption("custom", "Custom API").setValue(this.plugin.settings.provider).onChange(async (value) => {
       this.plugin.settings.provider = value;
       this.plugin.settings.model = "";
       await this.plugin.saveSettings();
@@ -4660,51 +5212,51 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
       this.display();
     }));
     if (this.plugin.settings.provider === "openai") {
-      new import_obsidian.Setting(containerEl).setName("OpenAI API Key").setDesc("Enter your OpenAI API key").addText((text) => text.setPlaceholder("sk-...").setValue(this.plugin.settings.openaiApiKey).onChange(async (value) => {
+      new import_obsidian3.Setting(containerEl).setName("OpenAI API Key").setDesc("Enter your OpenAI API key").addText((text) => text.setPlaceholder("sk-...").setValue(this.plugin.settings.openaiApiKey).onChange(async (value) => {
         this.plugin.settings.openaiApiKey = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "anthropic") {
-      new import_obsidian.Setting(containerEl).setName("Anthropic API Key").setDesc("Enter your Anthropic API key").addText((text) => text.setPlaceholder("sk-ant-...").setValue(this.plugin.settings.anthropicApiKey).onChange(async (value) => {
+      new import_obsidian3.Setting(containerEl).setName("Anthropic API Key").setDesc("Enter your Anthropic API key").addText((text) => text.setPlaceholder("sk-ant-...").setValue(this.plugin.settings.anthropicApiKey).onChange(async (value) => {
         this.plugin.settings.anthropicApiKey = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "google") {
-      new import_obsidian.Setting(containerEl).setName("Google API Key").setDesc("Enter your Google AI API key").addText((text) => text.setPlaceholder("AI...").setValue(this.plugin.settings.googleApiKey).onChange(async (value) => {
+      new import_obsidian3.Setting(containerEl).setName("Google API Key").setDesc("Enter your Google AI API key").addText((text) => text.setPlaceholder("AI...").setValue(this.plugin.settings.googleApiKey).onChange(async (value) => {
         this.plugin.settings.googleApiKey = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "ollama") {
-      new import_obsidian.Setting(containerEl).setName("Ollama Base URL").setDesc("Ollama server URL").addText((text) => text.setPlaceholder("http://localhost:11434").setValue(this.plugin.settings.ollamaBaseUrl).onChange(async (value) => {
+      new import_obsidian3.Setting(containerEl).setName("Ollama Base URL").setDesc("Ollama server URL").addText((text) => text.setPlaceholder("http://localhost:11434").setValue(this.plugin.settings.ollamaBaseUrl).onChange(async (value) => {
         this.plugin.settings.ollamaBaseUrl = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "lmstudio") {
-      new import_obsidian.Setting(containerEl).setName("LM Studio Base URL").setDesc("LM Studio server URL").addText((text) => text.setPlaceholder("http://localhost:1234").setValue(this.plugin.settings.lmStudioBaseUrl).onChange(async (value) => {
+      new import_obsidian3.Setting(containerEl).setName("LM Studio Base URL").setDesc("LM Studio server URL").addText((text) => text.setPlaceholder("http://localhost:1234").setValue(this.plugin.settings.lmStudioBaseUrl).onChange(async (value) => {
         this.plugin.settings.lmStudioBaseUrl = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "custom") {
-      new import_obsidian.Setting(containerEl).setName("Custom API URL").setDesc("Your custom API endpoint URL").addText((text) => text.setPlaceholder("https://your-api.com/v1/chat/completions").setValue(this.plugin.settings.customApiUrl).onChange(async (value) => {
+      new import_obsidian3.Setting(containerEl).setName("Custom API URL").setDesc("Your custom API endpoint URL").addText((text) => text.setPlaceholder("https://your-api.com/v1/chat/completions").setValue(this.plugin.settings.customApiUrl).onChange(async (value) => {
         this.plugin.settings.customApiUrl = value;
         await this.plugin.saveSettings();
       }));
-      new import_obsidian.Setting(containerEl).setName("Custom API Key").setDesc("API key for your custom endpoint (optional)").addText((text) => text.setPlaceholder("your-api-key").setValue(this.plugin.settings.customApiKey).onChange(async (value) => {
+      new import_obsidian3.Setting(containerEl).setName("Custom API Key").setDesc("API key for your custom endpoint (optional)").addText((text) => text.setPlaceholder("your-api-key").setValue(this.plugin.settings.customApiKey).onChange(async (value) => {
         this.plugin.settings.customApiKey = value;
         await this.plugin.saveSettings();
       }));
     }
-    this.modelSetting = new import_obsidian.Setting(containerEl).setName("Model").setDesc("Select the model to use (fetched from API)").addButton((button) => button.setButtonText("Refresh Models").onClick(() => this.refreshModelDropdown()));
+    this.modelSetting = new import_obsidian3.Setting(containerEl).setName("Model").setDesc("Select the model to use (fetched from API)").addButton((button) => button.setButtonText("Refresh Models").onClick(() => this.refreshModelDropdown()));
     this.modelDropdown = this.modelSetting.addDropdown((dropdown) => {
       dropdown.setValue(this.plugin.settings.model);
       dropdown.onChange(async (value) => {
@@ -4723,23 +5275,23 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
       console.log("Settings tab displayed, refreshing model dropdown...");
       this.refreshModelDropdown();
     }, 100);
-    new import_obsidian.Setting(containerEl).setName("Max Tokens").setDesc("Maximum tokens per response").addText((text) => text.setValue(this.plugin.settings.maxTokens.toString()).onChange(async (value) => {
+    new import_obsidian3.Setting(containerEl).setName("Max Tokens").setDesc("Maximum tokens per response").addText((text) => text.setValue(this.plugin.settings.maxTokens.toString()).onChange(async (value) => {
       this.plugin.settings.maxTokens = parseInt(value) || 4e3;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(containerEl).setName("Temperature").setDesc("Creativity level (0-1)").addText((text) => text.setValue(this.plugin.settings.temperature.toString()).onChange(async (value) => {
+    new import_obsidian3.Setting(containerEl).setName("Temperature").setDesc("Creativity level (0-1)").addText((text) => text.setValue(this.plugin.settings.temperature.toString()).onChange(async (value) => {
       this.plugin.settings.temperature = parseFloat(value) || 0.7;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(containerEl).setName("System Prompts Directory").setDesc("Path to directory containing your system prompt .md files (for /sys command)").addText((text) => text.setPlaceholder("/path/to/your/system-prompts").setValue(this.plugin.settings.systemPromptsPath).onChange(async (value) => {
+    new import_obsidian3.Setting(containerEl).setName("System Prompts Directory").setDesc("Path to directory containing your system prompt .md files (for /sys command)").addText((text) => text.setPlaceholder("/path/to/your/system-prompts").setValue(this.plugin.settings.systemPromptsPath).onChange(async (value) => {
       this.plugin.settings.systemPromptsPath = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(containerEl).setName("Mental Models Directory").setDesc("Path to directory containing your mental model .md files (for /model command)").addText((text) => text.setPlaceholder("/path/to/your/mental-models").setValue(this.plugin.settings.mentalModelsPath).onChange(async (value) => {
+    new import_obsidian3.Setting(containerEl).setName("Mental Models Directory").setDesc("Path to directory containing your mental model .md files (for /model command)").addText((text) => text.setPlaceholder("/path/to/your/mental-models").setValue(this.plugin.settings.mentalModelsPath).onChange(async (value) => {
       this.plugin.settings.mentalModelsPath = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(containerEl).setName("Background Image URL/Path").setDesc("URL or local file path to background image for chat area").addText((text) => text.setPlaceholder("https://example.com/image.jpg or /path/to/image.png").setValue(this.plugin.settings.backgroundImage).onChange(async (value) => {
+    new import_obsidian3.Setting(containerEl).setName("Background Image URL/Path").setDesc("URL or local file path to background image for chat area").addText((text) => text.setPlaceholder("https://example.com/image.jpg or /path/to/image.png").setValue(this.plugin.settings.backgroundImage).onChange(async (value) => {
       this.plugin.settings.backgroundImage = value;
       await this.plugin.saveSettings();
       this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
@@ -4749,7 +5301,7 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
         }
       });
     }));
-    new import_obsidian.Setting(containerEl).setName("Background Display Mode").setDesc("How the background image should be displayed").addDropdown((dropdown) => dropdown.addOption("centered", "Centered").addOption("fill", "Fill").addOption("stretch", "Stretch").setValue(this.plugin.settings.backgroundMode).onChange(async (value) => {
+    new import_obsidian3.Setting(containerEl).setName("Background Display Mode").setDesc("How the background image should be displayed").addDropdown((dropdown) => dropdown.addOption("centered", "Centered").addOption("fill", "Fill").addOption("stretch", "Stretch").setValue(this.plugin.settings.backgroundMode).onChange(async (value) => {
       this.plugin.settings.backgroundMode = value;
       await this.plugin.saveSettings();
       this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
@@ -4759,7 +5311,7 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
         }
       });
     }));
-    new import_obsidian.Setting(containerEl).setName("Background Opacity").setDesc("Opacity of the background image (0.0 to 1.0)").addSlider((slider) => slider.setLimits(0, 1, 0.05).setValue(this.plugin.settings.backgroundOpacity).setDynamicTooltip().onChange(async (value) => {
+    new import_obsidian3.Setting(containerEl).setName("Background Opacity").setDesc("Opacity of the background image (0.0 to 1.0)").addSlider((slider) => slider.setLimits(0, 1, 0.05).setValue(this.plugin.settings.backgroundOpacity).setDynamicTooltip().onChange(async (value) => {
       this.plugin.settings.backgroundOpacity = value;
       await this.plugin.saveSettings();
       this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
@@ -4769,7 +5321,7 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
         }
       });
     }));
-    new import_obsidian.Setting(containerEl).setName("Auto-hide header").setDesc("Automatically hide the header bar").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoHideHeader).onChange(async (value) => {
+    new import_obsidian3.Setting(containerEl).setName("Auto-hide header").setDesc("Automatically hide the header bar").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoHideHeader).onChange(async (value) => {
       this.plugin.settings.autoHideHeader = value;
       await this.plugin.saveSettings();
       this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
@@ -4779,11 +5331,11 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
         }
       });
     }));
-    new import_obsidian.Setting(containerEl).setName("Show Token Count").setDesc("Display estimated token usage during and after response generation").addToggle((toggle) => toggle.setValue(this.plugin.settings.showTokenCount).onChange(async (value) => {
+    new import_obsidian3.Setting(containerEl).setName("Show Token Count").setDesc("Display estimated token usage during and after response generation").addToggle((toggle) => toggle.setValue(this.plugin.settings.showTokenCount).onChange(async (value) => {
       this.plugin.settings.showTokenCount = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(containerEl).setName("QuickAdd Commands").setDesc("Configure right-click context menu options that trigger QuickAdd commands").addButton((button) => button.setButtonText("Show Available Commands").onClick(() => {
+    new import_obsidian3.Setting(containerEl).setName("QuickAdd Commands").setDesc("Configure right-click context menu options that trigger QuickAdd commands").addButton((button) => button.setButtonText("Show Available Commands").onClick(() => {
       this.showAvailableQuickAddCommands();
     })).addButton((button) => button.setButtonText("Add Command").onClick(() => {
       this.plugin.settings.quickAddCommands.push({
@@ -4796,7 +5348,7 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
     }));
     this.plugin.settings.quickAddCommands.forEach((command, index) => {
       const commandContainer = containerEl.createDiv("quickadd-command-item");
-      new import_obsidian.Setting(commandContainer).setName(`Command ${index + 1}`).addText((text) => text.setPlaceholder("Command Name").setValue(command.name).onChange(async (value) => {
+      new import_obsidian3.Setting(commandContainer).setName(`Command ${index + 1}`).addText((text) => text.setPlaceholder("Command Name").setValue(command.name).onChange(async (value) => {
         this.plugin.settings.quickAddCommands[index].name = value;
         await this.plugin.saveSettings();
       })).addText((text) => text.setPlaceholder('QuickAdd Command ID (click "Show Available Commands" for help)').setValue(command.id).onChange(async (value) => {
@@ -4812,7 +5364,7 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
       }));
     });
     containerEl.createEl("h2", { text: "MCP (Model Context Protocol)" });
-    new import_obsidian.Setting(containerEl).setName("Enable MCP").setDesc("Enable Model Context Protocol for connecting to external tools and data sources").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpEnabled).onChange(async (value) => {
+    new import_obsidian3.Setting(containerEl).setName("Enable MCP").setDesc("Enable Model Context Protocol for connecting to external tools and data sources").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpEnabled).onChange(async (value) => {
       this.plugin.settings.mcpEnabled = value;
       await this.plugin.saveSettings();
       if (value && this.plugin.settings.mcpServers.length > 0) {
@@ -4821,15 +5373,15 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
       this.display();
     }));
     if (this.plugin.settings.mcpEnabled) {
-      new import_obsidian.Setting(containerEl).setName("Auto-discovery").setDesc("Automatically discover MCP servers on the network").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpAutoDiscovery).onChange(async (value) => {
+      new import_obsidian3.Setting(containerEl).setName("Auto-discovery").setDesc("Automatically discover MCP servers on the network").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpAutoDiscovery).onChange(async (value) => {
         this.plugin.settings.mcpAutoDiscovery = value;
         await this.plugin.saveSettings();
       }));
-      new import_obsidian.Setting(containerEl).setName("Add MCP Server").setDesc("Configure connections to MCP servers").addButton((button) => button.setButtonText("Add Server").onClick(() => {
+      new import_obsidian3.Setting(containerEl).setName("Add MCP Server").setDesc("Configure connections to MCP servers").addButton((button) => button.setButtonText("Add Server").onClick(() => {
         this.showMCPServerModal();
       }));
       this.plugin.settings.mcpServers.forEach((server, index) => {
-        const serverSetting = new import_obsidian.Setting(containerEl);
+        const serverSetting = new import_obsidian3.Setting(containerEl);
         const serverInfo = serverSetting.settingEl.createDiv("mcp-server-info");
         serverInfo.style.display = "flex";
         serverInfo.style.alignItems = "center";
@@ -4882,7 +5434,7 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
         const connectedServers = this.plugin.mcp.getConnectedServers();
         const totalTools = this.plugin.mcp.getAllTools().length;
         const totalResources = this.plugin.mcp.getAllResources().length;
-        const statusSetting = new import_obsidian.Setting(containerEl);
+        const statusSetting = new import_obsidian3.Setting(containerEl);
         const statusDiv = statusSetting.settingEl.createDiv("mcp-status");
         statusDiv.innerHTML = `
                     <strong>MCP Status:</strong><br>
@@ -5101,16 +5653,16 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
     try {
       const commands = this.app.commands;
       if (!commands) {
-        new import_obsidian.Notice("Commands system not available");
+        new import_obsidian3.Notice("Commands system not available");
         return;
       }
       const allCommands = commands.listCommands();
       const quickAddCommands = allCommands.filter((cmd) => cmd.id.includes("quickadd"));
       if (quickAddCommands.length === 0) {
-        new import_obsidian.Notice("No QuickAdd commands found. Make sure QuickAdd plugin is installed and configured.");
+        new import_obsidian3.Notice("No QuickAdd commands found. Make sure QuickAdd plugin is installed and configured.");
         return;
       }
-      const modal = new import_obsidian.Modal(this.app);
+      const modal = new import_obsidian3.Modal(this.app);
       modal.titleEl.setText("Available QuickAdd Commands");
       const content = modal.contentEl;
       content.createEl("p", { text: "Copy the Command ID to use in Stella settings:" });
@@ -5131,7 +5683,7 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
         idEl.style.cursor = "pointer";
         idEl.addEventListener("click", () => {
           navigator.clipboard.writeText(cmd.id);
-          new import_obsidian.Notice(`Copied: ${cmd.id}`);
+          new import_obsidian3.Notice(`Copied: ${cmd.id}`);
         });
       });
       const buttonContainer = content.createDiv();
@@ -5141,12 +5693,12 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
       closeBtn.onclick = () => modal.close();
       modal.open();
     } catch (error) {
-      new import_obsidian.Notice("Failed to retrieve QuickAdd commands");
+      new import_obsidian3.Notice("Failed to retrieve QuickAdd commands");
       console.error("Error showing QuickAdd commands:", error);
     }
   }
   showMCPServerModal(server, index) {
-    const modal = new import_obsidian.Modal(this.app);
+    const modal = new import_obsidian3.Modal(this.app);
     modal.titleEl.setText(server ? "Edit MCP Server" : "Add MCP Server");
     const content = modal.contentEl;
     let selectedTransport = (server == null ? void 0 : server.transport) || "stdio";
@@ -5292,7 +5844,7 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
     saveBtn.onclick = async () => {
       const name = nameInput.value.trim();
       if (!name) {
-        new import_obsidian.Notice("Server name is required");
+        new import_obsidian3.Notice("Server name is required");
         return;
       }
       const newServer = {
@@ -5321,7 +5873,7 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
       } else {
         const endpoint = endpointInput.value.trim();
         if (!endpoint) {
-          new import_obsidian.Notice("WebSocket endpoint is required");
+          new import_obsidian3.Notice("WebSocket endpoint is required");
           return;
         }
         newServer.endpoint = endpoint;
@@ -5336,18 +5888,18 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
         if (this.plugin.settings.mcpEnabled) {
           await this.plugin.mcp.addServer(newServer);
         }
-        new import_obsidian.Notice(`MCP server ${server ? "updated" : "added"}: ${name}`);
+        new import_obsidian3.Notice(`MCP server ${server ? "updated" : "added"}: ${name}`);
         modal.close();
         this.display();
       } catch (error) {
-        new import_obsidian.Notice(`Failed to ${server ? "update" : "add"} MCP server`);
+        new import_obsidian3.Notice(`Failed to ${server ? "update" : "add"} MCP server`);
         console.error("MCP server error:", error);
       }
     };
     modal.open();
   }
   showMCPTemplateConfigModal(template) {
-    const modal = new import_obsidian.Modal(this.app);
+    const modal = new import_obsidian3.Modal(this.app);
     modal.titleEl.setText(`Configure ${template.name} Server`);
     const content = modal.contentEl;
     content.createEl("p", {
@@ -5394,7 +5946,7 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
     addBtn.onclick = async () => {
       for (const envVar of template.envVariables) {
         if (envVar.required && !envInputs[envVar.key].value.trim()) {
-          new import_obsidian.Notice(`${envVar.description} is required`);
+          new import_obsidian3.Notice(`${envVar.description} is required`);
           return;
         }
       }
@@ -5422,11 +5974,11 @@ var StellaSettingTab = class extends import_obsidian.PluginSettingTab {
         if (this.plugin.settings.mcpEnabled) {
           await this.plugin.mcp.addServer(newServer);
         }
-        new import_obsidian.Notice(`Added ${template.name} MCP server`);
+        new import_obsidian3.Notice(`Added ${template.name} MCP server`);
         modal.close();
         this.display();
       } catch (error) {
-        new import_obsidian.Notice(`Failed to add ${template.name} server`);
+        new import_obsidian3.Notice(`Failed to add ${template.name} server`);
         console.error("Template server error:", error);
       }
     };
