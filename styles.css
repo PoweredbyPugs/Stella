@@ -1,0 +1,1339 @@
+/* Stella Chat Styles - Smart Chat Inspired */
+
+.stella-mcp-chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0;
+    position: relative;
+    /* Background will be applied here instead of messages container */
+}
+
+/* Header with clean compact layout */
+.stella-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    background: var(--background-primary) !important;
+    min-height: 40px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    transition: opacity 300ms ease-out, transform 300ms ease-out;
+    opacity: 1;
+    transform: translateY(0);
+    margin: 0;
+}
+
+.stella-header-left {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.stella-conversation-name {
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-normal);
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 120px;
+    max-width: 200px;
+}
+
+.stella-conversation-name:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+    background: var(--background-secondary);
+}
+
+.stella-header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.stella-model-info {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-right: 8px;
+    white-space: nowrap;
+    opacity: 0.8;
+}
+
+.stella-action-btn {
+    padding: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.stella-action-btn:hover {
+    background: var(--interactive-hover);
+    border-color: var(--interactive-accent);
+    color: var(--text-normal);
+}
+
+.stella-action-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+/* Stable background - stays put while content scrolls */
+.stella-mcp-chat-container {
+    background-image: var(--bg-image, none);
+    background-size: var(--bg-size, cover);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: local;
+}
+
+/* Background overlay for opacity control using pseudo-element */
+.stella-mcp-chat-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--background-primary);
+    opacity: calc(1 - var(--bg-opacity, 0.5));
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Messages container */
+.stella-messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    padding-top: calc(40px + 16px); /* Header height + padding */
+    padding-bottom: calc(72px + 16px); /* Input height + padding */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    background: transparent;
+    z-index: 1;
+}
+
+/* Individual messages */
+.stella-message {
+    max-width: 100%;
+    margin-bottom: 12px;
+}
+
+.stella-message-content {
+    padding: 12px;
+    border-radius: 8px;
+    position: relative;
+    width: 100%;
+    user-select: text;
+    cursor: text;
+}
+
+.stella-message-user .stella-message-content {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    margin-left: auto;
+    max-width: 80%;
+}
+
+.stella-message-assistant .stella-message-content {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    max-width: 100%;
+}
+
+.stella-message-error .stella-message-content {
+    background: var(--background-modifier-error);
+    color: var(--text-error);
+    border: 1px solid var(--text-error);
+    max-width: 100%;
+}
+
+.stella-message-temp {
+    opacity: 0.8;
+}
+
+.stella-message-temp .stella-message-content {
+    min-height: 1em;
+    position: relative;
+}
+
+.stella-message-temp .stella-message-content::before {
+    content: "";
+    display: none;
+}
+
+/* Copy button */
+.stella-copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    color: var(--text-muted);
+    font-size: 0.75em;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 5;
+    min-width: 32px;
+    text-align: center;
+}
+
+.stella-message-assistant:hover .stella-copy-btn {
+    opacity: 1;
+}
+
+.stella-copy-btn:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+/* Input container */
+.stella-input-container {
+    padding: 16px;
+    border-top: 1px solid var(--background-modifier-border);
+    background: var(--background-primary) !important;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    margin: 0;
+}
+
+.stella-chat-input {
+    width: 100%;
+    min-height: 40px;
+    max-height: 120px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary) !important;
+    color: var(--text-normal);
+    resize: none;
+    font-family: inherit;
+    line-height: 1.4;
+    box-sizing: border-box;
+}
+
+.stella-chat-input:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+}
+
+
+/* Markdown content styling */
+.stella-message-content h1,
+.stella-message-content h2,
+.stella-message-content h3,
+.stella-message-content h4,
+.stella-message-content h5,
+.stella-message-content h6 {
+    margin: 16px 0 8px 0;
+    line-height: 1.3;
+}
+
+.stella-message-content h1:first-child,
+.stella-message-content h2:first-child,
+.stella-message-content h3:first-child,
+.stella-message-content h4:first-child,
+.stella-message-content h5:first-child,
+.stella-message-content h6:first-child {
+    margin-top: 0;
+}
+
+.stella-message-content p {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.stella-message-content pre {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 12px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.stella-message-content code {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 3px;
+    padding: 2px 4px;
+    font-size: 0.9em;
+}
+
+.stella-message-content ul,
+.stella-message-content ol {
+    margin: 12px 0;
+    padding-left: 20px;
+}
+
+.stella-message-content li {
+    margin: 4px 0;
+    line-height: 1.5;
+}
+
+/* Scrollbar styling */
+.stella-messages-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.stella-messages-container::-webkit-scrollbar-track {
+    background: var(--background-secondary);
+}
+
+.stella-messages-container::-webkit-scrollbar-thumb {
+    background: var(--background-modifier-border);
+    border-radius: 3px;
+}
+
+.stella-messages-container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Conversations Modal Styles */
+.stella-conversations-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.stella-conversation-item {
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: var(--background-primary);
+    position: relative;
+}
+
+.stella-conversation-item:hover,
+.stella-conversation-item.selected {
+    background: var(--interactive-hover);
+    border-color: var(--interactive-accent);
+}
+
+.stella-conversation-item.selected {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.stella-conversation-current {
+    border-color: var(--interactive-accent);
+    background: var(--interactive-accent-hover);
+}
+
+.stella-conversation-title {
+    font-weight: 500;
+    color: var(--text-normal);
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.stella-conversation-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.3;
+}
+
+.stella-conversation-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.stella-conversation-item:hover .stella-conversation-delete {
+    opacity: 0.6;
+}
+
+.stella-conversation-delete:hover {
+    opacity: 1 !important;
+    background: var(--background-modifier-error);
+    color: var(--text-error);
+}
+
+.stella-conversation-delete svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+}
+
+/* System Prompts Modal Styles */
+.stella-system-prompts-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.stella-system-prompt-item {
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: var(--background-primary);
+}
+
+.stella-system-prompt-item:hover,
+.stella-system-prompt-item.selected {
+    background: var(--interactive-hover);
+    border-color: var(--interactive-accent);
+}
+
+.stella-system-prompt-item.selected {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.stella-system-prompt-title {
+    font-weight: 500;
+    color: var(--text-normal);
+    font-size: 14px;
+}
+
+/* System prompt indicator in input area */
+.stella-system-prompt-indicator {
+    position: absolute;
+    top: -30px; /* Move up 2 pixels from -28px */
+    right: 16px; /* Align with right edge of UI (match container padding) */
+    color: var(--interactive-accent);
+    background: var(--background-secondary);
+    padding: 4px; /* Smaller padding */
+    border-radius: 4px;
+    z-index: 10;
+    pointer-events: auto; /* Enable hover events for tooltips */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; /* Smaller 1:1 aspect ratio */
+    height: 24px; /* Smaller 1:1 aspect ratio */
+    box-sizing: border-box;
+}
+
+.stella-system-prompt-indicator svg {
+    width: 14px; /* Slightly smaller icon */
+    height: 14px;
+    stroke: currentColor;
+    flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+/* Mental model indicator in input area */
+.stella-mental-model-indicator {
+    position: absolute;
+    top: -30px; /* Same as system prompt */
+    right: 48px; /* Position to left of system prompt (16px + 24px + 8px gap) */
+    color: var(--interactive-accent);
+    background: var(--background-secondary);
+    padding: 4px; /* Same as system prompt */
+    border-radius: 4px;
+    z-index: 10;
+    pointer-events: auto; /* Enable hover events for tooltips */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; /* Same as system prompt */
+    height: 24px; /* Same as system prompt */
+    box-sizing: border-box;
+}
+
+.stella-mental-model-indicator svg {
+    width: 14px; /* Same as system prompt icon */
+    height: 14px;
+    stroke: currentColor;
+    flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+/* MCP indicator in input area */
+.stella-mcp-indicator {
+    position: absolute;
+    top: -30px; /* Same as other indicators */
+    right: 80px; /* Position to left of other indicators */
+    color: var(--interactive-accent);
+    background: var(--background-secondary);
+    padding: 4px; /* Same as other indicators */
+    border-radius: 4px;
+    z-index: 10;
+    pointer-events: auto; /* Enable hover events */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; /* Same as other indicators */
+    height: 24px; /* Same as other indicators */
+    box-sizing: border-box;
+    cursor: help; /* Show help cursor on hover */
+}
+
+.stella-mcp-indicator svg {
+    width: 14px; /* Same as other indicator icons */
+    height: 14px;
+    stroke: currentColor;
+    flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+/* Context notes indicator */
+.stella-context-indicator {
+    display: none;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 4px 16px;
+    background: var(--background-primary);
+    min-height: 0;
+}
+
+.stella-context-chip {
+    display: flex;
+    align-items: center;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    color: var(--text-normal);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    gap: 4px;
+}
+
+.stella-context-chip-text {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stella-context-chip-remove {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 12px;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.15s ease;
+}
+
+.stella-context-chip-remove:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-normal);
+}
+
+/* Note indicator styles */
+.stella-note-indicator {
+    position: absolute;
+    top: -30px; /* Same as other indicators */
+    right: 112px; /* Position to left of MCP indicator */
+    color: var(--interactive-accent);
+    background: var(--background-secondary);
+    padding: 4px; /* Same as other indicators */
+    border-radius: 4px;
+    z-index: 10;
+    pointer-events: auto; /* Enable hover and click events */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.stella-note-indicator:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.stella-note-indicator svg {
+    width: 14px; /* Same as other indicator icons */
+    height: 14px;
+    stroke: currentColor;
+    flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+/* Tooltip styles */
+.stella-tooltip {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text-normal);
+    max-width: 250px;
+    white-space: pre-line;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    pointer-events: none;
+}
+
+/* Content tooltips for system prompt and mental model */
+.stella-content-tooltip {
+    max-width: 400px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.4;
+    font-family: var(--font-monospace);
+}
+
+.stella-content-tooltip::-webkit-scrollbar {
+    width: 8px;
+}
+
+.stella-content-tooltip::-webkit-scrollbar-track {
+    background: var(--background-secondary);
+    border-radius: 4px;
+}
+
+.stella-content-tooltip::-webkit-scrollbar-thumb {
+    background: var(--background-modifier-border);
+    border-radius: 4px;
+}
+
+.stella-content-tooltip::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Note context manager modal styles */
+.stella-note-manager-container {
+    padding: 20px 0;
+}
+
+.stella-notes-manager-list {
+    margin: 15px 0;
+}
+
+.stella-note-manager-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--background-secondary);
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.stella-note-name {
+    font-weight: 500;
+    color: var(--text-normal);
+}
+
+.stella-note-remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.15s ease;
+}
+
+.stella-note-remove-btn:hover {
+    background: rgba(255, 0, 0, 0.1);
+    color: var(--text-error);
+}
+
+.stella-note-manager-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+/* Mental Models Modal Styles */
+.stella-mental-models-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.stella-mental-model-item {
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: var(--background-primary);
+}
+
+.stella-mental-model-item:hover,
+.stella-mental-model-item.selected {
+    background: var(--interactive-hover);
+    border-color: var(--interactive-accent);
+}
+
+.stella-mental-model-item.selected {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.stella-mental-model-title {
+    font-weight: 500;
+    color: var(--text-normal);
+    font-size: 14px;
+}
+
+/* Note selector modal */
+.stella-note-search {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 16px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: 14px;
+}
+
+.stella-note-search:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+}
+
+.stella-notes-container {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.stella-note-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.stella-note-item:hover,
+.stella-note-item.selected {
+    background: var(--interactive-hover);
+    border-color: var(--interactive-accent);
+}
+
+.stella-note-item.selected {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.stella-note-title {
+    font-weight: 500;
+    color: var(--text-normal);
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.stella-note-path {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Modal with preview functionality */
+.stella-modal-container {
+    display: flex;
+    gap: 12px;
+    height: 100%;
+}
+
+.stella-modal-left-panel {
+    flex: 1;
+    min-width: 300px;
+    max-width: 400px;
+    transition: all 0.2s ease;
+}
+
+.stella-modal-right-panel {
+    flex: 0.64; /* Reduced from 0.8 by 20% = 0.64 */
+    min-width: 0;
+    background: var(--background-primary);
+    border-left: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: none;
+}
+
+.stella-modal-right-panel.visible {
+    display: block;
+}
+
+.stella-preview-container {
+    padding: 16px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.stella-preview-header {
+    font-weight: 500;
+    color: var(--text-normal);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    font-size: 14px;
+}
+
+.stella-preview-content {
+    color: var(--text-normal);
+    line-height: 1.5;
+    font-size: 13px;
+}
+
+.stella-preview-content h1,
+.stella-preview-content h2,
+.stella-preview-content h3,
+.stella-preview-content h4,
+.stella-preview-content h5,
+.stella-preview-content h6 {
+    margin: 12px 0 6px 0;
+    color: var(--text-normal);
+}
+
+.stella-preview-content p {
+    margin: 8px 0;
+}
+
+.stella-preview-content ul,
+.stella-preview-content ol {
+    margin: 8px 0;
+    padding-left: 16px;
+}
+
+.stella-preview-content li {
+    margin: 4px 0;
+}
+
+.stella-preview-content code {
+    background: var(--background-secondary);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.stella-preview-content pre {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 12px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.stella-preview-metadata {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.stella-preview-metadata-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.stella-preview-metadata-label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.stella-preview-metadata-value {
+    color: var(--text-normal);
+}
+
+/* Scrollbar for preview */
+.stella-preview-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.stella-preview-container::-webkit-scrollbar-track {
+    background: var(--background-secondary);
+}
+
+.stella-preview-container::-webkit-scrollbar-thumb {
+    background: var(--background-modifier-border);
+    border-radius: 3px;
+}
+
+.stella-preview-container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Note selector specific styling - compact initial width */
+.modal[aria-label*="Add Note Context"] .modal-content {
+    max-height: 60vh !important;
+    height: 60vh !important;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal[aria-label*="Add Note Context"] .modal-content .modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal[aria-label*="Add Note Context"] .stella-note-search {
+    flex-shrink: 0;
+    margin-bottom: 16px;
+}
+
+.modal[aria-label*="Add Note Context"] .stella-modal-container {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+}
+
+.modal[aria-label*="Add Note Context"] .stella-modal-left-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.modal[aria-label*="Add Note Context"] .stella-notes-container {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+}
+
+/* Wiki Links in Chat Messages */
+.stella-wiki-link {
+    color: var(--link-color) !important;
+    text-decoration: none !important;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.stella-wiki-link:hover {
+    color: var(--link-color-hover) !important;
+    text-decoration: none !important;
+}
+
+.stella-wiki-link-missing {
+    color: var(--text-error) !important;
+    opacity: 0.7;
+}
+
+.stella-wiki-link-missing:hover {
+    color: var(--text-error) !important;
+    opacity: 1;
+}
+
+/* Make note preview content 10% bigger (was 20% smaller, now only 10% smaller) */
+.stella-preview-content * {
+    font-size: 0.9em !important;
+    line-height: 1.4 !important;
+}
+
+.stella-preview-content h1 { font-size: 1.8em !important; }
+.stella-preview-content h2 { font-size: 1.6em !important; }
+.stella-preview-content h3 { font-size: 1.4em !important; }
+.stella-preview-content h4 { font-size: 1.1em !important; }
+.stella-preview-content h5 { font-size: 1.0em !important; }
+
+/* Loading Animation - minimal styling */
+.stella-cat-loading-overlay {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease-out;
+}
+
+.stella-cat-loading-overlay.stella-cat-loading-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.stella-cat-loading-overlay.stella-cat-loading-hiding {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease-in;
+}
+
+/* Left side: Cat + Timer grouped */
+.stella-cat-timer-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+
+.stella-cat-sprite {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    object-fit: cover;
+}
+
+
+
+/* Countdown Timer */
+.stella-countdown-timer {
+    color: var(--text-accent);
+    font-weight: 600;
+    font-size: 14px;
+    font-family: var(--font-monospace);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    min-width: 30px;
+}
+
+/* Floating Token Counter */
+.stella-token-counter-floating {
+    color: var(--text-muted);
+    font-family: var(--font-monospace);
+    font-size: 11px;
+    opacity: 0.8;
+    background: rgba(0,0,0,0.1);
+    padding: 3px 6px;
+    border-radius: 10px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Legacy token counter for final display */
+.stella-token-final {
+    position: static;
+    text-align: right;
+    margin-top: 8px;
+    opacity: 0.7;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-monospace);
+}
+
+/* QuickAdd Integration Styles */
+.quickadd-command-item {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: var(--background-secondary);
+}
+
+.quickadd-command-item .setting-item {
+    border: none;
+    padding: 4px 0;
+}
+
+.quickadd-command-item .setting-item-control {
+    gap: 8px;
+}
+
+.quickadd-command-item .setting-item-control input[type="text"] {
+    min-width: 150px;
+}
+
+.quickadd-command-item .setting-item-control textarea {
+    min-width: 200px;
+    min-height: 60px;
+    resize: vertical;
+}
+
+/* Pagination Styles */
+.stella-pagination-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    background: var(--background-secondary);
+    margin-bottom: 8px;
+    border-radius: 6px 6px 0 0;
+}
+
+.stella-page-info {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.stella-pagination-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.stella-pagination-btn {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    color: var(--text-normal);
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.stella-pagination-btn:hover:not(:disabled) {
+    background: var(--background-modifier-hover);
+    border-color: var(--background-modifier-border-hover);
+}
+
+.stella-pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Adjust conversation container for pagination */
+.stella-conversations-container {
+    border-radius: 0 0 6px 6px;
+}
+
+/* Message Pagination Styles */
+.stella-load-older-messages {
+    text-align: center;
+    padding: 12px;
+    margin: 8px 0;
+    background: var(--background-modifier-form-field);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    color: var(--text-accent);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.stella-load-older-messages:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--text-accent);
+    color: var(--text-accent-hover);
+}
+
+.stella-load-older-messages.loading {
+    cursor: wait;
+    opacity: 0.7;
+    background: var(--background-modifier-border);
+    color: var(--text-muted);
+}
+
+.stella-load-older-messages.loading:hover {
+    background: var(--background-modifier-border);
+    border-color: var(--background-modifier-border);
+    color: var(--text-muted);
+}
+
+/* MCP Modal Styles - New Layout */
+.stella-mcp-server-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+.stella-mcp-server-item {
+    padding: 12px;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.stella-mcp-server-item:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+.stella-mcp-server-item.selected {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
+}
+
+.stella-mcp-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.stella-mcp-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-normal);
+}
+
+.stella-mcp-server-item.selected .stella-mcp-name {
+    color: var(--text-on-accent);
+}
+
+.stella-mcp-status {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.stella-mcp-status.connected {
+    background: var(--color-green);
+    color: white;
+}
+
+.stella-mcp-status.disconnected {
+    background: var(--color-red);
+    color: white;
+}
+
+.stella-mcp-details-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.stella-mcp-server-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.stella-mcp-server-title {
+    margin: 0;
+    font-size: 18px;
+    color: var(--text-accent);
+}
+
+.stella-mcp-activate-btn {
+    margin-bottom: 16px;
+}
+
+.stella-mcp-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.stella-mcp-activate-item-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    border: 1px solid var(--interactive-accent);
+    background: transparent;
+    color: var(--interactive-accent);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.stella-mcp-activate-item-btn:hover {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.stella-mcp-section {
+    margin-bottom: 16px;
+}
+
+.stella-mcp-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-accent);
+    margin: 0 0 8px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.stella-mcp-details-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.stella-mcp-detail-item {
+    padding: 10px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.stella-mcp-detail-item:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+.stella-mcp-detail-item.stella-mcp-tool {
+    border-left: 3px solid var(--color-orange);
+}
+
+.stella-mcp-detail-item.stella-mcp-prompt {
+    border-left: 3px solid var(--color-green);
+}
+
+.stella-mcp-detail-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-normal);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.stella-mcp-detail-description {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.stella-empty-message {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+}
+
+
+
