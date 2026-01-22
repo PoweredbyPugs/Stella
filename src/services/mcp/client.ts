@@ -262,7 +262,7 @@ export class MCPClientManager {
                         this.pendingRequests.delete(message.id!);
                     }
                     reject(new Error('MCP request timeout'));
-                }, 10000);
+                }, 30000); // 30 second timeout for slower MCP servers
 
                 const responseHandler = (response: MCPMessage) => {
                     try {

@@ -512,7 +512,7 @@ var MCPClientManager = class {
             this.pendingRequests.delete(message.id);
           }
           reject(new Error("MCP request timeout"));
-        }, 1e4);
+        }, 3e4);
         const responseHandler = (response) => {
           try {
             console.log(`MCP sendMessage: Got response for message ${message.id}:`, response);
