@@ -27,7 +27,7 @@ __export(main_exports, {
   default: () => StellaPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian3 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 
 // src/types/index.ts
 var DEFAULT_SETTINGS = {
@@ -49,6 +49,7 @@ var DEFAULT_SETTINGS = {
   backgroundImage: "",
   backgroundMode: "centered",
   backgroundOpacity: 0.5,
+  loadingGif: "",
   autoHideHeader: false,
   quickAddCommands: [
     {
@@ -1456,6 +1457,43 @@ var ConversationHistoryModal = class extends StellaModal {
   }
 };
 
+// src/views/modals/suggest-modals.ts
+var import_obsidian3 = require("obsidian");
+var FolderSuggestModal = class extends import_obsidian3.FuzzySuggestModal {
+  constructor(app, folders, onChoose) {
+    super(app);
+    this.folders = folders.filter((f) => f instanceof import_obsidian3.TFolder);
+    this.onChoose = onChoose;
+    this.setPlaceholder("Type to search folders...");
+  }
+  getItems() {
+    return this.folders;
+  }
+  getItemText(item) {
+    return item.path;
+  }
+  onChooseItem(item, evt) {
+    this.onChoose(item);
+  }
+};
+var FileSuggestModal = class extends import_obsidian3.FuzzySuggestModal {
+  constructor(app, files, onChoose) {
+    super(app);
+    this.files = files;
+    this.onChoose = onChoose;
+    this.setPlaceholder("Type to search files...");
+  }
+  getItems() {
+    return this.files;
+  }
+  getItemText(item) {
+    return item.path;
+  }
+  onChooseItem(item, evt) {
+    this.onChoose(item);
+  }
+};
+
 // src/providers/types.ts
 function buildMessagesArray(chatHistory, currentMessage, systemMessage) {
   const messages = [];
@@ -2050,7 +2088,7 @@ function getProvider(name) {
 }
 
 // main.ts
-var StellaPlugin = class extends import_obsidian3.Plugin {
+var StellaPlugin = class extends import_obsidian4.Plugin {
   get cache() {
     return this.cacheManager;
   }
@@ -2085,7 +2123,9 @@ var StellaPlugin = class extends import_obsidian3.Plugin {
     this.logger.log("Stella plugin loading...");
     await this.loadSettings();
     if (this.settings.mcpEnabled) {
-      await this.initializeMCPServers();
+      this.initializeMCPServers().catch((error) => {
+        this.logger.error("Failed to initialize MCP servers:", error);
+      });
     }
     this.registerView(
       CHAT_VIEW_TYPE,
@@ -2154,7 +2194,7 @@ var StellaPlugin = class extends import_obsidian3.Plugin {
   }
 };
 var CHAT_VIEW_TYPE = "stella-mcp-chat-view";
-var StellaChatView = class extends import_obsidian3.ItemView {
+var StellaChatView = class extends import_obsidian4.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.conversations = [];
@@ -2492,45 +2532,65 @@ var StellaChatView = class extends import_obsidian3.ItemView {
     }, 300);
   }
   async loadGifAsDataUrl(imgElement) {
+    const customGif = this.plugin.settings.loadingGif;
+    if (customGif && customGif.trim() !== "") {
+      try {
+        const file = this.app.vault.getAbstractFileByPath(customGif);
+        if (file) {
+          const resourcePath = this.app.vault.getResourcePath(file);
+          imgElement.src = resourcePath;
+          return;
+        }
+        const adapter = this.app.vault.adapter;
+        if ("readBinary" in adapter) {
+          const data = await adapter.readBinary(customGif);
+          const blob = new Blob([data], { type: "image/gif" });
+          const reader = new FileReader();
+          reader.onload = () => {
+            imgElement.src = reader.result;
+          };
+          reader.readAsDataURL(blob);
+          return;
+        }
+      } catch (customError) {
+        console.warn("Failed to load custom GIF:", customError);
+      }
+    }
     try {
-      const paths = [
-        "bulbasaur.gif",
-        "./bulbasaur.gif",
-        `${this.plugin.manifest.dir}/bulbasaur.gif`,
-        `.obsidian/plugins/stella/bulbasaur.gif`
-      ];
-      for (const path of paths) {
-        try {
-          const response = await fetch(path);
-          if (response.ok) {
-            const blob = await response.blob();
-            const reader = new FileReader();
-            reader.onload = () => {
-              imgElement.src = reader.result;
-            };
-            reader.readAsDataURL(blob);
-            return;
-          }
-        } catch (e) {
-          continue;
+      const adapter = this.app.vault.adapter;
+      if (adapter.getBasePath) {
+        const basePath = adapter.getBasePath();
+        const path = require("path");
+        const fs = require("fs");
+        const gifPath = path.join(basePath, ".obsidian", "plugins", "Stella", "bulbasaur.gif");
+        if (fs.existsSync(gifPath)) {
+          const data = fs.readFileSync(gifPath);
+          const base64 = data.toString("base64");
+          imgElement.src = `data:image/gif;base64,${base64}`;
+          return;
         }
       }
-      const adapter = this.app.vault.adapter;
-      if ("readBinary" in adapter) {
-        const pluginDir = ".obsidian/plugins/stella";
-        const gifPath = `${pluginDir}/bulbasaur.gif`;
-        const data = await adapter.readBinary(gifPath);
-        const blob = new Blob([data], { type: "image/gif" });
-        const reader = new FileReader();
-        reader.onload = () => {
-          imgElement.src = reader.result;
-        };
-        reader.readAsDataURL(blob);
-      }
     } catch (error) {
-      console.error("Failed to load Bulbasaur GIF:", error);
-      imgElement.style.background = "#7CD55A";
-      imgElement.style.borderRadius = "4px";
+      console.warn("Failed to load default GIF from plugin directory:", error);
+    }
+    this.createCSSLoadingAnimation(imgElement);
+  }
+  createCSSLoadingAnimation(imgElement) {
+    imgElement.style.width = "64px";
+    imgElement.style.height = "64px";
+    imgElement.style.background = "linear-gradient(135deg, var(--interactive-accent) 0%, var(--interactive-accent-hover) 100%)";
+    imgElement.style.borderRadius = "50%";
+    imgElement.style.animation = "stella-pulse 1.5s ease-in-out infinite";
+    if (!document.getElementById("stella-loading-keyframes")) {
+      const style = document.createElement("style");
+      style.id = "stella-loading-keyframes";
+      style.textContent = `
+                @keyframes stella-pulse {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.1); opacity: 0.7; }
+                }
+            `;
+      document.head.appendChild(style);
     }
   }
   addMessage(content, type, isTemp = false) {
@@ -2577,7 +2637,7 @@ var StellaChatView = class extends import_obsidian3.ItemView {
     });
   }
   showQuickAddContextMenu(event, selectedText) {
-    const menu = new import_obsidian3.Menu();
+    const menu = new import_obsidian4.Menu();
     this.plugin.settings.quickAddCommands.forEach((command) => {
       menu.addItem(
         (item) => item.setTitle(command.name).setIcon("plus-circle").onClick(() => {
@@ -2598,13 +2658,13 @@ var StellaChatView = class extends import_obsidian3.ItemView {
       const plugins = this.app.plugins;
       const quickAddPlugin = (_a = plugins == null ? void 0 : plugins.plugins) == null ? void 0 : _a["quickadd"];
       if (!quickAddPlugin) {
-        new import_obsidian3.Notice("QuickAdd plugin is not installed or enabled");
+        new import_obsidian4.Notice("QuickAdd plugin is not installed or enabled");
         return;
       }
       window.stellaSelectedText = selectedText;
       const commands = this.app.commands;
       if (!commands) {
-        new import_obsidian3.Notice("Commands system not available");
+        new import_obsidian4.Notice("Commands system not available");
         return;
       }
       const allCommands = commands.listCommands();
@@ -2630,7 +2690,7 @@ var StellaChatView = class extends import_obsidian3.ItemView {
           if (foundCommand) {
             console.log(`Found QuickAdd command: ${foundCommand.id} (${foundCommand.name})`);
             commands.executeCommandById(foundCommand.id);
-            new import_obsidian3.Notice(`Executed QuickAdd command: ${foundCommand.name}`);
+            new import_obsidian4.Notice(`Executed QuickAdd command: ${foundCommand.name}`);
             commandExecuted = true;
             break;
           }
@@ -2642,19 +2702,19 @@ var StellaChatView = class extends import_obsidian3.ItemView {
         const quickAddCommands = allCommands.filter((cmd) => cmd.id.includes("quickadd"));
         console.log("Available QuickAdd commands:", quickAddCommands.map((cmd) => ({ id: cmd.id, name: cmd.name })));
         if (quickAddCommands.length > 0) {
-          new import_obsidian3.Notice(`QuickAdd command '${commandId}' not found. Available commands: ${quickAddCommands.map((cmd) => cmd.name).join(", ")}`);
+          new import_obsidian4.Notice(`QuickAdd command '${commandId}' not found. Available commands: ${quickAddCommands.map((cmd) => cmd.name).join(", ")}`);
         } else {
-          new import_obsidian3.Notice("No QuickAdd commands found. Make sure QuickAdd is properly configured.");
+          new import_obsidian4.Notice("No QuickAdd commands found. Make sure QuickAdd is properly configured.");
         }
       }
     } catch (error) {
-      new import_obsidian3.Notice("Failed to execute QuickAdd command");
+      new import_obsidian4.Notice("Failed to execute QuickAdd command");
       console.error("QuickAdd execution error:", error);
     }
   }
   async renderMarkdown(container, content) {
     try {
-      await import_obsidian3.MarkdownRenderer.renderMarkdown(content, container, "", this);
+      await import_obsidian4.MarkdownRenderer.renderMarkdown(content, container, "", this);
     } catch (error) {
       console.error("Error rendering markdown:", error);
       container.textContent = content;
@@ -3830,14 +3890,22 @@ Assistant:`;
     this.updateMentalModelIndicator();
   }
   loadConversations() {
+    this.cleanupEmptyConversations();
     const currentId = this.plugin.settings.currentConversationId;
     if (currentId) {
-      this.loadConversation(currentId);
+      const exists = this.plugin.settings.conversations.some((c) => c.id === currentId);
+      if (exists) {
+        this.loadConversation(currentId);
+      } else {
+        this.plugin.settings.currentConversationId = null;
+        const now = new Date();
+        const localDateStr = now.toLocaleDateString("en-CA");
+        this.conversationNameInput.value = localDateStr;
+      }
     } else {
       const now = new Date();
       const localDateStr = now.toLocaleDateString("en-CA");
-      const dateTitle = localDateStr;
-      this.conversationNameInput.value = dateTitle;
+      this.conversationNameInput.value = localDateStr;
     }
   }
   initializeMessagePagination(messages) {
@@ -3948,7 +4016,7 @@ Assistant:`;
   }
   startNewConversation() {
     if (this.currentConversationId) {
-      this.saveCurrentConversation();
+      this.cleanupIfEmpty(this.currentConversationId);
     }
     const now = new Date();
     const localDateStr = now.toLocaleDateString("en-CA");
@@ -3963,7 +4031,6 @@ Assistant:`;
     this.plugin.settings.conversations.unshift(newConversation);
     this.plugin.settings.currentConversationId = newConversation.id;
     this.currentConversationId = newConversation.id;
-    this.plugin.saveSettings();
     this.messagesContainer.empty();
     this.chatHistory = [];
     this.currentSystemPrompt = null;
@@ -3971,6 +4038,34 @@ Assistant:`;
     this.currentMentalModel = null;
     this.currentMentalModelFilename = null;
     this.conversationNameInput.value = dateTitle;
+  }
+  // Check if conversation title is a default date format (YYYY-MM-DD)
+  isDefaultDateTitle(title) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(title);
+  }
+  // Check if a conversation is worth saving (has custom name or has messages)
+  isWorthSaving(conversation) {
+    const hasCustomName = !this.isDefaultDateTitle(conversation.title);
+    const hasMessages = conversation.messages && conversation.messages.length > 0;
+    return hasCustomName || hasMessages;
+  }
+  // Clean up a conversation if it's empty and unnamed
+  cleanupIfEmpty(conversationId) {
+    const conversation = this.plugin.settings.conversations.find((c) => c.id === conversationId);
+    if (conversation && !this.isWorthSaving(conversation)) {
+      this.plugin.settings.conversations = this.plugin.settings.conversations.filter((c) => c.id !== conversationId);
+      console.log(`Cleaned up empty conversation: ${conversationId}`);
+    }
+  }
+  // Clean up all empty/unnamed conversations (call periodically)
+  cleanupEmptyConversations() {
+    const before = this.plugin.settings.conversations.length;
+    this.plugin.settings.conversations = this.plugin.settings.conversations.filter((c) => this.isWorthSaving(c));
+    const removed = before - this.plugin.settings.conversations.length;
+    if (removed > 0) {
+      console.log(`Cleaned up ${removed} empty/unnamed conversations`);
+      this.plugin.saveSettings();
+    }
   }
   saveConversationName() {
     if (!this.currentConversationId)
@@ -3980,6 +4075,7 @@ Assistant:`;
       conversation.title = this.conversationNameInput.value;
       conversation.updatedAt = Date.now();
       this.plugin.saveSettings();
+      console.log(`Conversation named: ${conversation.title}`);
     }
   }
   saveCurrentConversation() {
@@ -3989,8 +4085,10 @@ Assistant:`;
     if (conversation) {
       conversation.messages = [...this.chatHistory];
       conversation.updatedAt = Date.now();
-      this.plugin.saveSettings();
-      this.updateConversationMetadataCache();
+      if (this.isWorthSaving(conversation)) {
+        this.plugin.saveSettings();
+        this.updateConversationMetadataCache();
+      }
     }
   }
   updateConversationMetadataCache() {
@@ -4038,7 +4136,7 @@ Assistant:`;
   async showSystemPromptSelector() {
     const resolvedPath = this.resolveVaultPath(this.plugin.settings.systemPromptsPath);
     if (!resolvedPath) {
-      new import_obsidian3.Notice("System prompts directory not configured. Please set it in plugin settings.");
+      new import_obsidian4.Notice("System prompts directory not configured. Please set it in plugin settings.");
       return;
     }
     const modal = createSystemPromptModal(
@@ -4159,7 +4257,7 @@ Assistant:`;
     }
   }
   showNoteContextManager() {
-    const modal = new import_obsidian3.Modal(this.app);
+    const modal = new import_obsidian4.Modal(this.app);
     modal.titleEl.setText("Manage Note Context");
     const container = modal.contentEl.createDiv({ cls: "stella-note-manager-container" });
     if (this.contextNotes.length === 0) {
@@ -4306,6 +4404,7 @@ ${note.content}
           systemMessage += "\n\n";
         }
         systemMessage += "You have access to the following MCP (Model Context Protocol) tools through Google's function calling system:\n\n";
+        let totalToolCount = 0;
         for (const serverInfo of this.activeMCPServers) {
           try {
             if (!serverInfo) {
@@ -4315,6 +4414,8 @@ ${note.content}
             console.log(`buildSystemMessage: Processing server ${serverInfo.name || "unknown"}`, serverInfo);
             const tools = Array.isArray(serverInfo.tools) ? serverInfo.tools : [];
             const prompts = Array.isArray(serverInfo.prompts) ? serverInfo.prompts : [];
+            const highlighted = Array.isArray(serverInfo.highlightedTools) ? serverInfo.highlightedTools : [];
+            totalToolCount += tools.length;
             if (tools.length > 0) {
               systemMessage += `=== ${serverInfo.name} Server Tools ===
 `;
@@ -4322,11 +4423,20 @@ ${note.content}
                 try {
                   if (tool && tool.name) {
                     const functionName = `${serverInfo.name}_${tool.name}`;
-                    systemMessage += `\u2022 Function: ${functionName}`;
-                    if (tool.description) {
-                      systemMessage += ` - ${tool.description}`;
+                    const isHighlighted = highlighted.includes(tool.name);
+                    if (isHighlighted) {
+                      systemMessage += `\u2022 **PREFERRED** Function: ${functionName}`;
+                      if (tool.description) {
+                        systemMessage += ` - ${tool.description}`;
+                      }
+                      systemMessage += "\n  (User explicitly selected this tool - use it when relevant)\n";
+                    } else {
+                      systemMessage += `\u2022 Function: ${functionName}`;
+                      if (tool.description) {
+                        systemMessage += ` - ${tool.description}`;
+                      }
+                      systemMessage += "\n";
                     }
-                    systemMessage += "\n";
                     if (tool.inputSchema && tool.inputSchema.properties) {
                       const properties = Object.keys(tool.inputSchema.properties);
                       if (properties.length > 0) {
@@ -4367,7 +4477,10 @@ ${note.content}
 `;
           }
         }
-        systemMessage += "IMPORTANT: You can call these functions directly using Google's function calling capability. When you need to use a tool, call the corresponding function and I will automatically execute it and return the results to you. Do not ask the user to run tools - call them directly when needed.";
+        if (totalToolCount > 3) {
+          systemMessage += "\n**DISAMBIGUATION**: If the user's request could apply to multiple tools, ask for clarification about which specific tool or action they want before proceeding.\n";
+        }
+        systemMessage += "\nIMPORTANT: You can call these functions directly using Google's function calling capability. When you need to use a tool, call the corresponding function and I will automatically execute it and return the results to you. Do not ask the user to run tools - call them directly when needed.";
         console.log("buildSystemMessage: Final system message with MCP info:", systemMessage);
       }
     } catch (mcpError) {
@@ -4455,7 +4568,7 @@ ${note.content}
   async showMentalModelSelector() {
     const resolvedPath = this.resolveVaultPath(this.plugin.settings.mentalModelsPath);
     if (!resolvedPath) {
-      new import_obsidian3.Notice("Mental models directory not configured. Please set it in plugin settings.");
+      new import_obsidian4.Notice("Mental models directory not configured. Please set it in plugin settings.");
       return;
     }
     const modal = createMentalModelModal(
@@ -4513,8 +4626,8 @@ ${note.content}
     this.updateMentalModelIndicator();
   }
   async showMCPSelector() {
-    const modal = new import_obsidian3.Modal(this.app);
-    modal.titleEl.setText("Select MCP Server");
+    const modal = new import_obsidian4.Modal(this.app);
+    modal.titleEl.setText("MCP Servers");
     modal.modalEl.style.width = "70vw";
     modal.modalEl.style.height = "70vh";
     modal.modalEl.style.maxWidth = "1000px";
@@ -4524,32 +4637,38 @@ ${note.content}
     modal.open();
     try {
       const mcpManager = this.plugin.mcpClientManager;
-      if (!mcpManager) {
-        contentEl.createEl("p", { text: "MCP is not enabled. Please enable it in settings." });
-        const settingsBtn = contentEl.createEl("button", { text: "Open Settings", cls: "mod-cta" });
-        settingsBtn.onclick = () => {
-          modal.close();
-          this.openSettings();
-        };
+      let servers = [];
+      if (mcpManager) {
+        servers = Array.from(mcpManager.getServers().values());
+      }
+      const configuredServers = this.plugin.settings.mcpServers || [];
+      console.log(`MCP Modal: Found ${servers.length} in manager, ${configuredServers.length} in settings`);
+      if (servers.length === 0 && configuredServers.length === 0) {
+        this.showAddServerForm(contentEl, modal);
         return;
       }
-      const servers = Array.from(mcpManager.getServers().values());
+      if (servers.length === 0 && configuredServers.length > 0 && mcpManager) {
+        contentEl.createEl("p", { text: "Connecting to configured servers..." });
+        for (const serverConfig of configuredServers) {
+          try {
+            await mcpManager.addServer(serverConfig);
+          } catch (e) {
+            console.error(`Failed to add server ${serverConfig.name}:`, e);
+          }
+        }
+        servers = Array.from(mcpManager.getServers().values());
+        contentEl.empty();
+      }
       if (servers.length === 0) {
-        contentEl.createEl("p", { text: "No MCP servers configured. Please add servers in settings." });
-        const settingsBtn = contentEl.createEl("button", { text: "Open Settings", cls: "mod-cta" });
-        settingsBtn.onclick = () => {
-          modal.close();
-          this.openSettings();
-        };
+        this.showAddServerForm(contentEl, modal);
         return;
       }
       for (const server of servers) {
-        if (server.connected) {
-          try {
-            await mcpManager.refreshServerTools(server.id);
-            await mcpManager.refreshServerPrompts(server.id);
-          } catch (error) {
-          }
+        if (server.connected && mcpManager) {
+          mcpManager.refreshServerTools(server.id).catch(() => {
+          });
+          mcpManager.refreshServerPrompts(server.id).catch(() => {
+          });
         }
       }
       const mainContainer = contentEl.createDiv();
@@ -4572,6 +4691,7 @@ ${note.content}
       let selectedIndex = 0;
       const mcpServerItems = [];
       servers.forEach((server, index) => {
+        var _a;
         const serverItem = serverList.createDiv();
         serverItem.style.padding = "12px";
         serverItem.style.marginBottom = "8px";
@@ -4579,33 +4699,96 @@ ${note.content}
         serverItem.style.borderRadius = "4px";
         serverItem.style.border = "1px solid transparent";
         serverItem.style.backgroundColor = "var(--background-secondary)";
+        const isActive = (_a = this.activeMCPServers) == null ? void 0 : _a.some((s) => s.name === server.name);
         if (index === 0) {
           serverItem.style.backgroundColor = "var(--background-modifier-hover)";
           serverItem.style.border = "1px solid var(--accent-color)";
           serverItem.classList.add("selected");
         }
-        const nameEl = serverItem.createDiv();
+        if (isActive) {
+          serverItem.style.borderLeft = "3px solid var(--interactive-accent)";
+        }
+        const toggleContainer = serverItem.createDiv();
+        toggleContainer.style.display = "flex";
+        toggleContainer.style.justifyContent = "space-between";
+        toggleContainer.style.alignItems = "center";
+        toggleContainer.style.marginBottom = "4px";
+        const nameEl = toggleContainer.createDiv();
         nameEl.textContent = server.name;
         nameEl.style.fontWeight = "500";
-        nameEl.style.marginBottom = "4px";
+        const toggleSwitch = toggleContainer.createEl("div");
+        toggleSwitch.className = "stella-mcp-toggle";
+        toggleSwitch.style.cssText = `
+                    width: 40px; height: 22px;
+                    background: ${isActive ? "var(--interactive-accent)" : "var(--background-modifier-border)"};
+                    border-radius: 11px; cursor: pointer; position: relative;
+                    transition: background 0.2s ease; flex-shrink: 0;
+                `;
+        const toggleKnob = toggleSwitch.createEl("div");
+        toggleKnob.style.cssText = `
+                    width: 18px; height: 18px;
+                    background: white; border-radius: 50%;
+                    position: absolute; top: 2px;
+                    left: ${isActive ? "20px" : "2px"};
+                    transition: left 0.2s ease;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                `;
+        toggleSwitch.onclick = (e) => {
+          e.stopPropagation();
+          const newState = this.toggleMCPServer(server);
+          toggleSwitch.style.background = newState ? "var(--interactive-accent)" : "var(--background-modifier-border)";
+          toggleKnob.style.left = newState ? "20px" : "2px";
+          serverItem.style.borderLeft = newState ? "3px solid var(--interactive-accent)" : "none";
+        };
         const statusEl = serverItem.createDiv();
         statusEl.textContent = server.connected ? "Connected" : "Disconnected";
         statusEl.style.fontSize = "12px";
         statusEl.style.color = server.connected ? "var(--text-success)" : "var(--text-error)";
         mcpServerItems.push(serverItem);
         serverItem.onclick = () => {
-          mcpServerItems.forEach((el) => {
+          var _a2;
+          mcpServerItems.forEach((el, i) => {
+            var _a3;
             el.style.backgroundColor = "var(--background-secondary)";
             el.style.border = "1px solid transparent";
             el.classList.remove("selected");
+            if ((_a3 = this.activeMCPServers) == null ? void 0 : _a3.some((s) => {
+              var _a4;
+              return s.name === ((_a4 = servers[i]) == null ? void 0 : _a4.name);
+            })) {
+              el.style.borderLeft = "3px solid var(--interactive-accent)";
+            }
           });
           serverItem.style.backgroundColor = "var(--background-modifier-hover)";
           serverItem.style.border = "1px solid var(--accent-color)";
+          if (isActive || ((_a2 = this.activeMCPServers) == null ? void 0 : _a2.some((s) => s.name === server.name))) {
+            serverItem.style.borderLeft = "3px solid var(--interactive-accent)";
+          }
           serverItem.classList.add("selected");
           selectedIndex = index;
           showPreview(server);
         };
       });
+      const addServerBtn = serverList.createDiv();
+      addServerBtn.style.padding = "12px";
+      addServerBtn.style.marginTop = "8px";
+      addServerBtn.style.cursor = "pointer";
+      addServerBtn.style.borderRadius = "4px";
+      addServerBtn.style.border = "1px dashed var(--background-modifier-border)";
+      addServerBtn.style.textAlign = "center";
+      addServerBtn.style.color = "var(--text-muted)";
+      addServerBtn.textContent = "+ Add Server";
+      addServerBtn.addEventListener("mouseenter", () => {
+        addServerBtn.style.backgroundColor = "var(--background-modifier-hover)";
+        addServerBtn.style.color = "var(--text-normal)";
+      });
+      addServerBtn.addEventListener("mouseleave", () => {
+        addServerBtn.style.backgroundColor = "transparent";
+        addServerBtn.style.color = "var(--text-muted)";
+      });
+      addServerBtn.onclick = () => {
+        this.showAddServerForm(contentEl, modal);
+      };
       const showPreview = async (server) => {
         previewContent.innerHTML = "";
         const header = previewContent.createDiv();
@@ -4755,6 +4938,153 @@ ${note.content}
       contentEl.createEl("p", { text: `Error loading MCP data: ${error.message}` });
     }
   }
+  showAddServerForm(contentEl, modal) {
+    contentEl.empty();
+    const formContainer = contentEl.createDiv();
+    formContainer.style.padding = "16px";
+    formContainer.style.maxWidth = "500px";
+    formContainer.style.margin = "0 auto";
+    formContainer.createEl("h3", { text: "Add MCP Server" });
+    formContainer.createEl("p", {
+      text: "Configure a new MCP server to enable AI tools.",
+      cls: "setting-item-description"
+    });
+    let selectedTransport = "stdio";
+    let nameInput;
+    let commandInput;
+    let argsInput;
+    let endpointInput;
+    let envVars = [];
+    const nameContainer = formContainer.createDiv();
+    nameContainer.style.marginTop = "16px";
+    nameContainer.createEl("label", { text: "Server Name" });
+    nameInput = nameContainer.createEl("input", {
+      type: "text",
+      attr: { placeholder: "e.g., Filesystem, GitHub, etc." }
+    });
+    nameInput.style.width = "100%";
+    nameInput.style.marginTop = "4px";
+    nameInput.style.padding = "8px";
+    const transportContainer = formContainer.createDiv();
+    transportContainer.style.marginTop = "16px";
+    transportContainer.createEl("label", { text: "Server Type" });
+    const transportToggle = transportContainer.createDiv();
+    transportToggle.style.marginTop = "8px";
+    transportToggle.style.display = "flex";
+    transportToggle.style.gap = "16px";
+    const stdioOption = transportToggle.createEl("label");
+    stdioOption.style.cursor = "pointer";
+    stdioOption.style.display = "flex";
+    stdioOption.style.alignItems = "center";
+    stdioOption.style.gap = "6px";
+    const stdioRadio = stdioOption.createEl("input", { type: "radio", value: "stdio" });
+    stdioRadio.name = "transport";
+    stdioRadio.checked = true;
+    stdioOption.createSpan({ text: "Local (stdio)" });
+    const httpOption = transportToggle.createEl("label");
+    httpOption.style.cursor = "pointer";
+    httpOption.style.display = "flex";
+    httpOption.style.alignItems = "center";
+    httpOption.style.gap = "6px";
+    const httpRadio = httpOption.createEl("input", { type: "radio", value: "http" });
+    httpRadio.name = "transport";
+    httpOption.createSpan({ text: "Remote (WebSocket)" });
+    const configContainer = formContainer.createDiv();
+    configContainer.style.marginTop = "16px";
+    const updateConfig = () => {
+      configContainer.empty();
+      if (selectedTransport === "stdio") {
+        configContainer.createEl("label", { text: "Command" });
+        commandInput = configContainer.createEl("input", {
+          type: "text",
+          value: "npx",
+          attr: { placeholder: "npx" }
+        });
+        commandInput.style.width = "100%";
+        commandInput.style.marginTop = "4px";
+        commandInput.style.padding = "8px";
+        const argsLabel = configContainer.createEl("label", { text: "Arguments" });
+        argsLabel.style.marginTop = "12px";
+        argsLabel.style.display = "block";
+        argsInput = configContainer.createEl("input", {
+          type: "text",
+          attr: { placeholder: "-y @modelcontextprotocol/server-filesystem /path" }
+        });
+        argsInput.style.width = "100%";
+        argsInput.style.marginTop = "4px";
+        argsInput.style.padding = "8px";
+        const exampleText = configContainer.createEl("p", {
+          text: "Example: npx -y @modelcontextprotocol/server-filesystem /home/user/documents",
+          cls: "setting-item-description"
+        });
+        exampleText.style.marginTop = "8px";
+        exampleText.style.fontSize = "12px";
+      } else {
+        configContainer.createEl("label", { text: "WebSocket Endpoint" });
+        endpointInput = configContainer.createEl("input", {
+          type: "url",
+          attr: { placeholder: "wss://your-mcp-server.com/mcp" }
+        });
+        endpointInput.style.width = "100%";
+        endpointInput.style.marginTop = "4px";
+        endpointInput.style.padding = "8px";
+      }
+    };
+    stdioRadio.onchange = () => {
+      selectedTransport = "stdio";
+      updateConfig();
+    };
+    httpRadio.onchange = () => {
+      selectedTransport = "http";
+      updateConfig();
+    };
+    updateConfig();
+    const buttonContainer = formContainer.createDiv();
+    buttonContainer.style.marginTop = "24px";
+    buttonContainer.style.display = "flex";
+    buttonContainer.style.gap = "8px";
+    buttonContainer.style.justifyContent = "flex-end";
+    const cancelBtn = buttonContainer.createEl("button", { text: "Cancel" });
+    cancelBtn.onclick = () => modal.close();
+    const saveBtn = buttonContainer.createEl("button", { text: "Add Server", cls: "mod-cta" });
+    saveBtn.onclick = async () => {
+      const name = nameInput.value.trim();
+      if (!name) {
+        nameInput.style.border = "1px solid var(--text-error)";
+        return;
+      }
+      const serverConfig = {
+        id: `mcp-${Date.now()}`,
+        name,
+        transport: selectedTransport,
+        connected: false
+      };
+      if (selectedTransport === "stdio") {
+        serverConfig.command = (commandInput == null ? void 0 : commandInput.value.trim()) || "npx";
+        serverConfig.args = argsInput == null ? void 0 : argsInput.value.trim().split(" ").filter((a) => a);
+      } else {
+        serverConfig.endpoint = endpointInput == null ? void 0 : endpointInput.value.trim();
+      }
+      if (!this.plugin.settings.mcpServers) {
+        this.plugin.settings.mcpServers = [];
+      }
+      this.plugin.settings.mcpServers.push(serverConfig);
+      this.plugin.settings.mcpEnabled = true;
+      await this.plugin.saveSettings();
+      try {
+        const success = await this.plugin.mcpClientManager.addServer(serverConfig);
+        if (success) {
+          this.addMessage(`Connected to MCP server "${name}". Use /mcp to select tools.`, "system");
+        } else {
+          this.addMessage(`Added MCP server "${name}" but connection failed. Check settings.`, "error");
+        }
+      } catch (error) {
+        this.addMessage(`Added MCP server "${name}" but connection failed: ${error.message}`, "error");
+      }
+      modal.close();
+    };
+    setTimeout(() => nameInput.focus(), 100);
+  }
   activateMCPServer(server) {
     try {
       if (!this.activeMCPServers || !Array.isArray(this.activeMCPServers)) {
@@ -4773,21 +5103,48 @@ ${note.content}
       const mcpManager = this.plugin.mcpClientManager;
       const tools = (mcpManager == null ? void 0 : mcpManager.getTools().get(server.id)) || [];
       const prompts = (mcpManager == null ? void 0 : mcpManager.getPrompts().get(server.id)) || [];
-      console.log(`MCP Debug - Activating server ${server.name} with ${tools.length} tools and ${prompts.length} prompts`);
+      const resources = (mcpManager == null ? void 0 : mcpManager.getResources().get(server.id)) || [];
+      console.log(`MCP Debug - Activating server ${server.name} with ${tools.length} tools, ${prompts.length} prompts, and ${resources.length} resources`);
       this.activeMCPServers.push({
         name: server.name,
         tools: tools || [],
-        prompts: prompts || []
+        prompts: prompts || [],
+        resources: resources || [],
+        highlightedTools: []
       });
+      this.addMessage(`MCP server "${server.name}" activated with ${tools.length} tools, ${prompts.length} prompts, and ${resources.length} resources.`, "system");
     } catch (error) {
       console.error("Error activating MCP server:", server.name, error);
       this.activeMCPServers.push({
         name: server.name,
         tools: [],
-        prompts: []
+        prompts: [],
+        resources: [],
+        highlightedTools: []
       });
     }
     this.updateMCPIndicator();
+  }
+  deactivateMCPServer(serverName) {
+    if (!this.activeMCPServers || !Array.isArray(this.activeMCPServers)) {
+      return;
+    }
+    const index = this.activeMCPServers.findIndex((s) => s.name === serverName);
+    if (index >= 0) {
+      this.activeMCPServers.splice(index, 1);
+      this.addMessage(`MCP server "${serverName}" deactivated.`, "system");
+    }
+    this.updateMCPIndicator();
+  }
+  toggleMCPServer(server) {
+    var _a;
+    const isActive = (_a = this.activeMCPServers) == null ? void 0 : _a.some((s) => s.name === server.name);
+    if (isActive) {
+      this.deactivateMCPServer(server.name);
+    } else {
+      this.activateMCPServer(server);
+    }
+    return !isActive;
   }
   async executeMCPTool(functionName, args) {
     try {
@@ -4843,6 +5200,16 @@ ${note.content}
           this.activateMCPServer(server);
         serverEntry = this.activeMCPServers.find((s) => s.name === serverName);
       }
+      if (serverEntry) {
+        if (!serverEntry.highlightedTools) {
+          serverEntry.highlightedTools = [];
+        }
+        if (!serverEntry.highlightedTools.includes(tool.name)) {
+          serverEntry.highlightedTools.push(tool.name);
+          this.addMessage(`Tool "${tool.name}" highlighted for priority use.`, "system");
+        }
+        this.updateMCPIndicator();
+      }
     } catch (error) {
       console.error("Error activating MCP tool:", serverName, tool.name, error);
     }
@@ -4866,15 +5233,24 @@ ${prompt.description || ""}`;
           tooltipLines.push(serverLine);
           const tools = activeServer.tools || [];
           const prompts = activeServer.prompts || [];
+          const resources = activeServer.resources || [];
+          const highlighted = activeServer.highlightedTools || [];
           if (tools.length > 0) {
-            const toolNames = tools.map((t) => `  \u2022 ${t.name}`).join("\n");
+            const toolNames = tools.map((t) => {
+              const isHighlighted = highlighted.includes(t.name);
+              return `  ${isHighlighted ? "\u2605" : "\u2022"} ${t.name}${isHighlighted ? " (selected)" : ""}`;
+            }).join("\n");
             tooltipLines.push(toolNames);
           }
           if (prompts.length > 0) {
             const promptNames = prompts.map((p) => `  \u2022 ${p.name} (prompt)`).join("\n");
             tooltipLines.push(promptNames);
           }
-          if (tools.length === 0 && prompts.length === 0) {
+          if (resources.length > 0) {
+            const resourceNames = resources.map((r) => `  \u2022 ${r.name} (resource)`).join("\n");
+            tooltipLines.push(resourceNames);
+          }
+          if (tools.length === 0 && prompts.length === 0 && resources.length === 0) {
             tooltipLines.push("  \u2022 (server only)");
           }
         } catch (error) {
@@ -5119,7 +5495,7 @@ ${prompt.description || ""}`;
     }
   }
   showNameInput() {
-    const modal = new import_obsidian3.Modal(this.app);
+    const modal = new import_obsidian4.Modal(this.app);
     modal.setTitle("Rename Conversation");
     const currentConversation = this.plugin.settings.conversations.find((c) => c.id === this.currentConversationId);
     const currentName = currentConversation ? currentConversation.title : "";
@@ -5191,7 +5567,7 @@ ${prompt.description || ""}`;
     }
   }
 };
-var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
+var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -5199,7 +5575,7 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian3.Setting(containerEl).setName("AI Provider").setDesc("Select your AI provider").addDropdown((dropdown) => dropdown.addOption("anthropic", "Anthropic (Claude)").addOption("openai", "OpenAI (GPT)").addOption("google", "Google (Gemini)").addOption("ollama", "Ollama (Local)").addOption("lmstudio", "LM Studio (Local)").addOption("custom", "Custom API").setValue(this.plugin.settings.provider).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("AI Provider").setDesc("Select your AI provider").addDropdown((dropdown) => dropdown.addOption("anthropic", "Anthropic (Claude)").addOption("openai", "OpenAI (GPT)").addOption("google", "Google (Gemini)").addOption("ollama", "Ollama (Local)").addOption("lmstudio", "LM Studio (Local)").addOption("custom", "Custom API").setValue(this.plugin.settings.provider).onChange(async (value) => {
       this.plugin.settings.provider = value;
       this.plugin.settings.model = "";
       await this.plugin.saveSettings();
@@ -5212,51 +5588,51 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
       this.display();
     }));
     if (this.plugin.settings.provider === "openai") {
-      new import_obsidian3.Setting(containerEl).setName("OpenAI API Key").setDesc("Enter your OpenAI API key").addText((text) => text.setPlaceholder("sk-...").setValue(this.plugin.settings.openaiApiKey).onChange(async (value) => {
+      new import_obsidian4.Setting(containerEl).setName("OpenAI API Key").setDesc("Enter your OpenAI API key").addText((text) => text.setPlaceholder("sk-...").setValue(this.plugin.settings.openaiApiKey).onChange(async (value) => {
         this.plugin.settings.openaiApiKey = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "anthropic") {
-      new import_obsidian3.Setting(containerEl).setName("Anthropic API Key").setDesc("Enter your Anthropic API key").addText((text) => text.setPlaceholder("sk-ant-...").setValue(this.plugin.settings.anthropicApiKey).onChange(async (value) => {
+      new import_obsidian4.Setting(containerEl).setName("Anthropic API Key").setDesc("Enter your Anthropic API key").addText((text) => text.setPlaceholder("sk-ant-...").setValue(this.plugin.settings.anthropicApiKey).onChange(async (value) => {
         this.plugin.settings.anthropicApiKey = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "google") {
-      new import_obsidian3.Setting(containerEl).setName("Google API Key").setDesc("Enter your Google AI API key").addText((text) => text.setPlaceholder("AI...").setValue(this.plugin.settings.googleApiKey).onChange(async (value) => {
+      new import_obsidian4.Setting(containerEl).setName("Google API Key").setDesc("Enter your Google AI API key").addText((text) => text.setPlaceholder("AI...").setValue(this.plugin.settings.googleApiKey).onChange(async (value) => {
         this.plugin.settings.googleApiKey = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "ollama") {
-      new import_obsidian3.Setting(containerEl).setName("Ollama Base URL").setDesc("Ollama server URL").addText((text) => text.setPlaceholder("http://localhost:11434").setValue(this.plugin.settings.ollamaBaseUrl).onChange(async (value) => {
+      new import_obsidian4.Setting(containerEl).setName("Ollama Base URL").setDesc("Ollama server URL").addText((text) => text.setPlaceholder("http://localhost:11434").setValue(this.plugin.settings.ollamaBaseUrl).onChange(async (value) => {
         this.plugin.settings.ollamaBaseUrl = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "lmstudio") {
-      new import_obsidian3.Setting(containerEl).setName("LM Studio Base URL").setDesc("LM Studio server URL").addText((text) => text.setPlaceholder("http://localhost:1234").setValue(this.plugin.settings.lmStudioBaseUrl).onChange(async (value) => {
+      new import_obsidian4.Setting(containerEl).setName("LM Studio Base URL").setDesc("LM Studio server URL").addText((text) => text.setPlaceholder("http://localhost:1234").setValue(this.plugin.settings.lmStudioBaseUrl).onChange(async (value) => {
         this.plugin.settings.lmStudioBaseUrl = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "custom") {
-      new import_obsidian3.Setting(containerEl).setName("Custom API URL").setDesc("Your custom API endpoint URL").addText((text) => text.setPlaceholder("https://your-api.com/v1/chat/completions").setValue(this.plugin.settings.customApiUrl).onChange(async (value) => {
+      new import_obsidian4.Setting(containerEl).setName("Custom API URL").setDesc("Your custom API endpoint URL").addText((text) => text.setPlaceholder("https://your-api.com/v1/chat/completions").setValue(this.plugin.settings.customApiUrl).onChange(async (value) => {
         this.plugin.settings.customApiUrl = value;
         await this.plugin.saveSettings();
       }));
-      new import_obsidian3.Setting(containerEl).setName("Custom API Key").setDesc("API key for your custom endpoint (optional)").addText((text) => text.setPlaceholder("your-api-key").setValue(this.plugin.settings.customApiKey).onChange(async (value) => {
+      new import_obsidian4.Setting(containerEl).setName("Custom API Key").setDesc("API key for your custom endpoint (optional)").addText((text) => text.setPlaceholder("your-api-key").setValue(this.plugin.settings.customApiKey).onChange(async (value) => {
         this.plugin.settings.customApiKey = value;
         await this.plugin.saveSettings();
       }));
     }
-    this.modelSetting = new import_obsidian3.Setting(containerEl).setName("Model").setDesc("Select the model to use (fetched from API)").addButton((button) => button.setButtonText("Refresh Models").onClick(() => this.refreshModelDropdown()));
+    this.modelSetting = new import_obsidian4.Setting(containerEl).setName("Model").setDesc("Select the model to use (fetched from API)").addButton((button) => button.setButtonText("Refresh Models").onClick(() => this.refreshModelDropdown()));
     this.modelDropdown = this.modelSetting.addDropdown((dropdown) => {
       dropdown.setValue(this.plugin.settings.model);
       dropdown.onChange(async (value) => {
@@ -5275,33 +5651,86 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
       console.log("Settings tab displayed, refreshing model dropdown...");
       this.refreshModelDropdown();
     }, 100);
-    new import_obsidian3.Setting(containerEl).setName("Max Tokens").setDesc("Maximum tokens per response").addText((text) => text.setValue(this.plugin.settings.maxTokens.toString()).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("Max Tokens").setDesc("Maximum tokens per response").addText((text) => text.setValue(this.plugin.settings.maxTokens.toString()).onChange(async (value) => {
       this.plugin.settings.maxTokens = parseInt(value) || 4e3;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian3.Setting(containerEl).setName("Temperature").setDesc("Creativity level (0-1)").addText((text) => text.setValue(this.plugin.settings.temperature.toString()).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("Temperature").setDesc("Creativity level (0-1)").addText((text) => text.setValue(this.plugin.settings.temperature.toString()).onChange(async (value) => {
       this.plugin.settings.temperature = parseFloat(value) || 0.7;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian3.Setting(containerEl).setName("System Prompts Directory").setDesc("Path to directory containing your system prompt .md files (for /sys command)").addText((text) => text.setPlaceholder("/path/to/your/system-prompts").setValue(this.plugin.settings.systemPromptsPath).onChange(async (value) => {
-      this.plugin.settings.systemPromptsPath = value;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian3.Setting(containerEl).setName("Mental Models Directory").setDesc("Path to directory containing your mental model .md files (for /model command)").addText((text) => text.setPlaceholder("/path/to/your/mental-models").setValue(this.plugin.settings.mentalModelsPath).onChange(async (value) => {
-      this.plugin.settings.mentalModelsPath = value;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian3.Setting(containerEl).setName("Background Image URL/Path").setDesc("URL or local file path to background image for chat area").addText((text) => text.setPlaceholder("https://example.com/image.jpg or /path/to/image.png").setValue(this.plugin.settings.backgroundImage).onChange(async (value) => {
-      this.plugin.settings.backgroundImage = value;
-      await this.plugin.saveSettings();
-      this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
-        const chatView = leaf.view;
-        if (chatView && chatView.updateBackgroundImage) {
-          chatView.updateBackgroundImage();
-        }
+    const systemPromptsPathSetting = new import_obsidian4.Setting(containerEl).setName("System Prompts Directory").setDesc("Path to directory containing your system prompt .md files (for /sys command)");
+    let systemPromptsInput;
+    systemPromptsPathSetting.addText((text) => {
+      systemPromptsInput = text;
+      text.setPlaceholder("/path/to/your/system-prompts").setValue(this.plugin.settings.systemPromptsPath).onChange(async (value) => {
+        this.plugin.settings.systemPromptsPath = value;
+        await this.plugin.saveSettings();
       });
+    });
+    systemPromptsPathSetting.addButton((button) => button.setButtonText("Browse").onClick(async () => {
+      const folders = this.app.vault.getAllLoadedFiles().filter((f) => f.children !== void 0);
+      const modal = new FolderSuggestModal(this.app, folders, async (folder) => {
+        this.plugin.settings.systemPromptsPath = folder.path;
+        systemPromptsInput.setValue(folder.path);
+        await this.plugin.saveSettings();
+      });
+      modal.open();
     }));
-    new import_obsidian3.Setting(containerEl).setName("Background Display Mode").setDesc("How the background image should be displayed").addDropdown((dropdown) => dropdown.addOption("centered", "Centered").addOption("fill", "Fill").addOption("stretch", "Stretch").setValue(this.plugin.settings.backgroundMode).onChange(async (value) => {
+    const mentalModelsPathSetting = new import_obsidian4.Setting(containerEl).setName("Mental Models Directory").setDesc("Path to directory containing your mental model .md files (for /model command)");
+    let mentalModelsInput;
+    mentalModelsPathSetting.addText((text) => {
+      mentalModelsInput = text;
+      text.setPlaceholder("/path/to/your/mental-models").setValue(this.plugin.settings.mentalModelsPath).onChange(async (value) => {
+        this.plugin.settings.mentalModelsPath = value;
+        await this.plugin.saveSettings();
+      });
+    });
+    mentalModelsPathSetting.addButton((button) => button.setButtonText("Browse").onClick(async () => {
+      const folders = this.app.vault.getAllLoadedFiles().filter((f) => f.children !== void 0);
+      const modal = new FolderSuggestModal(this.app, folders, async (folder) => {
+        this.plugin.settings.mentalModelsPath = folder.path;
+        mentalModelsInput.setValue(folder.path);
+        await this.plugin.saveSettings();
+      });
+      modal.open();
+    }));
+    const backgroundImageSetting = new import_obsidian4.Setting(containerEl).setName("Background Image URL/Path").setDesc("URL or local file path to background image for chat area");
+    let backgroundImageInput;
+    backgroundImageSetting.addText((text) => {
+      backgroundImageInput = text;
+      text.setPlaceholder("https://example.com/image.jpg or /path/to/image.png").setValue(this.plugin.settings.backgroundImage).onChange(async (value) => {
+        this.plugin.settings.backgroundImage = value;
+        await this.plugin.saveSettings();
+        this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
+          const chatView = leaf.view;
+          if (chatView && chatView.updateBackgroundImage) {
+            chatView.updateBackgroundImage();
+          }
+        });
+      });
+    });
+    backgroundImageSetting.addButton((button) => button.setButtonText("Browse").onClick(async () => {
+      const imageExtensions = ["png", "jpg", "jpeg", "gif", "webp", "svg"];
+      const files = this.app.vault.getFiles().filter((f) => imageExtensions.includes(f.extension.toLowerCase()));
+      if (files.length === 0) {
+        new import_obsidian4.Notice("No image files found in your vault.");
+        return;
+      }
+      const modal = new FileSuggestModal(this.app, files, async (file) => {
+        this.plugin.settings.backgroundImage = file.path;
+        backgroundImageInput.setValue(file.path);
+        await this.plugin.saveSettings();
+        this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
+          const chatView = leaf.view;
+          if (chatView && chatView.updateBackgroundImage) {
+            chatView.updateBackgroundImage();
+          }
+        });
+      });
+      modal.open();
+    }));
+    new import_obsidian4.Setting(containerEl).setName("Background Display Mode").setDesc("How the background image should be displayed").addDropdown((dropdown) => dropdown.addOption("centered", "Centered").addOption("fill", "Fill").addOption("stretch", "Stretch").setValue(this.plugin.settings.backgroundMode).onChange(async (value) => {
       this.plugin.settings.backgroundMode = value;
       await this.plugin.saveSettings();
       this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
@@ -5311,7 +5740,7 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
         }
       });
     }));
-    new import_obsidian3.Setting(containerEl).setName("Background Opacity").setDesc("Opacity of the background image (0.0 to 1.0)").addSlider((slider) => slider.setLimits(0, 1, 0.05).setValue(this.plugin.settings.backgroundOpacity).setDynamicTooltip().onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("Background Opacity").setDesc("Opacity of the background image (0.0 to 1.0)").addSlider((slider) => slider.setLimits(0, 1, 0.05).setValue(this.plugin.settings.backgroundOpacity).setDynamicTooltip().onChange(async (value) => {
       this.plugin.settings.backgroundOpacity = value;
       await this.plugin.saveSettings();
       this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
@@ -5321,7 +5750,29 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
         }
       });
     }));
-    new import_obsidian3.Setting(containerEl).setName("Auto-hide header").setDesc("Automatically hide the header bar").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoHideHeader).onChange(async (value) => {
+    const loadingGifSetting = new import_obsidian4.Setting(containerEl).setName("Loading Animation GIF").setDesc("Custom GIF to display while waiting for AI response (leave empty for default)");
+    let loadingGifInput;
+    loadingGifSetting.addText((text) => {
+      loadingGifInput = text;
+      text.setPlaceholder("path/to/your/animation.gif").setValue(this.plugin.settings.loadingGif).onChange(async (value) => {
+        this.plugin.settings.loadingGif = value;
+        await this.plugin.saveSettings();
+      });
+    });
+    loadingGifSetting.addButton((button) => button.setButtonText("Browse").onClick(async () => {
+      const files = this.app.vault.getFiles().filter((f) => f.extension.toLowerCase() === "gif");
+      if (files.length === 0) {
+        new import_obsidian4.Notice("No GIF files found in your vault. Add a .gif file to your vault first.");
+        return;
+      }
+      const modal = new FileSuggestModal(this.app, files, async (file) => {
+        this.plugin.settings.loadingGif = file.path;
+        loadingGifInput.setValue(file.path);
+        await this.plugin.saveSettings();
+      });
+      modal.open();
+    }));
+    new import_obsidian4.Setting(containerEl).setName("Auto-hide header").setDesc("Automatically hide the header bar").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoHideHeader).onChange(async (value) => {
       this.plugin.settings.autoHideHeader = value;
       await this.plugin.saveSettings();
       this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
@@ -5331,11 +5782,11 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
         }
       });
     }));
-    new import_obsidian3.Setting(containerEl).setName("Show Token Count").setDesc("Display estimated token usage during and after response generation").addToggle((toggle) => toggle.setValue(this.plugin.settings.showTokenCount).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("Show Token Count").setDesc("Display estimated token usage during and after response generation").addToggle((toggle) => toggle.setValue(this.plugin.settings.showTokenCount).onChange(async (value) => {
       this.plugin.settings.showTokenCount = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian3.Setting(containerEl).setName("QuickAdd Commands").setDesc("Configure right-click context menu options that trigger QuickAdd commands").addButton((button) => button.setButtonText("Show Available Commands").onClick(() => {
+    new import_obsidian4.Setting(containerEl).setName("QuickAdd Commands").setDesc("Configure right-click context menu options that trigger QuickAdd commands").addButton((button) => button.setButtonText("Show Available Commands").onClick(() => {
       this.showAvailableQuickAddCommands();
     })).addButton((button) => button.setButtonText("Add Command").onClick(() => {
       this.plugin.settings.quickAddCommands.push({
@@ -5348,7 +5799,7 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
     }));
     this.plugin.settings.quickAddCommands.forEach((command, index) => {
       const commandContainer = containerEl.createDiv("quickadd-command-item");
-      new import_obsidian3.Setting(commandContainer).setName(`Command ${index + 1}`).addText((text) => text.setPlaceholder("Command Name").setValue(command.name).onChange(async (value) => {
+      new import_obsidian4.Setting(commandContainer).setName(`Command ${index + 1}`).addText((text) => text.setPlaceholder("Command Name").setValue(command.name).onChange(async (value) => {
         this.plugin.settings.quickAddCommands[index].name = value;
         await this.plugin.saveSettings();
       })).addText((text) => text.setPlaceholder('QuickAdd Command ID (click "Show Available Commands" for help)').setValue(command.id).onChange(async (value) => {
@@ -5364,7 +5815,7 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
       }));
     });
     containerEl.createEl("h2", { text: "MCP (Model Context Protocol)" });
-    new import_obsidian3.Setting(containerEl).setName("Enable MCP").setDesc("Enable Model Context Protocol for connecting to external tools and data sources").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpEnabled).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("Enable MCP").setDesc("Enable Model Context Protocol for connecting to external tools and data sources").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpEnabled).onChange(async (value) => {
       this.plugin.settings.mcpEnabled = value;
       await this.plugin.saveSettings();
       if (value && this.plugin.settings.mcpServers.length > 0) {
@@ -5373,15 +5824,15 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
       this.display();
     }));
     if (this.plugin.settings.mcpEnabled) {
-      new import_obsidian3.Setting(containerEl).setName("Auto-discovery").setDesc("Automatically discover MCP servers on the network").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpAutoDiscovery).onChange(async (value) => {
+      new import_obsidian4.Setting(containerEl).setName("Auto-discovery").setDesc("Automatically discover MCP servers on the network").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpAutoDiscovery).onChange(async (value) => {
         this.plugin.settings.mcpAutoDiscovery = value;
         await this.plugin.saveSettings();
       }));
-      new import_obsidian3.Setting(containerEl).setName("Add MCP Server").setDesc("Configure connections to MCP servers").addButton((button) => button.setButtonText("Add Server").onClick(() => {
+      new import_obsidian4.Setting(containerEl).setName("Add MCP Server").setDesc("Configure connections to MCP servers").addButton((button) => button.setButtonText("Add Server").onClick(() => {
         this.showMCPServerModal();
       }));
       this.plugin.settings.mcpServers.forEach((server, index) => {
-        const serverSetting = new import_obsidian3.Setting(containerEl);
+        const serverSetting = new import_obsidian4.Setting(containerEl);
         const serverInfo = serverSetting.settingEl.createDiv("mcp-server-info");
         serverInfo.style.display = "flex";
         serverInfo.style.alignItems = "center";
@@ -5434,7 +5885,7 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
         const connectedServers = this.plugin.mcp.getConnectedServers();
         const totalTools = this.plugin.mcp.getAllTools().length;
         const totalResources = this.plugin.mcp.getAllResources().length;
-        const statusSetting = new import_obsidian3.Setting(containerEl);
+        const statusSetting = new import_obsidian4.Setting(containerEl);
         const statusDiv = statusSetting.settingEl.createDiv("mcp-status");
         statusDiv.innerHTML = `
                     <strong>MCP Status:</strong><br>
@@ -5653,16 +6104,16 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
     try {
       const commands = this.app.commands;
       if (!commands) {
-        new import_obsidian3.Notice("Commands system not available");
+        new import_obsidian4.Notice("Commands system not available");
         return;
       }
       const allCommands = commands.listCommands();
       const quickAddCommands = allCommands.filter((cmd) => cmd.id.includes("quickadd"));
       if (quickAddCommands.length === 0) {
-        new import_obsidian3.Notice("No QuickAdd commands found. Make sure QuickAdd plugin is installed and configured.");
+        new import_obsidian4.Notice("No QuickAdd commands found. Make sure QuickAdd plugin is installed and configured.");
         return;
       }
-      const modal = new import_obsidian3.Modal(this.app);
+      const modal = new import_obsidian4.Modal(this.app);
       modal.titleEl.setText("Available QuickAdd Commands");
       const content = modal.contentEl;
       content.createEl("p", { text: "Copy the Command ID to use in Stella settings:" });
@@ -5683,7 +6134,7 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
         idEl.style.cursor = "pointer";
         idEl.addEventListener("click", () => {
           navigator.clipboard.writeText(cmd.id);
-          new import_obsidian3.Notice(`Copied: ${cmd.id}`);
+          new import_obsidian4.Notice(`Copied: ${cmd.id}`);
         });
       });
       const buttonContainer = content.createDiv();
@@ -5693,12 +6144,12 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
       closeBtn.onclick = () => modal.close();
       modal.open();
     } catch (error) {
-      new import_obsidian3.Notice("Failed to retrieve QuickAdd commands");
+      new import_obsidian4.Notice("Failed to retrieve QuickAdd commands");
       console.error("Error showing QuickAdd commands:", error);
     }
   }
   showMCPServerModal(server, index) {
-    const modal = new import_obsidian3.Modal(this.app);
+    const modal = new import_obsidian4.Modal(this.app);
     modal.titleEl.setText(server ? "Edit MCP Server" : "Add MCP Server");
     const content = modal.contentEl;
     let selectedTransport = (server == null ? void 0 : server.transport) || "stdio";
@@ -5844,7 +6295,7 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
     saveBtn.onclick = async () => {
       const name = nameInput.value.trim();
       if (!name) {
-        new import_obsidian3.Notice("Server name is required");
+        new import_obsidian4.Notice("Server name is required");
         return;
       }
       const newServer = {
@@ -5873,7 +6324,7 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
       } else {
         const endpoint = endpointInput.value.trim();
         if (!endpoint) {
-          new import_obsidian3.Notice("WebSocket endpoint is required");
+          new import_obsidian4.Notice("WebSocket endpoint is required");
           return;
         }
         newServer.endpoint = endpoint;
@@ -5888,18 +6339,18 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
         if (this.plugin.settings.mcpEnabled) {
           await this.plugin.mcp.addServer(newServer);
         }
-        new import_obsidian3.Notice(`MCP server ${server ? "updated" : "added"}: ${name}`);
+        new import_obsidian4.Notice(`MCP server ${server ? "updated" : "added"}: ${name}`);
         modal.close();
         this.display();
       } catch (error) {
-        new import_obsidian3.Notice(`Failed to ${server ? "update" : "add"} MCP server`);
+        new import_obsidian4.Notice(`Failed to ${server ? "update" : "add"} MCP server`);
         console.error("MCP server error:", error);
       }
     };
     modal.open();
   }
   showMCPTemplateConfigModal(template) {
-    const modal = new import_obsidian3.Modal(this.app);
+    const modal = new import_obsidian4.Modal(this.app);
     modal.titleEl.setText(`Configure ${template.name} Server`);
     const content = modal.contentEl;
     content.createEl("p", {
@@ -5946,7 +6397,7 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
     addBtn.onclick = async () => {
       for (const envVar of template.envVariables) {
         if (envVar.required && !envInputs[envVar.key].value.trim()) {
-          new import_obsidian3.Notice(`${envVar.description} is required`);
+          new import_obsidian4.Notice(`${envVar.description} is required`);
           return;
         }
       }
@@ -5974,11 +6425,11 @@ var StellaSettingTab = class extends import_obsidian3.PluginSettingTab {
         if (this.plugin.settings.mcpEnabled) {
           await this.plugin.mcp.addServer(newServer);
         }
-        new import_obsidian3.Notice(`Added ${template.name} MCP server`);
+        new import_obsidian4.Notice(`Added ${template.name} MCP server`);
         modal.close();
         this.display();
       } catch (error) {
-        new import_obsidian3.Notice(`Failed to add ${template.name} server`);
+        new import_obsidian4.Notice(`Failed to add ${template.name} server`);
         console.error("Template server error:", error);
       }
     };

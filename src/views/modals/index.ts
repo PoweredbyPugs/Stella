@@ -19,3 +19,6 @@ export { NoteSelectorModal } from './note-selector';
 
 // Export conversation history modal
 export { ConversationHistoryModal } from './conversation-history';
+
+// Export suggest modals for file/folder pickers
+export { FolderSuggestModal, FileSuggestModal } from './suggest-modals';

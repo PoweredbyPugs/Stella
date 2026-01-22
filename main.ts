@@ -30,7 +30,9 @@ import {
     ConversationHistoryModal,
     NoteSelectorModal,
     createSystemPromptModal,
-    createMentalModelModal
+    createMentalModelModal,
+    FolderSuggestModal,
+    FileSuggestModal
 } from './src/views';
 
 // Import providers
@@ -90,9 +92,11 @@ export default class StellaPlugin extends Plugin {
         this.logger.log('Stella plugin loading...');
         await this.loadSettings();
 
-        // Initialize MCP servers if enabled
+        // Initialize MCP servers in background (non-blocking)
         if (this.settings.mcpEnabled) {
-            await this.initializeMCPServers();
+            this.initializeMCPServers().catch(error => {
+                this.logger.error('Failed to initialize MCP servers:', error);
+            });
         }
 
         // Register chat view
@@ -218,7 +222,7 @@ class StellaChatView extends ItemView {
     contextNotes: Array<{name: string, content: string}> = [];
     contextIndicator: HTMLElement;
     // MCP context state
-    activeMCPServers: Array<{name: string, tools: MCPTool[], prompts: MCPPrompt[]}> = [];
+    activeMCPServers: Array<{name: string, tools: MCPTool[], prompts: MCPPrompt[], resources?: MCPResource[], highlightedTools?: string[]}> = [];
     mcpIndicator: HTMLElement;
     noteIndicator: HTMLElement;
 
@@ -673,51 +677,75 @@ class StellaChatView extends ItemView {
     }
 
     async loadGifAsDataUrl(imgElement: HTMLImageElement) {
-        try {
-            // Try different paths
-            const paths = [
-                'bulbasaur.gif',
-                './bulbasaur.gif',
-                `${this.plugin.manifest.dir}/bulbasaur.gif`,
-                `.obsidian/plugins/stella/bulbasaur.gif`
-            ];
+        // Check for custom loading GIF first
+        const customGif = this.plugin.settings.loadingGif;
+        if (customGif && customGif.trim() !== '') {
+            try {
+                // Try to get the file from vault and use Obsidian's resource path
+                const file = this.app.vault.getAbstractFileByPath(customGif);
+                if (file) {
+                    const resourcePath = this.app.vault.getResourcePath(file as any);
+                    imgElement.src = resourcePath;
+                    return;
+                }
+                // Fallback: try reading as binary
+                const adapter = this.app.vault.adapter;
+                if ('readBinary' in adapter) {
+                    const data = await adapter.readBinary(customGif);
+                    const blob = new Blob([data], { type: 'image/gif' });
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        imgElement.src = reader.result as string;
+                    };
+                    reader.readAsDataURL(blob);
+                    return;
+                }
+            } catch (customError) {
+                console.warn('Failed to load custom GIF:', customError);
+            }
+        }
 
-            for (const path of paths) {
-                try {
-                    const response = await fetch(path);
-                    if (response.ok) {
-                        const blob = await response.blob();
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                            imgElement.src = reader.result as string;
-                        };
-                        reader.readAsDataURL(blob);
-                        return; // Success, exit
-                    }
-                } catch (e) {
-                    // Try next path
-                    continue;
+        // Try to load default bulbasaur.gif from plugin directory using Node.js fs
+        try {
+            const adapter = this.app.vault.adapter as any;
+            if (adapter.getBasePath) {
+                const basePath = adapter.getBasePath();
+                const path = require('path');
+                const fs = require('fs');
+                const gifPath = path.join(basePath, '.obsidian', 'plugins', 'Stella', 'bulbasaur.gif');
+                if (fs.existsSync(gifPath)) {
+                    const data = fs.readFileSync(gifPath);
+                    const base64 = data.toString('base64');
+                    imgElement.src = `data:image/gif;base64,${base64}`;
+                    return;
                 }
             }
-
-            // If all paths fail, try reading the file directly using Obsidian's file system
-            const adapter = this.app.vault.adapter;
-            if ('readBinary' in adapter) {
-                const pluginDir = '.obsidian/plugins/stella';
-                const gifPath = `${pluginDir}/bulbasaur.gif`;
-                const data = await adapter.readBinary(gifPath);
-                const blob = new Blob([data], { type: 'image/gif' });
-                const reader = new FileReader();
-                reader.onload = () => {
-                    imgElement.src = reader.result as string;
-                };
-                reader.readAsDataURL(blob);
-            }
         } catch (error) {
-            console.error('Failed to load Bulbasaur GIF:', error);
-            // Set a simple placeholder if all fails
-            imgElement.style.background = '#7CD55A';
-            imgElement.style.borderRadius = '4px';
+            console.warn('Failed to load default GIF from plugin directory:', error);
+        }
+
+        // Final fallback: CSS-based loading animation
+        this.createCSSLoadingAnimation(imgElement);
+    }
+
+    createCSSLoadingAnimation(imgElement: HTMLImageElement) {
+        imgElement.style.width = '64px';
+        imgElement.style.height = '64px';
+        imgElement.style.background = 'linear-gradient(135deg, var(--interactive-accent) 0%, var(--interactive-accent-hover) 100%)';
+        imgElement.style.borderRadius = '50%';
+        imgElement.style.animation = 'stella-pulse 1.5s ease-in-out infinite';
+
+        // Add keyframes if not already added
+        if (!document.getElementById('stella-loading-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'stella-loading-keyframes';
+            style.textContent = `
+                @keyframes stella-pulse {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.1); opacity: 0.7; }
+                }
+            `;
+            document.head.appendChild(style);
         }
     }
 
@@ -2461,17 +2489,28 @@ class StellaChatView extends ItemView {
     }
 
     loadConversations() {
+        // Clean up empty/unnamed conversations on startup
+        this.cleanupEmptyConversations();
+
         // Load current conversation from settings
         const currentId = this.plugin.settings.currentConversationId;
         if (currentId) {
-            this.loadConversation(currentId);
+            // Check if the conversation still exists after cleanup
+            const exists = this.plugin.settings.conversations.some(c => c.id === currentId);
+            if (exists) {
+                this.loadConversation(currentId);
+            } else {
+                // Conversation was cleaned up, reset to default
+                this.plugin.settings.currentConversationId = null;
+                const now = new Date();
+                const localDateStr = now.toLocaleDateString('en-CA');
+                this.conversationNameInput.value = localDateStr;
+            }
         } else {
             // Start with default title
-            // Use local date string and parse it to avoid UTC confusion
             const now = new Date();
             const localDateStr = now.toLocaleDateString('en-CA'); // Format: YYYY-MM-DD in local time
-            const dateTitle = localDateStr;
-            this.conversationNameInput.value = dateTitle;
+            this.conversationNameInput.value = localDateStr;
         }
     }
 
@@ -2626,9 +2665,9 @@ class StellaChatView extends ItemView {
     }
 
     startNewConversation() {
-        // Save current conversation if it exists
+        // Clean up current conversation if it's empty/unnamed before starting new one
         if (this.currentConversationId) {
-            this.saveCurrentConversation();
+            this.cleanupIfEmpty(this.currentConversationId);
         }
 
         // Create new conversation with date title using local time
@@ -2644,11 +2683,10 @@ class StellaChatView extends ItemView {
             updatedAt: now.getTime()
         };
 
-        // Add to plugin settings
+        // Add to plugin settings (but don't persist yet - will save when named or has messages)
         this.plugin.settings.conversations.unshift(newConversation);
         this.plugin.settings.currentConversationId = newConversation.id;
         this.currentConversationId = newConversation.id;
-        this.plugin.saveSettings();
 
         // Update UI
         this.messagesContainer.empty();
@@ -2658,7 +2696,39 @@ class StellaChatView extends ItemView {
         this.currentMentalModel = null;
         this.currentMentalModelFilename = null;
         this.conversationNameInput.value = dateTitle;
+    }
 
+    // Check if conversation title is a default date format (YYYY-MM-DD)
+    private isDefaultDateTitle(title: string): boolean {
+        return /^\d{4}-\d{2}-\d{2}$/.test(title);
+    }
+
+    // Check if a conversation is worth saving (has custom name or has messages)
+    private isWorthSaving(conversation: Conversation): boolean {
+        const hasCustomName = !this.isDefaultDateTitle(conversation.title);
+        const hasMessages = conversation.messages && conversation.messages.length > 0;
+        return hasCustomName || hasMessages;
+    }
+
+    // Clean up a conversation if it's empty and unnamed
+    private cleanupIfEmpty(conversationId: string) {
+        const conversation = this.plugin.settings.conversations.find(c => c.id === conversationId);
+        if (conversation && !this.isWorthSaving(conversation)) {
+            // Remove empty/unnamed conversation
+            this.plugin.settings.conversations = this.plugin.settings.conversations.filter(c => c.id !== conversationId);
+            console.log(`Cleaned up empty conversation: ${conversationId}`);
+        }
+    }
+
+    // Clean up all empty/unnamed conversations (call periodically)
+    private cleanupEmptyConversations() {
+        const before = this.plugin.settings.conversations.length;
+        this.plugin.settings.conversations = this.plugin.settings.conversations.filter(c => this.isWorthSaving(c));
+        const removed = before - this.plugin.settings.conversations.length;
+        if (removed > 0) {
+            console.log(`Cleaned up ${removed} empty/unnamed conversations`);
+            this.plugin.saveSettings();
+        }
     }
 
     saveConversationName() {
@@ -2668,7 +2738,9 @@ class StellaChatView extends ItemView {
         if (conversation) {
             conversation.title = this.conversationNameInput.value;
             conversation.updatedAt = Date.now();
+            // Save immediately when user names a conversation (makes it worth saving)
             this.plugin.saveSettings();
+            console.log(`Conversation named: ${conversation.title}`);
         }
     }
 
@@ -2679,10 +2751,13 @@ class StellaChatView extends ItemView {
         if (conversation) {
             conversation.messages = [...this.chatHistory];
             conversation.updatedAt = Date.now();
-            this.plugin.saveSettings();
 
-            // Update conversation metadata cache
-            this.updateConversationMetadataCache();
+            // Only persist if conversation is worth saving (has name or messages)
+            if (this.isWorthSaving(conversation)) {
+                this.plugin.saveSettings();
+                // Update conversation metadata cache
+                this.updateConversationMetadataCache();
+            }
         }
     }
 
@@ -3104,6 +3179,7 @@ class StellaChatView extends ItemView {
 
                 systemMessage += 'You have access to the following MCP (Model Context Protocol) tools through Google\'s function calling system:\n\n';
 
+                let totalToolCount = 0;
                 for (const serverInfo of this.activeMCPServers) {
                     try {
                         if (!serverInfo) {
@@ -3115,6 +3191,8 @@ class StellaChatView extends ItemView {
 
                         const tools = Array.isArray(serverInfo.tools) ? serverInfo.tools : [];
                         const prompts = Array.isArray(serverInfo.prompts) ? serverInfo.prompts : [];
+                        const highlighted = Array.isArray(serverInfo.highlightedTools) ? serverInfo.highlightedTools : [];
+                        totalToolCount += tools.length;
 
                         if (tools.length > 0) {
                             systemMessage += `=== ${serverInfo.name} Server Tools ===\n`;
@@ -3122,11 +3200,21 @@ class StellaChatView extends ItemView {
                                 try {
                                     if (tool && tool.name) {
                                         const functionName = `${serverInfo.name}_${tool.name}`;
-                                        systemMessage += `• Function: ${functionName}`;
-                                        if (tool.description) {
-                                            systemMessage += ` - ${tool.description}`;
+                                        const isHighlighted = highlighted.includes(tool.name);
+
+                                        if (isHighlighted) {
+                                            systemMessage += `• **PREFERRED** Function: ${functionName}`;
+                                            if (tool.description) {
+                                                systemMessage += ` - ${tool.description}`;
+                                            }
+                                            systemMessage += '\n  (User explicitly selected this tool - use it when relevant)\n';
+                                        } else {
+                                            systemMessage += `• Function: ${functionName}`;
+                                            if (tool.description) {
+                                                systemMessage += ` - ${tool.description}`;
+                                            }
+                                            systemMessage += '\n';
                                         }
-                                        systemMessage += '\n';
 
                                         // Add input schema information if available
                                         if (tool.inputSchema && tool.inputSchema.properties) {
@@ -3167,7 +3255,11 @@ class StellaChatView extends ItemView {
                     }
                 }
 
-                systemMessage += 'IMPORTANT: You can call these functions directly using Google\'s function calling capability. When you need to use a tool, call the corresponding function and I will automatically execute it and return the results to you. Do not ask the user to run tools - call them directly when needed.';
+                if (totalToolCount > 3) {
+                    systemMessage += '\n**DISAMBIGUATION**: If the user\'s request could apply to multiple tools, ask for clarification about which specific tool or action they want before proceeding.\n';
+                }
+
+                systemMessage += '\nIMPORTANT: You can call these functions directly using Google\'s function calling capability. When you need to use a tool, call the corresponding function and I will automatically execute it and return the results to you. Do not ask the user to run tools - call them directly when needed.';
 
                 console.log('buildSystemMessage: Final system message with MCP info:', systemMessage);
             }
@@ -3354,7 +3446,7 @@ class StellaChatView extends ItemView {
 
     async showMCPSelector() {
         const modal = new Modal(this.app);
-        modal.titleEl.setText('Select MCP Server');
+        modal.titleEl.setText('MCP Servers');
         modal.modalEl.style.width = '70vw';
         modal.modalEl.style.height = '70vh';
         modal.modalEl.style.maxWidth = '1000px';
@@ -3367,38 +3459,48 @@ class StellaChatView extends ItemView {
         try {
             // Get MCP client manager
             const mcpManager = this.plugin.mcpClientManager;
-            if (!mcpManager) {
-                contentEl.createEl('p', { text: 'MCP is not enabled. Please enable it in settings.' });
-                const settingsBtn = contentEl.createEl('button', { text: 'Open Settings', cls: 'mod-cta' });
-                settingsBtn.onclick = () => {
-                    modal.close();
-                    this.openSettings();
-                };
+
+            // Get servers from both manager AND settings (in case init is still running)
+            let servers: MCPServer[] = [];
+            if (mcpManager) {
+                servers = Array.from(mcpManager.getServers().values()) as MCPServer[];
+            }
+
+            // Also check settings for configured servers not yet in manager
+            const configuredServers = this.plugin.settings.mcpServers || [];
+            console.log(`MCP Modal: Found ${servers.length} in manager, ${configuredServers.length} in settings`);
+
+            // If no servers anywhere, show add form
+            if (servers.length === 0 && configuredServers.length === 0) {
+                this.showAddServerForm(contentEl, modal);
                 return;
             }
 
-            // Get available servers
-            const servers = Array.from(mcpManager.getServers().values()) as MCPServer[];
-
-            if (servers.length === 0) {
-                contentEl.createEl('p', { text: 'No MCP servers configured. Please add servers in settings.' });
-                const settingsBtn = contentEl.createEl('button', { text: 'Open Settings', cls: 'mod-cta' });
-                settingsBtn.onclick = () => {
-                    modal.close();
-                    this.openSettings();
-                };
-                return;
-            }
-
-            // Force refresh tools and prompts for all servers
-            for (const server of servers) {
-                if (server.connected) {
+            // If servers in settings but not in manager, try to add them
+            if (servers.length === 0 && configuredServers.length > 0 && mcpManager) {
+                contentEl.createEl('p', { text: 'Connecting to configured servers...' });
+                for (const serverConfig of configuredServers) {
                     try {
-                        await mcpManager.refreshServerTools(server.id);
-                        await mcpManager.refreshServerPrompts(server.id);
-                    } catch (error) {
-                        // Silent failure - servers will show empty tools/prompts
+                        await mcpManager.addServer(serverConfig);
+                    } catch (e) {
+                        console.error(`Failed to add server ${serverConfig.name}:`, e);
                     }
+                }
+                servers = Array.from(mcpManager.getServers().values()) as MCPServer[];
+                contentEl.empty();
+            }
+
+            // Still no servers after trying to connect?
+            if (servers.length === 0) {
+                this.showAddServerForm(contentEl, modal);
+                return;
+            }
+
+            // Refresh tools/prompts in background (don't block UI)
+            for (const server of servers) {
+                if (server.connected && mcpManager) {
+                    mcpManager.refreshServerTools(server.id).catch(() => {});
+                    mcpManager.refreshServerPrompts(server.id).catch(() => {});
                 }
             }
 
@@ -3440,16 +3542,56 @@ class StellaChatView extends ItemView {
                 serverItem.style.border = '1px solid transparent';
                 serverItem.style.backgroundColor = 'var(--background-secondary)';
 
+                const isActive = this.activeMCPServers?.some(s => s.name === server.name);
+
                 if (index === 0) {
                     serverItem.style.backgroundColor = 'var(--background-modifier-hover)';
                     serverItem.style.border = '1px solid var(--accent-color)';
                     serverItem.classList.add('selected');
                 }
 
-                const nameEl = serverItem.createDiv();
+                if (isActive) {
+                    serverItem.style.borderLeft = '3px solid var(--interactive-accent)';
+                }
+
+                // Toggle container with name and switch
+                const toggleContainer = serverItem.createDiv();
+                toggleContainer.style.display = 'flex';
+                toggleContainer.style.justifyContent = 'space-between';
+                toggleContainer.style.alignItems = 'center';
+                toggleContainer.style.marginBottom = '4px';
+
+                const nameEl = toggleContainer.createDiv();
                 nameEl.textContent = server.name;
                 nameEl.style.fontWeight = '500';
-                nameEl.style.marginBottom = '4px';
+
+                // Toggle switch
+                const toggleSwitch = toggleContainer.createEl('div');
+                toggleSwitch.className = 'stella-mcp-toggle';
+                toggleSwitch.style.cssText = `
+                    width: 40px; height: 22px;
+                    background: ${isActive ? 'var(--interactive-accent)' : 'var(--background-modifier-border)'};
+                    border-radius: 11px; cursor: pointer; position: relative;
+                    transition: background 0.2s ease; flex-shrink: 0;
+                `;
+
+                const toggleKnob = toggleSwitch.createEl('div');
+                toggleKnob.style.cssText = `
+                    width: 18px; height: 18px;
+                    background: white; border-radius: 50%;
+                    position: absolute; top: 2px;
+                    left: ${isActive ? '20px' : '2px'};
+                    transition: left 0.2s ease;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                `;
+
+                toggleSwitch.onclick = (e) => {
+                    e.stopPropagation();
+                    const newState = this.toggleMCPServer(server);
+                    toggleSwitch.style.background = newState ? 'var(--interactive-accent)' : 'var(--background-modifier-border)';
+                    toggleKnob.style.left = newState ? '20px' : '2px';
+                    serverItem.style.borderLeft = newState ? '3px solid var(--interactive-accent)' : 'none';
+                };
 
                 const statusEl = serverItem.createDiv();
                 statusEl.textContent = server.connected ? 'Connected' : 'Disconnected';
@@ -3461,19 +3603,50 @@ class StellaChatView extends ItemView {
 
                 serverItem.onclick = () => {
                     // Update selection
-                    mcpServerItems.forEach(el => {
+                    mcpServerItems.forEach((el, i) => {
                         el.style.backgroundColor = 'var(--background-secondary)';
                         el.style.border = '1px solid transparent';
                         el.classList.remove('selected');
+                        // Preserve active indicator
+                        if (this.activeMCPServers?.some(s => s.name === servers[i]?.name)) {
+                            el.style.borderLeft = '3px solid var(--interactive-accent)';
+                        }
                     });
                     serverItem.style.backgroundColor = 'var(--background-modifier-hover)';
                     serverItem.style.border = '1px solid var(--accent-color)';
+                    if (isActive || this.activeMCPServers?.some(s => s.name === server.name)) {
+                        serverItem.style.borderLeft = '3px solid var(--interactive-accent)';
+                    }
                     serverItem.classList.add('selected');
                     selectedIndex = index;
 
                     showPreview(server);
                 };
             });
+
+            // Add "Add Server" button at bottom of server list
+            const addServerBtn = serverList.createDiv();
+            addServerBtn.style.padding = '12px';
+            addServerBtn.style.marginTop = '8px';
+            addServerBtn.style.cursor = 'pointer';
+            addServerBtn.style.borderRadius = '4px';
+            addServerBtn.style.border = '1px dashed var(--background-modifier-border)';
+            addServerBtn.style.textAlign = 'center';
+            addServerBtn.style.color = 'var(--text-muted)';
+            addServerBtn.textContent = '+ Add Server';
+
+            addServerBtn.addEventListener('mouseenter', () => {
+                addServerBtn.style.backgroundColor = 'var(--background-modifier-hover)';
+                addServerBtn.style.color = 'var(--text-normal)';
+            });
+            addServerBtn.addEventListener('mouseleave', () => {
+                addServerBtn.style.backgroundColor = 'transparent';
+                addServerBtn.style.color = 'var(--text-muted)';
+            });
+
+            addServerBtn.onclick = () => {
+                this.showAddServerForm(contentEl, modal);
+            };
 
             // Preview function
             const showPreview = async (server: MCPServer) => {
@@ -3663,6 +3836,194 @@ class StellaChatView extends ItemView {
         }
     }
 
+    showAddServerForm(contentEl: HTMLElement, modal: Modal) {
+        contentEl.empty();
+
+        const formContainer = contentEl.createDiv();
+        formContainer.style.padding = '16px';
+        formContainer.style.maxWidth = '500px';
+        formContainer.style.margin = '0 auto';
+
+        formContainer.createEl('h3', { text: 'Add MCP Server' });
+        formContainer.createEl('p', {
+            text: 'Configure a new MCP server to enable AI tools.',
+            cls: 'setting-item-description'
+        });
+
+        let selectedTransport = 'stdio';
+        let nameInput: HTMLInputElement;
+        let commandInput: HTMLInputElement;
+        let argsInput: HTMLInputElement;
+        let endpointInput: HTMLInputElement;
+        let envVars: {key: string, value: string}[] = [];
+
+        // Server name
+        const nameContainer = formContainer.createDiv();
+        nameContainer.style.marginTop = '16px';
+        nameContainer.createEl('label', { text: 'Server Name' });
+        nameInput = nameContainer.createEl('input', {
+            type: 'text',
+            attr: { placeholder: 'e.g., Filesystem, GitHub, etc.' }
+        });
+        nameInput.style.width = '100%';
+        nameInput.style.marginTop = '4px';
+        nameInput.style.padding = '8px';
+
+        // Transport toggle
+        const transportContainer = formContainer.createDiv();
+        transportContainer.style.marginTop = '16px';
+        transportContainer.createEl('label', { text: 'Server Type' });
+
+        const transportToggle = transportContainer.createDiv();
+        transportToggle.style.marginTop = '8px';
+        transportToggle.style.display = 'flex';
+        transportToggle.style.gap = '16px';
+
+        const stdioOption = transportToggle.createEl('label');
+        stdioOption.style.cursor = 'pointer';
+        stdioOption.style.display = 'flex';
+        stdioOption.style.alignItems = 'center';
+        stdioOption.style.gap = '6px';
+        const stdioRadio = stdioOption.createEl('input', { type: 'radio', value: 'stdio' });
+        stdioRadio.name = 'transport';
+        stdioRadio.checked = true;
+        stdioOption.createSpan({ text: 'Local (stdio)' });
+
+        const httpOption = transportToggle.createEl('label');
+        httpOption.style.cursor = 'pointer';
+        httpOption.style.display = 'flex';
+        httpOption.style.alignItems = 'center';
+        httpOption.style.gap = '6px';
+        const httpRadio = httpOption.createEl('input', { type: 'radio', value: 'http' });
+        httpRadio.name = 'transport';
+        httpOption.createSpan({ text: 'Remote (WebSocket)' });
+
+        // Configuration container
+        const configContainer = formContainer.createDiv();
+        configContainer.style.marginTop = '16px';
+
+        const updateConfig = () => {
+            configContainer.empty();
+
+            if (selectedTransport === 'stdio') {
+                // Command
+                configContainer.createEl('label', { text: 'Command' });
+                commandInput = configContainer.createEl('input', {
+                    type: 'text',
+                    value: 'npx',
+                    attr: { placeholder: 'npx' }
+                });
+                commandInput.style.width = '100%';
+                commandInput.style.marginTop = '4px';
+                commandInput.style.padding = '8px';
+
+                // Arguments
+                const argsLabel = configContainer.createEl('label', { text: 'Arguments' });
+                argsLabel.style.marginTop = '12px';
+                argsLabel.style.display = 'block';
+                argsInput = configContainer.createEl('input', {
+                    type: 'text',
+                    attr: { placeholder: '-y @modelcontextprotocol/server-filesystem /path' }
+                });
+                argsInput.style.width = '100%';
+                argsInput.style.marginTop = '4px';
+                argsInput.style.padding = '8px';
+
+                // Example text
+                const exampleText = configContainer.createEl('p', {
+                    text: 'Example: npx -y @modelcontextprotocol/server-filesystem /home/user/documents',
+                    cls: 'setting-item-description'
+                });
+                exampleText.style.marginTop = '8px';
+                exampleText.style.fontSize = '12px';
+
+            } else {
+                // WebSocket endpoint
+                configContainer.createEl('label', { text: 'WebSocket Endpoint' });
+                endpointInput = configContainer.createEl('input', {
+                    type: 'url',
+                    attr: { placeholder: 'wss://your-mcp-server.com/mcp' }
+                });
+                endpointInput.style.width = '100%';
+                endpointInput.style.marginTop = '4px';
+                endpointInput.style.padding = '8px';
+            }
+        };
+
+        stdioRadio.onchange = () => {
+            selectedTransport = 'stdio';
+            updateConfig();
+        };
+
+        httpRadio.onchange = () => {
+            selectedTransport = 'http';
+            updateConfig();
+        };
+
+        updateConfig();
+
+        // Action buttons
+        const buttonContainer = formContainer.createDiv();
+        buttonContainer.style.marginTop = '24px';
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.gap = '8px';
+        buttonContainer.style.justifyContent = 'flex-end';
+
+        const cancelBtn = buttonContainer.createEl('button', { text: 'Cancel' });
+        cancelBtn.onclick = () => modal.close();
+
+        const saveBtn = buttonContainer.createEl('button', { text: 'Add Server', cls: 'mod-cta' });
+        saveBtn.onclick = async () => {
+            const name = nameInput.value.trim();
+            if (!name) {
+                nameInput.style.border = '1px solid var(--text-error)';
+                return;
+            }
+
+            // Create server config
+            const serverConfig: MCPServer = {
+                id: `mcp-${Date.now()}`,
+                name,
+                transport: selectedTransport as 'stdio' | 'http',
+                connected: false
+            };
+
+            if (selectedTransport === 'stdio') {
+                serverConfig.command = commandInput?.value.trim() || 'npx';
+                serverConfig.args = argsInput?.value.trim().split(' ').filter(a => a);
+            } else {
+                serverConfig.endpoint = endpointInput?.value.trim();
+            }
+
+            // Add to settings
+            if (!this.plugin.settings.mcpServers) {
+                this.plugin.settings.mcpServers = [];
+            }
+            this.plugin.settings.mcpServers.push(serverConfig);
+
+            // Enable MCP if not already
+            this.plugin.settings.mcpEnabled = true;
+            await this.plugin.saveSettings();
+
+            // Try to connect
+            try {
+                const success = await this.plugin.mcpClientManager.addServer(serverConfig);
+                if (success) {
+                    this.addMessage(`Connected to MCP server "${name}". Use /mcp to select tools.`, 'system');
+                } else {
+                    this.addMessage(`Added MCP server "${name}" but connection failed. Check settings.`, 'error');
+                }
+            } catch (error) {
+                this.addMessage(`Added MCP server "${name}" but connection failed: ${error.message}`, 'error');
+            }
+
+            modal.close();
+        };
+
+        // Focus name input
+        setTimeout(() => nameInput.focus(), 100);
+    }
+
     activateMCPServer(server: MCPServer) {
         try {
             // Ensure activeMCPServers is initialized as an array
@@ -3683,30 +4044,58 @@ class StellaChatView extends ItemView {
             this.activeMCPServers = [];
         }
 
-        // Get tools and prompts for this server with enhanced error handling
+        // Get tools, prompts, and resources for this server with enhanced error handling
         try {
             const mcpManager = this.plugin.mcpClientManager;
             const tools = mcpManager?.getTools().get(server.id) || [];
             const prompts = mcpManager?.getPrompts().get(server.id) || [];
+            const resources = mcpManager?.getResources().get(server.id) || [];
 
-            console.log(`MCP Debug - Activating server ${server.name} with ${tools.length} tools and ${prompts.length} prompts`);
+            console.log(`MCP Debug - Activating server ${server.name} with ${tools.length} tools, ${prompts.length} prompts, and ${resources.length} resources`);
 
             this.activeMCPServers.push({
                 name: server.name,
                 tools: tools || [],
-                prompts: prompts || []
+                prompts: prompts || [],
+                resources: resources || [],
+                highlightedTools: []
             });
+            this.addMessage(`MCP server "${server.name}" activated with ${tools.length} tools, ${prompts.length} prompts, and ${resources.length} resources.`, 'system');
         } catch (error) {
             console.error('Error activating MCP server:', server.name, error);
             // Add server with empty arrays to prevent undefined errors
             this.activeMCPServers.push({
                 name: server.name,
                 tools: [],
-                prompts: []
+                prompts: [],
+                resources: [],
+                highlightedTools: []
             });
         }
 
         this.updateMCPIndicator();
+    }
+
+    deactivateMCPServer(serverName: string) {
+        if (!this.activeMCPServers || !Array.isArray(this.activeMCPServers)) {
+            return;
+        }
+        const index = this.activeMCPServers.findIndex(s => s.name === serverName);
+        if (index >= 0) {
+            this.activeMCPServers.splice(index, 1);
+            this.addMessage(`MCP server "${serverName}" deactivated.`, 'system');
+        }
+        this.updateMCPIndicator();
+    }
+
+    toggleMCPServer(server: MCPServer): boolean {
+        const isActive = this.activeMCPServers?.some(s => s.name === server.name);
+        if (isActive) {
+            this.deactivateMCPServer(server.name);
+        } else {
+            this.activateMCPServer(server);
+        }
+        return !isActive;
     }
 
     async executeMCPTool(functionName: string, args: any): Promise<any> {
@@ -3783,7 +4172,17 @@ class StellaChatView extends ItemView {
                 serverEntry = this.activeMCPServers.find(s => s.name === serverName);
             }
 
-            // Tool activated silently
+            // Add tool to highlighted list
+            if (serverEntry) {
+                if (!serverEntry.highlightedTools) {
+                    serverEntry.highlightedTools = [];
+                }
+                if (!serverEntry.highlightedTools.includes(tool.name)) {
+                    serverEntry.highlightedTools.push(tool.name);
+                    this.addMessage(`Tool "${tool.name}" highlighted for priority use.`, 'system');
+                }
+                this.updateMCPIndicator();
+            }
         } catch (error) {
             console.error('Error activating MCP tool:', serverName, tool.name, error);
         }
@@ -3814,9 +4213,14 @@ class StellaChatView extends ItemView {
 
                     const tools = activeServer.tools || [];
                     const prompts = activeServer.prompts || [];
+                    const resources = activeServer.resources || [];
+                    const highlighted = activeServer.highlightedTools || [];
 
                     if (tools.length > 0) {
-                        const toolNames = tools.map(t => `  • ${t.name}`).join('\n');
+                        const toolNames = tools.map(t => {
+                            const isHighlighted = highlighted.includes(t.name);
+                            return `  ${isHighlighted ? '★' : '•'} ${t.name}${isHighlighted ? ' (selected)' : ''}`;
+                        }).join('\n');
                         tooltipLines.push(toolNames);
                     }
 
@@ -3825,7 +4229,12 @@ class StellaChatView extends ItemView {
                         tooltipLines.push(promptNames);
                     }
 
-                    if (tools.length === 0 && prompts.length === 0) {
+                    if (resources.length > 0) {
+                        const resourceNames = resources.map(r => `  • ${r.name} (resource)`).join('\n');
+                        tooltipLines.push(resourceNames);
+                    }
+
+                    if (tools.length === 0 && prompts.length === 0 && resources.length === 0) {
                         tooltipLines.push('  • (server only)');
                     }
                 } catch (error) {
@@ -4439,35 +4848,66 @@ class StellaSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        // System prompts directory setting
-        new Setting(containerEl)
+        // System prompts directory setting with browse button
+        const systemPromptsPathSetting = new Setting(containerEl)
             .setName('System Prompts Directory')
-            .setDesc('Path to directory containing your system prompt .md files (for /sys command)')
-            .addText(text => text
-                .setPlaceholder('/path/to/your/system-prompts')
+            .setDesc('Path to directory containing your system prompt .md files (for /sys command)');
+        let systemPromptsInput: any;
+        systemPromptsPathSetting.addText(text => {
+            systemPromptsInput = text;
+            text.setPlaceholder('/path/to/your/system-prompts')
                 .setValue(this.plugin.settings.systemPromptsPath)
                 .onChange(async (value) => {
                     this.plugin.settings.systemPromptsPath = value;
                     await this.plugin.saveSettings();
-                }));
+                });
+        });
+        systemPromptsPathSetting.addButton(button => button
+            .setButtonText('Browse')
+            .onClick(async () => {
+                const folders = this.app.vault.getAllLoadedFiles().filter(f => (f as any).children !== undefined);
+                const modal = new FolderSuggestModal(this.app, folders, async (folder) => {
+                    this.plugin.settings.systemPromptsPath = folder.path;
+                    systemPromptsInput.setValue(folder.path);
+                    await this.plugin.saveSettings();
+                });
+                modal.open();
+            }));
 
-        new Setting(containerEl)
+        // Mental models directory setting with browse button
+        const mentalModelsPathSetting = new Setting(containerEl)
             .setName('Mental Models Directory')
-            .setDesc('Path to directory containing your mental model .md files (for /model command)')
-            .addText(text => text
-                .setPlaceholder('/path/to/your/mental-models')
+            .setDesc('Path to directory containing your mental model .md files (for /model command)');
+        let mentalModelsInput: any;
+        mentalModelsPathSetting.addText(text => {
+            mentalModelsInput = text;
+            text.setPlaceholder('/path/to/your/mental-models')
                 .setValue(this.plugin.settings.mentalModelsPath)
                 .onChange(async (value) => {
                     this.plugin.settings.mentalModelsPath = value;
                     await this.plugin.saveSettings();
-                }));
+                });
+        });
+        mentalModelsPathSetting.addButton(button => button
+            .setButtonText('Browse')
+            .onClick(async () => {
+                const folders = this.app.vault.getAllLoadedFiles().filter(f => (f as any).children !== undefined);
+                const modal = new FolderSuggestModal(this.app, folders, async (folder) => {
+                    this.plugin.settings.mentalModelsPath = folder.path;
+                    mentalModelsInput.setValue(folder.path);
+                    await this.plugin.saveSettings();
+                });
+                modal.open();
+            }));
 
-
-        new Setting(containerEl)
+        // Background image setting with browse button
+        const backgroundImageSetting = new Setting(containerEl)
             .setName('Background Image URL/Path')
-            .setDesc('URL or local file path to background image for chat area')
-            .addText(text => text
-                .setPlaceholder('https://example.com/image.jpg or /path/to/image.png')
+            .setDesc('URL or local file path to background image for chat area');
+        let backgroundImageInput: any;
+        backgroundImageSetting.addText(text => {
+            backgroundImageInput = text;
+            text.setPlaceholder('https://example.com/image.jpg or /path/to/image.png')
                 .setValue(this.plugin.settings.backgroundImage)
                 .onChange(async (value) => {
                     this.plugin.settings.backgroundImage = value;
@@ -4479,7 +4919,30 @@ class StellaSettingTab extends PluginSettingTab {
                             chatView.updateBackgroundImage();
                         }
                     });
-                }));
+                });
+        });
+        backgroundImageSetting.addButton(button => button
+            .setButtonText('Browse')
+            .onClick(async () => {
+                const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
+                const files = this.app.vault.getFiles().filter(f => imageExtensions.includes(f.extension.toLowerCase()));
+                if (files.length === 0) {
+                    new Notice('No image files found in your vault.');
+                    return;
+                }
+                const modal = new FileSuggestModal(this.app, files, async (file) => {
+                    this.plugin.settings.backgroundImage = file.path;
+                    backgroundImageInput.setValue(file.path);
+                    await this.plugin.saveSettings();
+                    this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach(leaf => {
+                        const chatView = leaf.view as StellaChatView;
+                        if (chatView && chatView.updateBackgroundImage) {
+                            chatView.updateBackgroundImage();
+                        }
+                    });
+                });
+                modal.open();
+            }));
 
         new Setting(containerEl)
             .setName('Background Display Mode')
@@ -4519,6 +4982,36 @@ class StellaSettingTab extends PluginSettingTab {
                         }
                     });
                 }));
+
+        // Loading GIF setting with browse button
+        const loadingGifSetting = new Setting(containerEl)
+            .setName('Loading Animation GIF')
+            .setDesc('Custom GIF to display while waiting for AI response (leave empty for default)');
+        let loadingGifInput: any;
+        loadingGifSetting.addText(text => {
+            loadingGifInput = text;
+            text.setPlaceholder('path/to/your/animation.gif')
+                .setValue(this.plugin.settings.loadingGif)
+                .onChange(async (value) => {
+                    this.plugin.settings.loadingGif = value;
+                    await this.plugin.saveSettings();
+                });
+        });
+        loadingGifSetting.addButton(button => button
+            .setButtonText('Browse')
+            .onClick(async () => {
+                const files = this.app.vault.getFiles().filter(f => f.extension.toLowerCase() === 'gif');
+                if (files.length === 0) {
+                    new Notice('No GIF files found in your vault. Add a .gif file to your vault first.');
+                    return;
+                }
+                const modal = new FileSuggestModal(this.app, files, async (file) => {
+                    this.plugin.settings.loadingGif = file.path;
+                    loadingGifInput.setValue(file.path);
+                    await this.plugin.saveSettings();
+                });
+                modal.open();
+            }));
 
         // Auto-hide header toggle
         new Setting(containerEl)

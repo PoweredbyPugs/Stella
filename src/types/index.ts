@@ -106,6 +106,7 @@ export interface StellaSettings {
     backgroundImage: string;
     backgroundMode: 'centered' | 'fill' | 'stretch';
     backgroundOpacity: number;
+    loadingGif: string;
     autoHideHeader: boolean;
     quickAddCommands: QuickAddCommand[];
     showTokenCount: boolean;
@@ -151,6 +152,7 @@ export const DEFAULT_SETTINGS: StellaSettings = {
     backgroundImage: '',
     backgroundMode: 'centered',
     backgroundOpacity: 0.5,
+    loadingGif: '',
     autoHideHeader: false,
     quickAddCommands: [
         {

@@ -1050,25 +1050,70 @@
     padding: 12px;
     margin-bottom: 8px;
     background: var(--background-secondary);
+    overflow: hidden;
 }
 
 .quickadd-command-item .setting-item {
     border: none;
     padding: 4px 0;
+    flex-wrap: wrap;
 }
 
 .quickadd-command-item .setting-item-control {
     gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: flex-start;
 }
 
 .quickadd-command-item .setting-item-control input[type="text"] {
-    min-width: 150px;
+    min-width: 120px;
+    max-width: 100%;
+    flex: 1 1 120px;
 }
 
 .quickadd-command-item .setting-item-control textarea {
-    min-width: 200px;
+    min-width: 100%;
+    width: 100%;
     min-height: 60px;
     resize: vertical;
+    flex-basis: 100%;
+}
+
+.quickadd-command-item .setting-item-control button {
+    flex-shrink: 0;
+    margin-top: 8px;
+}
+
+.quickadd-command-item .setting-item-info {
+    flex-basis: 100%;
+    margin-bottom: 8px;
+}
+
+/* Stella Settings Path Inputs with Browse Buttons */
+.stella-setting-path .setting-item-control {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.stella-setting-path .setting-item-control input[type="text"] {
+    flex: 1 1 200px;
+    min-width: 150px;
+}
+
+.stella-setting-path .setting-item-control button {
+    flex-shrink: 0;
+}
+
+/* Fix for settings with multiple buttons */
+.setting-item-control {
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.setting-item-control button {
+    white-space: nowrap;
 }
 
 /* Pagination Styles */
