@@ -1579,7 +1579,12 @@ CHART_SIZES = {
         "depth": """Distilled portrait. Every lens touched in a phrase or sentence.
 Who this person is at their core, their dominant strength, their central tension,
 where they are right now in life. Like a therapist's first-session impression.
-No astrology language — pure human insight, compressed to its essence.""",
+No astrology language — pure human insight, compressed to its essence.
+
+CLOSING: End the entire reading with ONE quote or beautifully written sentence
+in the spirit of a Stoic, Jung, or Alan Watts — something that captures
+the essence of this person's chart. If the knowledge graph has a perfect
+passage, use it. Otherwise, compose one.""",
         "knowledge_results": 1,  # per query
     },
     "s": {
@@ -1589,7 +1594,10 @@ No astrology language — pure human insight, compressed to its essence.""",
 What drives this person, what holds them back, how they relate to others.
 The central psychological tension and the primary coping strategy.
 Where they are in their life's arc right now and why it matters.
-Written as insight, not analysis. Like a letter from someone who understands.""",
+Written as insight, not analysis. Like a letter from someone who understands.
+
+CLOSING: End with ONE quote or beautifully written sentence — Stoic, Jungian,
+or contemplative in tone — that captures the whole.""",
         "knowledge_results": 2,
     },
     "m": {
@@ -1602,7 +1610,12 @@ What they attract in relationships and why. How early life shaped their coping.
 Their natural gifts and where they overcompensate. How motivation and purpose
 flow through their life. The current chapter and what it's asking of them.
 Written as a continuous narrative — warm, direct, psychologically grounded.
-Knowledge graph material absorbed and synthesized, never cited as astrology.""",
+Knowledge graph material absorbed and synthesized, never cited as astrology.
+
+SECTION CLOSINGS: At the end of 2-3 key sections, include a one-sentence
+summary written beautifully — in the spirit of a Stoic, Jung, or Alan Watts.
+These are distillations, not decorations. End the full reading with a quote
+from the knowledge graph if one fits, or compose a closing aphorism.""",
         "knowledge_results": 3,
     },
     "l": {
@@ -1628,7 +1641,13 @@ Psychological frameworks woven throughout: attachment theory, Jungian
 individuation, shadow work, internal family systems, developmental stages.
 The knowledge graph material fully absorbed and expressed as insight.
 The current life chapter given biographical weight — where have they been,
-where are they now, what's being asked of them.""",
+where are they now, what's being asked of them.
+
+SECTION CLOSINGS: End most sections with a one-sentence closing —
+beautifully written in the voice of a Stoic, Jung, or Alan Watts.
+If the knowledge graph contains a passage that captures the section's
+essence, quote it directly (attributed). Otherwise compose an aphorism
+that distills the section. These closings are the heartbeat of the reading.""",
         "knowledge_results": 4,
     },
     "xl": {
@@ -1670,7 +1689,22 @@ Express it as human truth. The reader should feel *seen* — not analyzed.
 
 Actionable synthesis: What does this person need to understand about
 themselves right now? Where are the growth edges? What's the invitation?
-What would a wise friend who could see everything say to them?""",
+What would a wise friend who could see everything say to them?
+
+SECTION CLOSINGS — CRITICAL:
+After EVERY section, include a closing quote or aphorism. Two options:
+1. PREFERRED: A direct quote from the knowledge graph source material
+   that resonates with the section's insight. Attribute it:
+   *"The soul becomes dyed with the color of its thoughts." — Marcus Aurelius*
+   Search the knowledge graph excerpts for passages from Tarnas, Sasportas,
+   the Gnostic Book of Changes, Stoic philosophy, or the archetypal layer
+   that match the section's theme. Use the actual text when it fits.
+2. FALLBACK: If no knowledge graph passage fits, compose a one-sentence
+   aphorism in the spirit of the Stoics, Jung, or Alan Watts. Make it
+   beautiful, specific to this section, not generic.
+
+These closings are not decoration. They are the resonant frequency of each
+section — the thing that lingers after the analysis fades.""",
         "knowledge_results": 5,
     },
 }
