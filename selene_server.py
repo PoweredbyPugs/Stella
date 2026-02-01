@@ -86,6 +86,15 @@ def embed_query(text: str) -> list[float]:
     return response.data[0].embedding
 
 
+def embed_batch(texts: list[str]) -> list[list[float]]:
+    """Embed multiple texts in a single API call. Much faster than one-by-one."""
+    if not texts:
+        return []
+    client = get_openai_client()
+    response = client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
+    return [item.embedding for item in sorted(response.data, key=lambda x: x.index)]
+
+
 def load_json(filename: str):
     filepath = SELENE_DIR / filename
     if filepath.exists():
@@ -1294,6 +1303,459 @@ For each day of the week, provide:
 - Practical recommendations for each day based on these combined influences
 
 Include a section on which life areas (houses) are most activated this week based on planetary activity of their rulers, and what that means for personal planning. Present this as a practical guide that incorporates house rulership principles while remaining accessible to those with limited astrological knowledge."""
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 6: CHART READING — Full Computation + Knowledge-Grounded Narrative
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# The chart reading pipeline:
+#   1. full_chart_computation(name) — gathers ALL data from Helios into one payload
+#   2. _gather_knowledge(chart_data) — queries knowledge graph for every placement
+#   3. chart_reading(name, size, perspective) — returns computation + knowledge + narrative prompt
+#
+# The LLM receives everything it needs to write the interpretation.
+# Selene provides data + sources + guidelines. The LLM synthesizes.
+
+
+# ── Size definitions ──
+
+CHART_SIZES = {
+    "xs": {
+        "label": "XS — The Glance",
+        "target_length": "3-5 sentences",
+        "depth": """Distilled framework. Every lens touched in a phrase or sentence.
+Core identity (Sun/Moon/Rising), dominant dignity/debility, lord of the year,
+current ZR chapter, one key transit. Like reading the weather before you walk outside.
+The bones of the chart in concise, precise language.""",
+        "knowledge_results": 1,  # per query
+    },
+    "s": {
+        "label": "S — Key Themes",
+        "target_length": "2-3 paragraphs",
+        "depth": """Framework plus the 2-3 most dominant themes fleshed out.
+Sect analysis and what it means for this person. Most/least dignified planets
+and how they shape daily experience. The depositor chain's central node.
+Current timing (profections + ZR) as context for everything.
+Knowledge sources cited where they illuminate.""",
+        "knowledge_results": 2,
+    },
+    "m": {
+        "label": "M — Working Reading",
+        "target_length": "1-2 pages",
+        "depth": """All interpretive lenses addressed with moderate depth.
+Each planet gets its dignity assessment woven into the narrative of how this
+person navigates life. House rulerships traced — where does each house lord
+fall and what does that mean for that domain? Aspect patterns interpreted as
+psychological dynamics, not just geometric facts. Depositor chains as power
+flows. Timing techniques integrated as "where you are now in the story."
+Knowledge graph sources woven naturally — Brennan on technique, Lehman on
+dignities, Tarnas on archetypes, Sasportas on houses. No deep psychological
+excavation yet, but the emotional body and relational patterns are addressed.""",
+        "knowledge_results": 3,
+    },
+    "l": {
+        "label": "L — Full Narrative",
+        "target_length": "3-5 pages",
+        "depth": """Full narrative interpretation across all lenses.
+External self vs. internal self traced through Sun/ASC/1H ruler vs. Moon/4H/IC.
+The emotional body — how this person takes in the world (Moon, water houses,
+aspects to Moon) and how that resonates outward. The mirror — 7th house, DSC,
+what people reflect back. Conscious vs. unconscious (hemispheric emphasis,
+12th house, Pluto/Neptune as buried material). Strengths and weaknesses as
+expression patterns, not judgments. Depositor chains as the chart's internal
+logic. Every house ruler traced to its placement.
+
+Knowledge graph sources integrated throughout — direct quotes and concepts
+from the corpus that illuminate specific placements. Psychological frameworks
+(attachment, shadow, individuation) woven where they add depth.
+Timing as life chapters — where has this person been, where are they going.""",
+        "knowledge_results": 4,
+    },
+    "xl": {
+        "label": "XL — The Deep Dive",
+        "target_length": "5-10+ pages",
+        "depth": """Exhaustive meaning-making. The full operating system.
+
+Every lens explored in full depth:
+- External self / Internal self: How the projected identity (Sun, ASC, 1H ruler)
+  interacts with the felt inner world (Moon, 4H, IC). Where they align, where
+  they create tension.
+- The emotional body: Moon sign, house, aspects. Water house activity. How this
+  person receives and processes experience. What feels safe, what triggers defense.
+- The mirror: 7H, DSC ruler, planets there. What this person attracts in others,
+  what gets projected outward, the feedback loop between self and world.
+- Formative imprints: 4H, Moon, Saturn aspects, IC. What childhood conditions
+  shaped the expression of the chart. Not deterministic — but the soil the seed
+  grew in.
+- Conscious / Unconscious: Hemispheric emphasis. Above/below horizon. 12H as
+  the hidden room. Pluto/Neptune aspects as material that operates below awareness.
+- Personal / Public: Houses 1-6 vs 7-12. Where is the weight? Private builder
+  or public performer?
+- Strengths / Weaknesses: Dignities and debilities as expression patterns.
+  A planet in detriment isn't broken — it expresses with friction, with effort,
+  sometimes with compensatory brilliance.
+- Depositor chains: Follow the rulership. Where does power flow? Where does it
+  pool? Where does it leak?
+
+Knowledge graph pulled extensively — Brennan for Hellenistic technique, Lehman
+for dignity analysis, Tarnas for archetypal framing, Sasportas for house
+psychology, planet PDFs for detailed delineations. Direct concepts and frameworks
+from the corpus woven throughout.
+
+Timing integration as biographical context — profections as annual chapters,
+ZR as decades-long arcs. Current transits as the weather within the season.
+
+Actionable synthesis: What does this person need to understand about themselves?
+Where are the growth edges? What's the invitation of the current chapter?""",
+        "knowledge_results": 5,
+    },
+}
+
+
+# ── Perspectives ──
+
+PERSPECTIVES = {
+    "psychological": """Interpretive philosophy: NON-FATALIST, NON-DETERMINISTIC.
+The chart describes archetypal fields of possibility, not fixed outcomes.
+Planets in challenging conditions (detriment, fall) represent areas where
+expression requires more conscious effort — not doom. Use psychological
+frameworks where they illuminate: attachment patterns, individuation,
+shadow work, defense mechanisms. The goal is self-understanding that
+increases agency and autonomy.
+
+Voice: Warm but precise. Speak to the person, not about them. Second person
+where natural. No cookbook platitudes. Specific to THIS chart.
+
+Source integration: Weave knowledge graph material naturally — "as Brennan
+notes about sect..." or "Tarnas describes this archetypal pattern as..."
+Don't just list sources; let them inform the interpretation.""",
+
+    "deterministic": """Interpretive philosophy: DETERMINISTIC (GTEI framework).
+The chart is a necessitated expression of Absolute Self-Consistency (ASC).
+Every placement, aspect, and timing event is the only possible configuration
+— the singular, self-consistent solution to this person's coherence equation.
+
+Analyze through the 5 Primordial Categories:
+- Distinction/Unity: This individual chart within the collective
+- Relation/Separation: Aspects and house relationships as necessitated connections
+- Potentiality/Actuality: Natal chart as potential, timing as actualization
+- Quantity/Quality: Dignities (quantitative) yielding qualitative expression
+- Process/State: Timing techniques as process, natal positions as state
+
+"Free will" is reinterpreted as self-generated determinism — the maximally
+coherent pathway from this IEI's internal potentials.
+
+Voice: Authoritative, philosophical. Frame everything as necessitated unfolding.
+End with a human-readable synthesis in everyday language and one
+coherence-aiding question for the reader.""",
+}
+
+
+@mcp.tool()
+async def full_chart_computation(name: str) -> str:
+    """Gather ALL computational data for a natal chart in one call.
+
+    Returns every piece of astrological data Helios can compute:
+    planets, dignities, depositors, houses, angles, lots, sect,
+    aspects, profections, zodiacal releasing, and current transits.
+
+    This is the raw data layer. Always maximal, regardless of report size.
+
+    Args:
+        name: Chart name (must exist in Helios or local storage)
+    """
+    results = {}
+    errors = []
+
+    # 1. Full chart data (planets, houses, angles, lots, depositors, sect)
+    try:
+        results["chart"] = await call_sweph(f"/chart/{name}")
+    except Exception as e:
+        errors.append(f"chart: {e}")
+        # Try local storage as fallback
+        local = _load_local_chart(name)
+        if local:
+            results["chart"] = local
+        else:
+            return json.dumps({"error": f"Chart '{name}' not found", "details": errors})
+
+    # 2. Essential dignities for every planet in the chart
+    chart = results.get("chart", {})
+    planets = chart.get("planets", [])
+    sect = chart.get("sect", {})
+    is_day = sect.get("isDaySect", True)
+
+    dignity_results = []
+    for p in planets:
+        p_name = p.get("name", "")
+        lon = p.get("longitude")
+        if lon and p_name not in ("North Node", "South Node", "Chiron"):
+            try:
+                dignity = await call_sweph(
+                    f"/dignity-score?planet={p_name}&longitude={lon}&isDaySect={'true' if is_day else 'false'}"
+                )
+                dignity_results.append(dignity)
+            except Exception as e:
+                errors.append(f"dignity {p_name}: {e}")
+    results["dignities"] = dignity_results
+
+    # 3. Current aspects between all planets
+    try:
+        results["current_aspects"] = await call_sweph("/aspects-now")
+    except Exception as e:
+        errors.append(f"aspects: {e}")
+
+    # 4. Profections
+    try:
+        results["profections"] = await call_sweph(f"/profections/{name}")
+    except Exception as e:
+        errors.append(f"profections: {e}")
+
+    # 5. Zodiacal Releasing (both lots)
+    for lot in ["spirit", "fortune"]:
+        try:
+            results[f"zr_{lot}"] = await call_sweph(f"/zr/{name}?lot={lot}")
+        except Exception as e:
+            errors.append(f"zr_{lot}: {e}")
+
+    # 6. Current transits to natal
+    try:
+        results["transits"] = await call_sweph(f"/transits/{name}/now?major=true")
+    except Exception as e:
+        errors.append(f"transits: {e}")
+
+    # 7. Transit summary (compact view with timing context)
+    try:
+        results["transit_summary"] = await call_sweph(f"/transits/{name}/summary")
+    except Exception as e:
+        errors.append(f"transit_summary: {e}")
+
+    # 8. Current planetary positions (for context)
+    try:
+        results["current_positions"] = await call_sweph("/planets-now")
+    except Exception as e:
+        errors.append(f"current_positions: {e}")
+
+    # 9. Current moon
+    try:
+        results["current_moon"] = await call_sweph("/moon-now")
+    except Exception as e:
+        errors.append(f"current_moon: {e}")
+
+    if errors:
+        results["_warnings"] = errors
+
+    return json.dumps(results, indent=2)
+
+
+def _gather_knowledge_for_chart(chart_data: dict, results_per_query: int = 3) -> list[dict]:
+    """Query the knowledge graph for every significant placement in the chart.
+
+    Batches all embedding calls into a single API request for speed.
+    Pulls interpretive material across all layers for every planet,
+    plus timing techniques (profections, ZR).
+
+    Returns a list of {query, layer, results} dicts.
+    """
+    collection = get_collection()
+
+    chart = chart_data.get("chart", {})
+    planets = chart.get("planets", [])
+
+    # ── Build all queries upfront ──
+    queries = []  # list of (query_text, label, where_filter)
+
+    for p in planets:
+        name = p.get("name", "")
+        sign = p.get("sign", "")
+        house = p.get("house", "")
+        if not name or name in ("Chiron",):
+            continue
+
+        # Technical: dignity, rulership, condition
+        queries.append((
+            f"{name} in {sign} essential dignity condition",
+            f"{name} in {sign} (technical)",
+            {"layer": "technical"},
+        ))
+
+        # Psychological: house meaning
+        if house:
+            queries.append((
+                f"{name} in {house} house psychological meaning",
+                f"{name} in house {house} (psychological)",
+                {"layer": "psychological"},
+            ))
+
+        # Reference: delineation
+        queries.append((
+            f"{name} in {sign} {house} house delineation interpretation",
+            f"{name} in {sign} in {house}H (reference)",
+            {"layer": "reference"},
+        ))
+
+    # Archetypal: notable dignities/debilities
+    dignities = chart_data.get("dignities", [])
+    for d in dignities:
+        if d.get("detriment") or d.get("fall") or d.get("domicile") or d.get("exaltation"):
+            planet = d.get("planet", "")
+            sign = d.get("sign", "")
+            condition = d.get("condition", "")
+            queries.append((
+                f"{planet} in {sign} {condition} archetypal meaning",
+                f"{planet} in {sign} ({condition}, archetypal)",
+                {"layer": "archetypal"},
+            ))
+
+    # Timing: profections
+    profections = chart_data.get("profections", {})
+    lord_of_year = profections.get("profection", {}).get("lordOfYear", "")
+    if lord_of_year:
+        queries.append((
+            f"{lord_of_year} profection year lord annual profections",
+            f"Lord of year: {lord_of_year} (profections)",
+            None,
+        ))
+
+    # Timing: ZR
+    zr_spirit = chart_data.get("zr_spirit", {})
+    zr_sign = zr_spirit.get("activePeriod", {}).get("sign", "")
+    zr_ruler = zr_spirit.get("activePeriod", {}).get("ruler", "")
+    if zr_sign:
+        queries.append((
+            f"zodiacal releasing {zr_sign} {zr_ruler} spirit period",
+            f"ZR Spirit L1: {zr_sign} ruled by {zr_ruler}",
+            {"layer": "technical"},
+        ))
+
+    # ── Batch embed all queries in ONE API call ──
+    query_texts = [q[0] for q in queries]
+    embeddings = embed_batch(query_texts)
+
+    # ── Run ChromaDB queries with pre-computed embeddings ──
+    knowledge_hits = []
+    for (query_text, label, where_filter), embedding in zip(queries, embeddings):
+        try:
+            kwargs = {
+                "query_embeddings": [embedding],
+                "n_results": results_per_query,
+            }
+            if where_filter:
+                kwargs["where"] = where_filter
+
+            results = collection.query(**kwargs)
+
+            if results["documents"][0]:
+                knowledge_hits.append({
+                    "query": label,
+                    "results": [
+                        {
+                            "text": doc[:500],
+                            "author": meta.get("source_author", "?"),
+                            "title": meta.get("source_title", "?"),
+                            "relevance": round(1 - dist, 3),
+                        }
+                        for doc, meta, dist in zip(
+                            results["documents"][0],
+                            results["metadatas"][0],
+                            results["distances"][0],
+                        )
+                    ],
+                })
+        except Exception:
+            pass
+
+    return knowledge_hits
+
+
+@mcp.tool()
+async def chart_reading(
+    name: str,
+    size: str = "m",
+    perspective: str = "psychological",
+) -> str:
+    """Generate a complete chart reading: full computation + knowledge graph + narrative prompt.
+
+    This is the main chart interpretation tool. It:
+    1. Computes ALL chart data from Helios (always maximal)
+    2. Queries the knowledge graph for every placement (grounded in the corpus)
+    3. Returns everything packaged with narrative guidelines for the requested size
+
+    The LLM receives: raw data + source material + interpretation instructions.
+    The LLM synthesizes the narrative.
+
+    Args:
+        name: Chart name (e.g. 'chris', 'katy', 'megan')
+        size: xs | s | m | l | xl (default: m)
+        perspective: psychological (default) | deterministic (GTEI)
+    """
+    size = size.lower()
+    if size not in CHART_SIZES:
+        return f"Invalid size '{size}'. Choose from: xs, s, m, l, xl"
+
+    perspective = perspective.lower()
+    if perspective not in PERSPECTIVES:
+        return f"Invalid perspective '{perspective}'. Choose from: psychological, deterministic"
+
+    size_config = CHART_SIZES[size]
+    perspective_text = PERSPECTIVES[perspective]
+
+    # ── Step 1: Full computation (always maximal) ──
+    computation_json = await full_chart_computation(name)
+    computation = json.loads(computation_json)
+
+    if "error" in computation:
+        return json.dumps(computation)
+
+    # ── Step 2: Knowledge graph queries (grounded in corpus) ──
+    knowledge = _gather_knowledge_for_chart(
+        computation,
+        results_per_query=size_config["knowledge_results"],
+    )
+
+    # ── Step 3: Package everything ──
+    output = {
+        "report_config": {
+            "chart_name": name,
+            "size": size_config["label"],
+            "target_length": size_config["target_length"],
+            "perspective": perspective,
+        },
+        "narrative_instructions": f"""
+=== CHART READING: {name.upper()} ===
+Size: {size_config['label']}
+Target length: {size_config['target_length']}
+
+=== DEPTH GUIDELINES ===
+{size_config['depth']}
+
+=== INTERPRETIVE LENSES ===
+Weave these throughout the narrative (do not use as section headers):
+- External self / Internal self (Sun, ASC, 1H ruler vs Moon, 4H, IC)
+- The emotional body (Moon sign/house/aspects, water houses)
+- The mirror (7H, DSC, what others reflect back)
+- Formative imprints (4H, Moon, Saturn aspects, IC)
+- Conscious / Unconscious (hemispheric emphasis, 12H, Pluto/Neptune)
+- Personal / Public (houses 1-6 vs 7-12)
+- Strengths / Weaknesses (dignities as expression patterns, not judgments)
+- Depositor chains (where power flows, pools, and leaks)
+- Current chapter (profections + ZR as biographical timing)
+
+=== PERSPECTIVE ===
+{perspective_text}
+
+=== IMPORTANT ===
+- Ground every claim in the computation data below. Cite degrees, signs, houses.
+- Draw from the knowledge graph material — these are your source texts.
+- Weave, don't section. This is a narrative, not a list.
+- Every size gets full computation. The sizing controls elaboration depth.
+""",
+        "computation": computation,
+        "knowledge_graph": knowledge,
+    }
+
+    return json.dumps(output, indent=2)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
