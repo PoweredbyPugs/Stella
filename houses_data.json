@@ -1,0 +1,134 @@
+[
+  {
+    "house": "First House",
+    "natural_sign": "Aries",
+    "natural_ruler": "Mars",
+    "keywords": "Self, identity, appearance, beginnings, personal initiatives, physical body",
+    "life_area": "Self-expression and personal presence in the world",
+    "traditional_meaning": "The House of Life. Governs the physical body, particularly the head, personal characteristics, and one's approach to life. Shows how one begins things and presents oneself to the world.",
+    "modern_meaning": "Represents the persona, identity, and sense of self. Shows how one initiates action and the first impression one makes on others. Connected to self-awareness and personal autonomy.",
+    "rudhyar_perspective": "The field of experience where individual selfhood is established through direct action. It represents the emergence of consciousness as a distinct entity and the initial impulse toward individualization.",
+    "archetypal_function": "Establishment of individual identity through self-assertion, personal initiative, and embodied presence."
+  },
+  {
+    "house": "Second House",
+    "natural_sign": "Taurus",
+    "natural_ruler": "Venus",
+    "keywords": "Values, possessions, resources, talents, self-worth, income, stability",
+    "life_area": "Material security and personal resources",
+    "traditional_meaning": "The House of Possessions. Governs money, movable possessions, and resources. Shows what one values and how one acquires, manages, and uses material resources.",
+    "modern_meaning": "Represents personal values, self-worth, and talents. Shows attitudes toward material security and comfort. Connected to building reliable foundations and establishing stability.",
+    "rudhyar_perspective": "The field of experience where substance and value are established. It represents the consolidation of individual energy into tangible form and the development of self-reliance through the management of resources.",
+    "archetypal_function": "Cultivation of value, substance, and security through the tangible expression of personal resources and talents."
+  },
+  {
+    "house": "Third House",
+    "natural_sign": "Gemini",
+    "natural_ruler": "Mercury",
+    "keywords": "Communication, learning, siblings, neighbors, local environment, early education",
+    "life_area": "Information exchange and immediate environment",
+    "traditional_meaning": "The House of Brothers and Sisters. Governs siblings, neighbors, short journeys, and basic education. Shows how one communicates and processes information at a basic level.",
+    "modern_meaning": "Represents the thinking mind, communication style, and curiosity. Shows how one learns, gathers information, and relates to the immediate environment. Connected to early socialization and intellectual development.",
+    "rudhyar_perspective": "The field of experience where connections are made within the immediate environment. It represents the differentiation of consciousness through the exchange of ideas and the development of relational awareness.",
+    "archetypal_function": "Development of mental flexibility and social connection through communication, learning, and engagement with the immediate environment."
+  },
+  {
+    "house": "Fourth House",
+    "natural_sign": "Cancer",
+    "natural_ruler": "Moon",
+    "keywords": "Home, family, roots, emotional foundation, private life, ancestors, security",
+    "life_area": "Foundation and inner security",
+    "traditional_meaning": "The House of the Father. Governs properties, land, heritage, and the end of life. Shows one's connection to ancestry, foundations, and what supports one at the deepest level.",
+    "modern_meaning": "Represents the home, family patterns, and emotional security. Shows the inner, private self and relationship to the past. Connected to emotional foundations and psychological roots.",
+    "rudhyar_perspective": "The field of experience where the individual becomes aware of subjective selfhood through connection with the past. It represents the foundation of consciousness and the psychological roots from which the personality grows.",
+    "archetypal_function": "Establishment of emotional security and inner foundation through connection with roots, home, and the collective past."
+  },
+  {
+    "house": "Fifth House",
+    "natural_sign": "Leo",
+    "natural_ruler": "Sun",
+    "keywords": "Creativity, pleasure, romance, children, self-expression, recreation, talents",
+    "life_area": "Creative self-expression and joy",
+    "traditional_meaning": "The House of Children. Governs offspring, creative works, games, and pleasures. Shows how one expresses oneself freely and what brings joy and fulfillment.",
+    "modern_meaning": "Represents creative self-expression, romance, and playfulness. Shows where and how one seeks pleasure and experiences joy. Connected to authentic self-expression and the inner child.",
+    "rudhyar_perspective": "The field of experience where individual selfhood is actualized through creative expression. It represents the spontaneous outpouring of life energy and the development of authentic self-expression.",
+    "archetypal_function": "Actualization of unique potential through creative expression, play, and the sharing of one's essential nature."
+  },
+  {
+    "house": "Sixth House",
+    "natural_sign": "Virgo",
+    "natural_ruler": "Mercury",
+    "keywords": "Work, health, service, daily routine, skills, improvement, duty, efficiency",
+    "life_area": "Practical service and self-improvement",
+    "traditional_meaning": "The House of Illness. Governs health, servants, small animals, and daily work. Shows where one must adapt to necessity and manage the practical details of life.",
+    "modern_meaning": "Represents work routines, health practices, and service to others. Shows how one handles responsibilities and strives for improvement. Connected to skill development and the integration of body and mind.",
+    "rudhyar_perspective": "The field of experience where individual selfhood is refined through service and adaptation. It represents the development of technique and the adjustment of personality to meet the demands of everyday life.",
+    "archetypal_function": "Refinement of function through practical service, skill development, and conscious adaptation to the requirements of daily life."
+  },
+  {
+    "house": "Seventh House",
+    "natural_sign": "Libra",
+    "natural_ruler": "Venus",
+    "keywords": "Partnerships, marriage, committed relationships, contracts, open enemies, mirroring",
+    "life_area": "One-to-one relationships and balance",
+    "traditional_meaning": "The House of Marriage. Governs spouses, business partners, contracts, and open enemies. Shows how one relates to others in committed partnerships and formal agreements.",
+    "modern_meaning": "Represents relationship patterns, the qualities projected onto others, and the capacity for compromise. Shows how one finds balance through partnership. Connected to the development of relationship skills and awareness of others.",
+    "rudhyar_perspective": "The field of experience where individual selfhood is completed through relationship. It represents the encounter with the 'other' and the development of consciousness through the mirroring process of partnership.",
+    "archetypal_function": "Integration of polarities through relationship, cooperation, and the balancing of self and other."
+  },
+  {
+    "house": "Eighth House",
+    "natural_sign": "Scorpio",
+    "natural_ruler": "Mars/Pluto",
+    "keywords": "Transformation, shared resources, intimacy, sex, death, rebirth, power, the occult",
+    "life_area": "Deep sharing and transformation",
+    "traditional_meaning": "The House of Death. Governs inheritances, legacies, the property of partners, and death. Shows how one deals with the resources of others and experiences profound transformation.",
+    "modern_meaning": "Represents psychological depth, intimacy, and transformative experiences. Shows how one handles power, crisis, and encounters with the shadow. Connected to sexuality, deep bonding, and psychological regeneration.",
+    "rudhyar_perspective": "The field of experience where individual selfhood is transformed through the release of personal attachments. It represents the descent into the collective depths and the regeneration of consciousness through surrender and transformation.",
+    "archetypal_function": "Transformation of consciousness through intimacy, shared resources, and the confrontation with existential realities."
+  },
+  {
+    "house": "Ninth House",
+    "natural_sign": "Sagittarius",
+    "natural_ruler": "Jupiter",
+    "keywords": "Philosophy, higher education, travel, spirituality, beliefs, expansion, exploration",
+    "life_area": "Expansion through meaning and experience",
+    "traditional_meaning": "The House of Journeys. Governs long voyages, higher education, religion, and philosophy. Shows how one connects with broader cultural, intellectual, and spiritual perspectives.",
+    "modern_meaning": "Represents the search for meaning, truth, and expanded awareness. Shows how one develops a coherent worldview and explores beyond familiar boundaries. Connected to spiritual growth, cultural exchange, and the integration of diverse experiences.",
+    "rudhyar_perspective": "The field of experience where individual selfhood is expanded through meaning. It represents the development of a coherent worldview and the integration of experience into a meaningful whole.",
+    "archetypal_function": "Expansion of consciousness through the search for meaning, exploration of broader horizons, and the integration of diverse perspectives."
+  },
+  {
+    "house": "Tenth House",
+    "natural_sign": "Capricorn",
+    "natural_ruler": "Saturn",
+    "keywords": "Career, public image, authority, achievement, responsibility, social status, ambition",
+    "life_area": "Public contribution and social standing",
+    "traditional_meaning": "The House of the Mother. Governs honors, dignity, office, and public station. Shows how one appears in the world and what one aspires to achieve in terms of social status and public recognition.",
+    "modern_meaning": "Represents career path, public reputation, and social contribution. Shows how one establishes authority and takes responsibility in the world. Connected to ambition, achievement, and the development of a mature social identity.",
+    "rudhyar_perspective": "The field of experience where individual selfhood is actualized through social contribution. It represents the socialization of consciousness and the fulfillment of one's dharma or life purpose through participation in society.",
+    "archetypal_function": "Materialization of purpose through social contribution, the assumption of authority, and the fulfillment of one's calling in the world."
+  },
+  {
+    "house": "Eleventh House",
+    "natural_sign": "Aquarius",
+    "natural_ruler": "Saturn/Uranus",
+    "keywords": "Friends, groups, social causes, hopes, wishes, collective vision, innovation, networks",
+    "life_area": "Social networks and future vision",
+    "traditional_meaning": "The House of Good Fortune. Governs friends, allies, and received income. Shows where one connects with broader social groups and what hopes one has for the future.",
+    "modern_meaning": "Represents social networks, humanitarian interests, and progressive ideals. Shows how one participates in collective endeavors and envisions a better future. Connected to innovation, reform, and the cultivation of social awareness.",
+    "rudhyar_perspective": "The field of experience where individual selfhood is transcended through participation in collective ideals. It represents the socialization of vision and the integration of personal purpose with the needs of society and humanity.",
+    "archetypal_function": "Liberation of consciousness through collective participation, the sharing of vision, and the reformation of social patterns toward greater inclusivity."
+  },
+  {
+    "house": "Twelfth House",
+    "natural_sign": "Pisces",
+    "natural_ruler": "Jupiter/Neptune",
+    "keywords": "Unconscious, spirituality, sacrifice, hidden matters, isolation, compassion, transcendence",
+    "life_area": "Dissolution and spiritual connection",
+    "traditional_meaning": "The House of Enemies. Governs hidden enemies, confinement, limitations, and self-undoing. Shows where one may experience isolation, sacrifice, or dissolution of personal boundaries.",
+    "modern_meaning": "Represents the collective unconscious, spiritual transcendence, and psychological completion. Shows how one connects with the universal and processes the unintegrated aspects of the psyche. Connected to compassion, surrender, and mystical experience.",
+    "rudhyar_perspective": "The field of experience where individual selfhood is dissolved in preparation for rebirth. It represents the completion of the cycle of consciousness and the surrender of personal identity to universal wholeness. The threshold between endings and new beginnings.",
+    "archetypal_function": "Transcendence of personal limitations through compassion, surrender, and mystical connection to the universal source of consciousness."
+  }
+]

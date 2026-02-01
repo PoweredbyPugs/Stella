@@ -1,0 +1,142 @@
+[
+  {
+    "aspect": "Conjunction",
+    "symbol": "☌",
+    "angle": "0°",
+    "orb": {
+      "traditional": "7-8°",
+      "modern": "8-10°"
+    },
+    "quality": "Variable - depends on planets involved",
+    "traditional_meaning": "Intensification of planetary qualities by combining their energies. Considered powerful but neither strictly benefic nor malefic; depends on the nature of the planets involved.",
+    "modern_meaning": "Fusion of planetary energies creating a concentrated blend of forces. Represents a unified expression where neither planetary energy can be separated from the other.",
+    "archetypal_description": "The unifying principle where energies merge into a singular expression. Represents beginnings, initiation, and the potential inherent in seeds.",
+    "psychological_function": "Integration of different facets of personality or life experience into a unified whole. Can represent both internal harmony and potential blind spots."
+  },
+  {
+    "aspect": "Opposition",
+    "symbol": "☍",
+    "angle": "180°",
+    "orb": {
+      "traditional": "7-8°",
+      "modern": "8-10°"
+    },
+    "quality": "Major - Challenging/Dynamic",
+    "traditional_meaning": "Planets in polar tension across the zodiac. Considered a difficult aspect showing opposition, contradiction, and the need for balance between opposing forces.",
+    "modern_meaning": "Dynamic tension between complementary energies requiring integration. Represents awareness through relationship and the need to reconcile seemingly opposite principles.",
+    "archetypal_description": "The balancing principle where energies stand in polar relationship. Represents the tension of opposites, the full moon phase, and the principle of relationship.",
+    "psychological_function": "Conscious awareness of polarities and the challenge of integrating opposing aspects of the personality or life experience."
+  },
+  {
+    "aspect": "Trine",
+    "symbol": "△",
+    "angle": "120°",
+    "orb": {
+      "traditional": "7-8°",
+      "modern": "8-10°"
+    },
+    "quality": "Major - Harmonious/Flowing",
+    "traditional_meaning": "Planets in harmony within the same element. Considered the most favorable aspect, bringing luck, ease, and natural talents that flow without obstruction.",
+    "modern_meaning": "Harmonious flow of compatible energies. Represents natural talents, creative expression, and areas of life that unfold with minimal effort.",
+    "archetypal_description": "The flowing principle where energies support and enhance each other. Represents harmony, grace, and the unobstructed movement of forces.",
+    "psychological_function": "Natural integration and expression of complementary aspects of the personality or life experience. Indicates talents that may be taken for granted."
+  },
+  {
+    "aspect": "Square",
+    "symbol": "□",
+    "angle": "90°",
+    "orb": {
+      "traditional": "7-8°",
+      "modern": "8-10°"
+    },
+    "quality": "Major - Challenging/Dynamic",
+    "traditional_meaning": "Planets in tension across different modalities. Considered a difficult aspect showing obstacles, conflicts, and the need to overcome resistance through effort.",
+    "modern_meaning": "Productive tension requiring action and adjustment. Represents challenges that lead to growth, motivation, and the building of character through overcoming obstacles.",
+    "archetypal_description": "The building principle where energies create tension that demands resolution. Represents the quarter moon phases and the principle of manifestation through effort.",
+    "psychological_function": "Development of strength through addressing conflicts between different aspects of the personality or life experience."
+  },
+  {
+    "aspect": "Sextile",
+    "symbol": "⚹",
+    "angle": "60°",
+    "orb": {
+      "traditional": "5-6°",
+      "modern": "4-6°"
+    },
+    "quality": "Major - Harmonious/Flowing",
+    "traditional_meaning": "Planets in compatibility between complementary elements. Considered a favorable aspect, though less powerful than the trine, bringing opportunities that require some initiative.",
+    "modern_meaning": "Supportive energies that offer opportunities for growth. Represents potential that can be developed through conscious effort and the ability to communicate and learn.",
+    "archetypal_description": "The opportunity principle where energies support mutual development. Represents the opening of doors and the expansion of possibilities through complementary forces.",
+    "psychological_function": "Development of skills through the positive interaction of complementary aspects of the personality or life experience."
+  },
+  {
+    "aspect": "Quincunx/Inconjunct",
+    "symbol": "⚻",
+    "angle": "150°",
+    "orb": {
+      "traditional": "2-3°",
+      "modern": "2-3°"
+    },
+    "quality": "Minor - Challenging/Adjusting",
+    "traditional_meaning": "Planets in an awkward relationship without common ground. Considered an aspect of adjustment, irritation, and the need for adaptation.",
+    "modern_meaning": "Energies that don't naturally integrate, requiring adjustment and flexibility. Represents the need to adapt, compromise, and make continuous minor corrections.",
+    "archetypal_description": "The adjusting principle where energies require ongoing refinement to work together. Represents the need for adaptation and the cultivation of flexibility.",
+    "psychological_function": "Development of adaptability through addressing aspects of the personality or life experience that don't naturally integrate."
+  },
+  {
+    "aspect": "Semi-Sextile",
+    "symbol": "⚺",
+    "angle": "30°",
+    "orb": {
+      "traditional": "1-2°",
+      "modern": "1-2°"
+    },
+    "quality": "Minor - Mildly Flowing/Neutral",
+    "traditional_meaning": "Planets in adjacent signs without elemental or modal compatibility. Considered a weak aspect showing minor connections and subtle influences.",
+    "modern_meaning": "Subtle connection between adjacent energies. Represents potential for growth through small steps and gradual development.",
+    "archetypal_description": "The connecting principle where energies that are fundamentally different maintain a subtle linkage. Represents the bridging of differences and minor transitions.",
+    "psychological_function": "Subtle awareness of connections between different aspects of the personality or life experience."
+  },
+  {
+    "aspect": "Semi-Square",
+    "symbol": "⚼",
+    "angle": "45°",
+    "orb": {
+      "traditional": "1-2°",
+      "modern": "1-2°"
+    },
+    "quality": "Minor - Challenging/Irritating",
+    "traditional_meaning": "Planets in minor tension. Considered an aspect of irritation, nagging problems, and persistent low-level stress.",
+    "modern_meaning": "Nagging tension requiring ongoing adjustments. Represents chronic friction that eventually prompts growth through persistent effort.",
+    "archetypal_description": "The irritating principle where energies create consistent friction. Represents the persistence needed to overcome ongoing obstacles.",
+    "psychological_function": "Development of persistence through addressing chronic tensions between different aspects of the personality or life experience."
+  },
+  {
+    "aspect": "Sesquiquadrate",
+    "symbol": "⚿",
+    "angle": "135°",
+    "orb": {
+      "traditional": "1-2°",
+      "modern": "1-2°"
+    },
+    "quality": "Minor - Challenging/Irritating",
+    "traditional_meaning": "Planets in complex tension. Considered similar to the semi-square but more internal and complex, showing internal conflicts and the need for adjustments.",
+    "modern_meaning": "Complex internal tension requiring resolution. Represents the need to address structural imbalances and make substantive changes.",
+    "archetypal_description": "The restructuring principle where energies demand internal reorganization. Represents the need for substantive change to resolve persistent tensions.",
+    "psychological_function": "Internal reorganization through addressing complex tensions between different aspects of the personality or life experience."
+  },
+  {
+    "aspect": "Quintile",
+    "symbol": "Q",
+    "angle": "72°",
+    "orb": {
+      "traditional": "1-2°",
+      "modern": "1-2°"
+    },
+    "quality": "Minor - Harmonious/Creative",
+    "traditional_meaning": "Not emphasized in traditional astrology.",
+    "modern_meaning": "Creative connection fostering unique talents. Represents the development of specialized abilities and innovative approaches.",
+    "archetypal_description": "The creative principle where energies combine to produce original expressions. Represents the development of unique gifts and talents.",
+    "psychological_function": "Development of creative expression through the unique combination of different aspects of the personality or life experience."
+  }
+]

@@ -1,0 +1,172 @@
+[
+  {
+    "planet": "Sun",
+    "symbol": "☉",
+    "rules": {
+      "traditional": "Leo",
+      "modern": "Leo"
+    },
+    "exaltation": "Aries",
+    "detriment": "Aquarius",
+    "fall": "Libra",
+    "represents": "Core identity, ego, vitality, consciousness, purpose, life force, and creative expression",
+    "archetypal_energy": "The Spirit, The King/Queen, The Central Self",
+    "archetypal_description": "The life-giving center around which all else revolves. The principle of conscious, individualized being and the archetype of wholeness.",
+    "traditional_meaning": "Hot and dry in nature. The greater benefic representing the spirit, authority, and vitality. Governs gold, the heart, and royalty.",
+    "modern_meaning": "Representative of the core identity, conscious ego, and essential purpose. The central organizing principle of the personality.",
+    "psychological_function": "Integration and conscious expression of the whole self; the center of identity and purpose that radiates vitality."
+  },
+  {
+    "planet": "Moon",
+    "symbol": "☽",
+    "rules": {
+      "traditional": "Cancer",
+      "modern": "Cancer"
+    },
+    "exaltation": "Taurus",
+    "detriment": "Capricorn",
+    "fall": "Scorpio",
+    "represents": "Emotions, instincts, habits, subconscious patterns, nurturing, receptivity, and cyclical rhythms",
+    "archetypal_energy": "The Mother, The Nurturer, The Anima",
+    "archetypal_description": "The reflective principle that receives, contains, and nourishes. The archetype of the feminine, the receptive, and the cyclical.",
+    "traditional_meaning": "Cold and moist in nature. Associated with the body, fertility, fluctuation, and the feminine. Governs silver, the breasts, and fluids.",
+    "modern_meaning": "Representative of the emotional nature, instinctual responses, and subconscious patterning. The foundation of psychological security and belonging.",
+    "psychological_function": "Emotional processing and responsiveness; the containing and nurturing of psychological content and relationships."
+  },
+  {
+    "planet": "Mercury",
+    "symbol": "☿",
+    "rules": {
+      "traditional": "Gemini, Virgo",
+      "modern": "Gemini, Virgo"
+    },
+    "exaltation": "Virgo",
+    "detriment": "Sagittarius, Pisces",
+    "fall": "Pisces",
+    "represents": "Communication, intellect, learning, information processing, adaptability, and coordination",
+    "archetypal_energy": "The Messenger, The Trickster, The Interpreter",
+    "archetypal_description": "The connective principle that links and translates between realms. The archetype of agility, cleverness, and mental adaptability.",
+    "traditional_meaning": "Cold and dry in nature (though adaptable). Associated with youth, commerce, and skill. Governs quicksilver, the nervous system, and communication.",
+    "modern_meaning": "Representative of the thinking function, verbal expression, and information processing. The capacity for learning, reasoning, and mental flexibility.",
+    "psychological_function": "Mental processing and communication; the collection, organization, and exchange of information and ideas."
+  },
+  {
+    "planet": "Venus",
+    "symbol": "♀",
+    "rules": {
+      "traditional": "Taurus, Libra",
+      "modern": "Taurus, Libra"
+    },
+    "exaltation": "Pisces",
+    "detriment": "Scorpio, Aries",
+    "fall": "Virgo",
+    "represents": "Love, beauty, harmony, values, relationships, pleasure, and the arts",
+    "archetypal_energy": "The Lover, The Artist, The Harmonizer",
+    "archetypal_description": "The attractive principle that draws together and creates harmony. The archetype of beauty, pleasure, and relatedness.",
+    "traditional_meaning": "Cold and moist in nature. The lesser benefic representing beauty, pleasure, and attraction. Governs copper, the kidneys, and artistry.",
+    "modern_meaning": "Representative of the appreciative and relational function in psychology. The aesthetic sense and capacity for love, connection, and value assessment.",
+    "psychological_function": "Valuing and relating; the attraction, appreciation, and harmonization of experiences and relationships."
+  },
+  {
+    "planet": "Mars",
+    "symbol": "♂",
+    "rules": {
+      "traditional": "Aries, Scorpio",
+      "modern": "Aries"
+    },
+    "exaltation": "Capricorn",
+    "detriment": "Libra, Taurus",
+    "fall": "Cancer",
+    "represents": "Energy, action, desire, courage, conflict, assertion, and drive",
+    "archetypal_energy": "The Warrior, The Competitor, The Pioneer",
+    "archetypal_description": "The activating principle that initiates, separates, and competes. The archetype of courage, assertiveness, and directed energy.",
+    "traditional_meaning": "Hot and dry in nature. The lesser malefic representing strength, conflict, and separation. Governs iron, muscles, and weaponry.",
+    "modern_meaning": "Representative of the assertive and desiring function in psychology. The capacity for action, competition, and the pursuit of goals through directed energy.",
+    "psychological_function": "Asserting and desiring; the mobilization of energy toward desired objectives and the protection of boundaries."
+  },
+  {
+    "planet": "Jupiter",
+    "symbol": "♃",
+    "rules": {
+      "traditional": "Sagittarius, Pisces",
+      "modern": "Sagittarius"
+    },
+    "exaltation": "Cancer",
+    "detriment": "Gemini, Virgo",
+    "fall": "Capricorn",
+    "represents": "Growth, expansion, abundance, philosophy, luck, optimism, and higher meaning",
+    "archetypal_energy": "The Sage, The Guru, The Benefactor",
+    "archetypal_description": "The expansive principle that grows, integrates, and finds meaning. The archetype of abundance, wisdom, and faith in greater possibilities.",
+    "traditional_meaning": "Hot and moist in nature. The greater benefic representing fortune, social order, and faith. Governs tin, the liver, and religious institutions.",
+    "modern_meaning": "Representative of the expansive and meaning-making function in psychology. The capacity for growth, optimism, and the development of a coherent worldview.",
+    "psychological_function": "Expanding and integrating; the enlargement of perspective and opportunity through faith, meaning, and benevolent connection."
+  },
+  {
+    "planet": "Saturn",
+    "symbol": "♄",
+    "rules": {
+      "traditional": "Capricorn, Aquarius",
+      "modern": "Capricorn"
+    },
+    "exaltation": "Libra",
+    "detriment": "Cancer, Leo",
+    "fall": "Aries",
+    "represents": "Structure, limitations, responsibility, discipline, time, maturity, and achievements",
+    "archetypal_energy": "The Elder, The Teacher, The Judge",
+    "archetypal_description": "The limiting principle that defines, structures, and tests. The archetype of authority, maturity, and the establishment of form and order.",
+    "traditional_meaning": "Cold and dry in nature. The greater malefic representing contraction, hardship, and endurance. Governs lead, bones, and structures of authority.",
+    "modern_meaning": "Representative of the structuring and boundary-setting function in psychology. The capacity for discipline, responsibility, and the development of mature authority.",
+    "psychological_function": "Structuring and consolidating; the establishment of form, limitation, and enduring achievement through discipline and responsibility."
+  },
+  {
+    "planet": "Uranus",
+    "symbol": "♅",
+    "rules": {
+      "traditional": null,
+      "modern": "Aquarius"
+    },
+    "exaltation": "Scorpio",
+    "detriment": "Leo",
+    "fall": "Taurus",
+    "represents": "Innovation, rebellion, technology, sudden change, originality, and awakening",
+    "archetypal_energy": "The Revolutionary, The Awakener, The Liberator",
+    "archetypal_description": "The disruptive principle that breaks patterns and liberates. The archetype of sudden insight, genius, and unpredictable change.",
+    "traditional_meaning": "Not recognized in traditional astrology.",
+    "modern_meaning": "Representative of the awakening and liberating function in psychology. The capacity for breakthrough, innovation, and radical departure from established patterns.",
+    "psychological_function": "Awakening and revolutionizing; the disruption of crystallized patterns to allow sudden insight, freedom, and originality."
+  },
+  {
+    "planet": "Neptune",
+    "symbol": "♆",
+    "rules": {
+      "traditional": null,
+      "modern": "Pisces"
+    },
+    "exaltation": "Cancer",
+    "detriment": "Virgo",
+    "fall": "Capricorn",
+    "represents": "Dreams, imagination, spirituality, idealism, dissolution, compassion, and transcendence",
+    "archetypal_energy": "The Mystic, The Dreamer, The Transcendent",
+    "archetypal_description": "The dissolving principle that transcends boundaries and merges. The archetype of the spiritual, the imaginative, and the transcendent.",
+    "traditional_meaning": "Not recognized in traditional astrology.",
+    "modern_meaning": "Representative of the imaginal and transcendent function in psychology. The capacity for unity, idealism, and connection to the collective unconscious.",
+    "psychological_function": "Dissolving and transcending; the softening of boundaries to allow compassion, inspiration, and mystical connection."
+  },
+  {
+    "planet": "Pluto",
+    "symbol": "♇",
+    "rules": {
+      "traditional": null,
+      "modern": "Scorpio"
+    },
+    "exaltation": "Aries",
+    "detriment": "Taurus",
+    "fall": "Libra",
+    "represents": "Transformation, power, death and rebirth, the unconscious, obsession, and regeneration",
+    "archetypal_energy": "The Transformer, The Shadow, The Phoenix",
+    "archetypal_description": "The regenerative principle that destroys and renews. The archetype of profound transformation, power, and confrontation with the shadow.",
+    "traditional_meaning": "Not recognized in traditional astrology.",
+    "modern_meaning": "Representative of the transformative and regenerative function in psychology. The capacity for deep change through confrontation with shadow material and primal power.",
+    "psychological_function": "Transforming and regenerating; the destruction of obsolete forms to allow evolutionary rebirth and psychological empowerment."
+  }
+]

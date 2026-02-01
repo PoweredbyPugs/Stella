@@ -1,0 +1,206 @@
+{
+  "name": "Traditional Astrology Framework",
+  "description": "Traditional astrological interpretative framework based on Hellenistic, Medieval, and Renaissance traditions",
+  "approaches": [
+    {
+      "name": "Hellenistic Whole Sign",
+      "description": "The approach used by Chris Brennan and other traditional astrologers, focusing on whole sign houses, sect, dignity, and traditional rulerships",
+      "key_techniques": [
+        "Whole sign house system",
+        "Sect (day/night chart division)",
+        "Planetary dignity and debility",
+        "Planetary domicile rulership",
+        "Triplicity, term and face rulerships",
+        "Annual profections",
+        "Time lord techniques",
+        "Lots/Arabian parts",
+        "Traditional aspects without modern aspects"
+      ]
+    },
+    {
+      "name": "Medieval Traditional",
+      "description": "Medieval approach with emphasis on dignity, reception, and house rulership",
+      "key_techniques": [
+        "Detailed dignity and reception analysis",
+        "House-based prediction",
+        "Horary techniques applied to natal",
+        "Ruler of the Ascendant analysis"
+      ]
+    },
+    {
+      "name": "Archetypal Astrology",
+      "description": "Richard Tarnas' approach combining traditional planetary meanings with archetypal psychology",
+      "key_techniques": [
+        "Planetary archetypes and their complex interactions",
+        "World transits and collective patterns",
+        "Cyclical nature of planetary alignments",
+        "Emphasis on outer planet alignments",
+        "Recognition of synchronistic patterns"
+      ]
+    }
+  ],
+  "traditional_rulerships": {
+    "Aries": {
+      "ruler": "Mars",
+      "exaltation": "Sun",
+      "fall": "Saturn",
+      "detriment": "Venus"
+    },
+    "Taurus": {
+      "ruler": "Venus",
+      "exaltation": "Moon",
+      "fall": "Mars",
+      "detriment": "Mars"
+    },
+    "Gemini": {
+      "ruler": "Mercury",
+      "exaltation": null,
+      "fall": null,
+      "detriment": "Jupiter"
+    },
+    "Cancer": {
+      "ruler": "Moon",
+      "exaltation": "Jupiter",
+      "fall": "Mars",
+      "detriment": "Saturn"
+    },
+    "Leo": {
+      "ruler": "Sun",
+      "exaltation": null,
+      "fall": null,
+      "detriment": "Saturn"
+    },
+    "Virgo": {
+      "ruler": "Mercury",
+      "exaltation": "Mercury",
+      "fall": "Venus",
+      "detriment": "Jupiter"
+    },
+    "Libra": {
+      "ruler": "Venus",
+      "exaltation": "Saturn",
+      "fall": "Sun",
+      "detriment": "Mars"
+    },
+    "Scorpio": {
+      "ruler": "Mars",
+      "exaltation": null,
+      "fall": "Moon",
+      "detriment": "Venus"
+    },
+    "Sagittarius": {
+      "ruler": "Jupiter",
+      "exaltation": null,
+      "fall": null,
+      "detriment": "Mercury"
+    },
+    "Capricorn": {
+      "ruler": "Saturn",
+      "exaltation": "Mars",
+      "fall": "Jupiter",
+      "detriment": "Moon"
+    },
+    "Aquarius": {
+      "ruler": "Saturn",
+      "exaltation": null,
+      "fall": null,
+      "detriment": "Sun"
+    },
+    "Pisces": {
+      "ruler": "Jupiter",
+      "exaltation": "Venus",
+      "fall": "Mercury",
+      "detriment": "Mercury"
+    }
+  },
+  "lots": {
+    "Lot of Fortune": "Ascendant + Moon - Sun (day charts) / Ascendant + Sun - Moon (night charts)",
+    "Lot of Spirit": "Ascendant + Sun - Moon (day charts) / Ascendant + Moon - Sun (night charts)",
+    "Lot of Eros": "Ascendant + Venus - Spirit (day charts) / Ascendant + Spirit - Venus (night charts)",
+    "Lot of Necessity": "Ascendant + Mercury - Spirit (day charts) / Ascendant + Spirit - Mercury (night charts)",
+    "Lot of Courage": "Ascendant + Mars - Spirit (day charts) / Ascendant + Spirit - Mars (night charts)",
+    "Lot of Victory": "Ascendant + Jupiter - Spirit (day charts) / Ascendant + Spirit - Jupiter (night charts)",
+    "Lot of Nemesis": "Ascendant + Saturn - Spirit (day charts) / Ascendant + Spirit - Saturn (night charts)"
+  },
+  "aspectDoctrine": {
+    "conjunction": {
+      "angle": 0,
+      "orb": 8,
+      "nature": "Varies with planets involved"
+    },
+    "opposition": {
+      "angle": 180,
+      "orb": 8,
+      "nature": "Challenging"
+    },
+    "trine": {
+      "angle": 120,
+      "orb": 8,
+      "nature": "Beneficial"
+    },
+    "square": {
+      "angle": 90,
+      "orb": 8,
+      "nature": "Challenging"
+    },
+    "sextile": {
+      "angle": 60,
+      "orb": 6,
+      "nature": "Beneficial"
+    }
+  },
+  "dignityScoring": {
+    "domicile": {
+      "points": 5,
+      "description": "Planet in its own sign"
+    },
+    "exaltation": {
+      "points": 4,
+      "description": "Planet in sign of exaltation"
+    },
+    "triplicity": {
+      "points": 3,
+      "description": "Planet in sign of same element and fitting sect"
+    },
+    "term": {
+      "points": 2,
+      "description": "Planet in its own terms"
+    },
+    "face": {
+      "points": 1,
+      "description": "Planet in its own face/decan"
+    },
+    "fall": {
+      "points": -4,
+      "description": "Planet in sign of its fall"
+    },
+    "detriment": {
+      "points": -5,
+      "description": "Planet in sign opposite its ruler"
+    }
+  },
+  "sect": {
+    "daySect": {
+      "planets": [
+        "Sun",
+        "Jupiter",
+        "Saturn"
+      ],
+      "description": "Diurnal planets, strengthened in day charts"
+    },
+    "nightSect": {
+      "planets": [
+        "Moon",
+        "Venus",
+        "Mars"
+      ],
+      "description": "Nocturnal planets, strengthened in night charts"
+    },
+    "sectorless": {
+      "planets": [
+        "Mercury"
+      ],
+      "description": "Adaptable to either sect depending on position"
+    }
+  }
+}

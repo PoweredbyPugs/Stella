@@ -1,0 +1,1389 @@
+{
+  "chartInfo": {
+    "name": "Chandra",
+    "type": "Natal Chart",
+    "dateTime": {
+      "date": "1994-11-02",
+      "time": "22:55:00",
+      "timezone": "ET",
+      "julianDay": 2449659.454865,
+      "deltaT": "+60s"
+    },
+    "siderealTime": {
+      "st0": "01:41:54",
+      "lst": "19:46:10"
+    },
+    "obliquity": "23°26'23\"",
+    "equationOfTime": "+16m25s",
+    "acdDates": {
+      "acd0h": "1994-11-19",
+      "acd12h": "1995-05-21"
+    }
+  },
+  "angles": {
+    "ascendant": {
+      "sign": "Taurus",
+      "degree": 11,
+      "minute": 3,
+      "second": 38
+    },
+    "midheaven": {
+      "sign": "Capricorn",
+      "degree": 24,
+      "minute": 37,
+      "second": 22
+    },
+    "coAscendant": {
+      "sign": "Taurus",
+      "degree": 25,
+      "minute": 32,
+      "second": 29
+    },
+    "polarAscendant": {
+      "sign": "Libra",
+      "degree": 21,
+      "minute": 36,
+      "second": 9
+    }
+  },
+  "houses": {
+    "system": "Whole Signs",
+    "cusps": {
+      "1": {
+        "sign": "Taurus",
+        "degree": 0
+      },
+      "2": {
+        "sign": "Gemini",
+        "degree": 0
+      },
+      "3": {
+        "sign": "Cancer",
+        "degree": 0
+      },
+      "4": {
+        "sign": "Leo",
+        "degree": 0
+      },
+      "5": {
+        "sign": "Virgo",
+        "degree": 0
+      },
+      "6": {
+        "sign": "Libra",
+        "degree": 0
+      },
+      "7": {
+        "sign": "Scorpio",
+        "degree": 0
+      },
+      "8": {
+        "sign": "Sagittarius",
+        "degree": 0
+      },
+      "9": {
+        "sign": "Capricorn",
+        "degree": 0
+      },
+      "10": {
+        "sign": "Aquarius",
+        "degree": 0
+      },
+      "11": {
+        "sign": "Pisces",
+        "degree": 0
+      },
+      "12": {
+        "sign": "Aries",
+        "degree": 0
+      }
+    }
+  },
+  "planets": {
+    "moon": {
+      "longitude": {
+        "sign": "Scorpio",
+        "degree": 1,
+        "minute": 37,
+        "second": 23
+      },
+      "travel": "+15°07'",
+      "latitude": "-01°12'",
+      "rightAscension": "209°02'",
+      "declination": "-13°10'",
+      "azimuth": "258°02'",
+      "altitude": "-06°05'",
+      "house": 7,
+      "dispositor": "Pluto",
+      "rulesHouse": 3
+    },
+    "sun": {
+      "longitude": {
+        "sign": "Scorpio",
+        "degree": 10,
+        "minute": 17,
+        "second": 26
+      },
+      "travel": "+01°00'",
+      "latitude": "+00°00'",
+      "rightAscension": "217°52'",
+      "declination": "-14°54'",
+      "azimuth": "251°21'",
+      "altitude": "-00°24'",
+      "house": 7,
+      "dispositor": "Pluto",
+      "rulesHouse": 4
+    },
+    "mercury": {
+      "longitude": {
+        "sign": "Libra",
+        "degree": 22,
+        "minute": 4,
+        "second": 24
+      },
+      "travel": "+38'11\"",
+      "latitude": "+02°02'",
+      "rightAscension": "201°10'",
+      "declination": "-06°42'",
+      "azimuth": "267°56'",
+      "altitude": "-08°20'",
+      "house": 6,
+      "dispositor": "Venus",
+      "rulesHouses": [
+        2,
+        5
+      ],
+      "dignity": "accidentalDignity"
+    },
+    "venus": {
+      "longitude": {
+        "sign": "Scorpio",
+        "degree": 10,
+        "minute": 18,
+        "second": 38
+      },
+      "retrograde": true,
+      "travel": "-36'28\"",
+      "latitude": "-05°23'",
+      "rightAscension": "216°05'",
+      "declination": "-20°01'",
+      "azimuth": "248°25'",
+      "altitude": "-04°56'",
+      "house": 7,
+      "dispositor": "Pluto",
+      "rulesHouses": [
+        1,
+        6
+      ],
+      "dignity": "accidentalDignity",
+      "debility": "detriment"
+    },
+    "mars": {
+      "longitude": {
+        "sign": "Leo",
+        "degree": 15,
+        "minute": 20,
+        "second": 38
+      },
+      "travel": "+28'29\"",
+      "latitude": "+01°37'",
+      "rightAscension": "138°18'",
+      "declination": "+17°47'",
+      "azimuth": "335°43'",
+      "altitude": "-30°49'",
+      "house": 4,
+      "dispositor": "Sun",
+      "rulesHouse": 12
+    },
+    "jupiter": {
+      "longitude": {
+        "sign": "Scorpio",
+        "degree": 21,
+        "minute": 57,
+        "second": 21
+      },
+      "travel": "+13'07\"",
+      "latitude": "+00°48'",
+      "rightAscension": "229°45'",
+      "declination": "-17°28'",
+      "azimuth": "241°55'",
+      "altitude": "+06°30'",
+      "house": 7,
+      "dispositor": "Pluto",
+      "rulesHouse": 8
+    },
+    "saturn": {
+      "longitude": {
+        "sign": "Pisces",
+        "degree": 5,
+        "minute": 42,
+        "second": 54
+      },
+      "retrograde": true,
+      "travel": "-00'40\"",
+      "latitude": "-01°55'",
+      "rightAscension": "338°13'",
+      "declination": "-11°12'",
+      "azimuth": "132°41'",
+      "altitude": "+27°24'",
+      "house": 11,
+      "dispositor": "Neptune",
+      "rulesHouse": 9,
+      "mutualReceptionWith": "Neptune"
+    },
+    "uranus": {
+      "longitude": {
+        "sign": "Capricorn",
+        "degree": 22,
+        "minute": 49,
+        "second": 5
+      },
+      "travel": "+01'35\"",
+      "latitude": "-00°30'",
+      "rightAscension": "294°43'",
+      "declination": "-22°00'",
+      "azimuth": "181°57'",
+      "altitude": "+30°14'",
+      "house": 9,
+      "dispositor": "Saturn",
+      "rulesHouse": 10
+    },
+    "neptune": {
+      "longitude": {
+        "sign": "Capricorn",
+        "degree": 20,
+        "minute": 50,
+        "second": 40
+      },
+      "travel": "+01'01\"",
+      "latitude": "+00°34'",
+      "rightAscension": "292°26'",
+      "declination": "-21°15'",
+      "azimuth": "184°27'",
+      "altitude": "+30°53'",
+      "house": 9,
+      "dispositor": "Saturn",
+      "rulesHouse": 11,
+      "mutualReceptionWith": "Saturn"
+    },
+    "pluto": {
+      "longitude": {
+        "sign": "Scorpio",
+        "degree": 27,
+        "minute": 16,
+        "second": 34
+      },
+      "travel": "+02'18\"",
+      "latitude": "+13°18'",
+      "rightAscension": "238°01'",
+      "declination": "-06°34'",
+      "azimuth": "244°17'",
+      "altitude": "+19°53'",
+      "house": 7,
+      "dispositor": "Pluto",
+      "rulesHouse": 7,
+      "dignity": "rulership"
+    }
+  },
+  "minorBodies": {
+    "chiron": {
+      "longitude": {
+        "sign": "Virgo",
+        "degree": 22,
+        "minute": 10,
+        "second": 58
+      },
+      "travel": "+06'47\"",
+      "latitude": "-04°20'",
+      "rightAscension": "171°06'",
+      "declination": "-00°53'",
+      "azimuth": "292°48'",
+      "altitude": "-27°53'",
+      "house": 5,
+      "dispositor": "Mercury"
+    },
+    "vesta": {
+      "longitude": {
+        "sign": "Cancer",
+        "degree": 10,
+        "minute": 49,
+        "second": 20
+      },
+      "travel": "+01'30\"",
+      "latitude": "-03°40'",
+      "rightAscension": "101°27'",
+      "declination": "+19°19'",
+      "azimuth": "016°41'",
+      "altitude": "-31°12'",
+      "house": 3,
+      "dispositor": "Moon"
+    },
+    "pallas": {
+      "longitude": {
+        "sign": "Taurus",
+        "degree": 18,
+        "minute": 4,
+        "second": 56
+      },
+      "retrograde": true,
+      "travel": "-18'46\"",
+      "latitude": "-45°00'",
+      "rightAscension": "058°16'",
+      "declination": "-26°04'",
+      "azimuth": "094°23'",
+      "altitude": "-39°59'",
+      "house": 1,
+      "dispositor": "Venus"
+    },
+    "juno": {
+      "longitude": {
+        "sign": "Scorpio",
+        "degree": 20,
+        "minute": 45,
+        "second": 46
+      },
+      "travel": "+20'17\"",
+      "latitude": "+09°02'",
+      "rightAscension": "230°44'",
+      "declination": "-09°12'",
+      "azimuth": "247°26'",
+      "altitude": "+12°49'",
+      "house": 7,
+      "dispositor": "Pluto"
+    },
+    "ceres": {
+      "longitude": {
+        "sign": "Leo",
+        "degree": 13,
+        "minute": 38,
+        "second": 13
+      },
+      "travel": "+15'28\"",
+      "latitude": "+05°44'",
+      "rightAscension": "137°52'",
+      "declination": "+22°13'",
+      "azimuth": "337°50'",
+      "altitude": "-26°46'",
+      "house": 4,
+      "dispositor": "Sun"
+    },
+    "vulcan": {
+      "longitude": {
+        "sign": "Scorpio",
+        "degree": 13,
+        "minute": 20,
+        "second": 10
+      },
+      "travel": "+03°02'",
+      "latitude": "-00°17'",
+      "rightAscension": "220°47'",
+      "declination": "-16°07'",
+      "azimuth": "248°37'",
+      "altitude": "+00°58'",
+      "house": 7,
+      "dispositor": "Pluto"
+    }
+  },
+  "calculatedPoints": {
+    "northNode": {
+      "longitude": {
+        "sign": "Scorpio",
+        "degree": 14,
+        "minute": 53,
+        "second": 39
+      },
+      "retrograde": true,
+      "house": 7,
+      "dispositor": "Pluto"
+    },
+    "southNode": {
+      "longitude": {
+        "sign": "Taurus",
+        "degree": 14,
+        "minute": 53,
+        "second": 39
+      },
+      "retrograde": true,
+      "house": 1,
+      "dispositor": "Venus"
+    },
+    "partOfFortune": {
+      "longitude": {
+        "sign": "Taurus",
+        "degree": 19,
+        "minute": 43,
+        "second": 41
+      },
+      "house": 1,
+      "dispositor": "Venus"
+    },
+    "blackMoonLilith": {
+      "longitude": {
+        "sign": "Taurus",
+        "degree": 23,
+        "minute": 15,
+        "second": 59
+      },
+      "travel": "+06'38\"",
+      "house": 1,
+      "dispositor": "Venus"
+    },
+    "descendant": {
+      "longitude": {
+        "sign": "Scorpio",
+        "degree": 11,
+        "minute": 3,
+        "second": 38
+      },
+      "house": 7,
+      "dispositor": "Pluto"
+    },
+    "imumCoeli": {
+      "longitude": {
+        "sign": "Cancer",
+        "degree": 24,
+        "minute": 37,
+        "second": 22
+      },
+      "house": 3,
+      "dispositor": "Moon"
+    }
+  },
+  "lunarPhase": {
+    "angle": 351.32,
+    "phaseName": "Balsamic",
+    "phaseNumber": 8,
+    "totalPhases": 8,
+    "dayOfCycle": 28,
+    "totalDays": 28
+  },
+  "chartShape": {
+    "pattern": "Locomotive",
+    "leadPlanet": "Mars"
+  },
+  "modalities": {
+    "signs": {
+      "cardinal": {
+        "points": [
+          "Mercury",
+          "Uranus",
+          "Neptune",
+          "Vesta",
+          "MC",
+          "IC"
+        ],
+        "totalPoints": 6,
+        "weightedScore": 7
+      },
+      "fixed": {
+        "points": [
+          "Moon",
+          "Sun",
+          "Vulcan",
+          "Venus",
+          "Mars",
+          "Jupiter",
+          "Pluto",
+          "Pallas",
+          "Juno",
+          "Ceres",
+          "NorthNode",
+          "SouthNode",
+          "Ascendant",
+          "PartOfFortune",
+          "BlackMoonLilith",
+          "Descendant"
+        ],
+        "totalPoints": 16,
+        "weightedScore": 15
+      },
+      "mutable": {
+        "points": [
+          "Saturn",
+          "Chiron"
+        ],
+        "totalPoints": 2,
+        "weightedScore": 1
+      }
+    },
+    "houses": {
+      "angular": {
+        "points": [
+          "Moon",
+          "Sun",
+          "Vulcan",
+          "Venus",
+          "Mars",
+          "Jupiter",
+          "Pluto",
+          "Pallas",
+          "Juno",
+          "Ceres",
+          "NorthNode",
+          "SouthNode",
+          "PartOfFortune",
+          "BlackMoonLilith",
+          "Descendant"
+        ],
+        "totalPoints": 15,
+        "weightedScore": 12
+      },
+      "succedent": {
+        "points": [
+          "Saturn",
+          "Chiron"
+        ],
+        "totalPoints": 2,
+        "weightedScore": 1
+      },
+      "cadent": {
+        "points": [
+          "Mercury",
+          "Uranus",
+          "Neptune",
+          "Vesta",
+          "IC"
+        ],
+        "totalPoints": 5,
+        "weightedScore": 4
+      }
+    }
+  },
+  "elements": {
+    "fire": {
+      "points": [
+        "Mars",
+        "Ceres"
+      ],
+      "totalPoints": 2,
+      "weightedScore": 2
+    },
+    "earth": {
+      "points": [
+        "Uranus",
+        "Neptune",
+        "Chiron",
+        "Pallas",
+        "SouthNode",
+        "Ascendant",
+        "MC",
+        "PartOfFortune",
+        "BlackMoonLilith"
+      ],
+      "totalPoints": 9,
+      "weightedScore": 8
+    },
+    "air": {
+      "points": [
+        "Mercury"
+      ],
+      "totalPoints": 1,
+      "weightedScore": 2
+    },
+    "water": {
+      "points": [
+        "Moon",
+        "Sun",
+        "Vulcan",
+        "Venus",
+        "Jupiter",
+        "Saturn",
+        "Pluto",
+        "Vesta",
+        "Juno",
+        "NorthNode",
+        "Descendant",
+        "IC"
+      ],
+      "totalPoints": 12,
+      "weightedScore": 11
+    }
+  },
+  "dignities": {
+    "inRulership": [
+      "Pluto"
+    ],
+    "inExaltation": [],
+    "accidentalDignity": [
+      "Mercury",
+      "Venus"
+    ],
+    "inDetriment": [
+      "Venus"
+    ],
+    "inFall": [
+      "Moon"
+    ],
+    "mutualReceptions": [
+      {
+        "planet1": "Saturn",
+        "planet2": "Neptune"
+      }
+    ],
+    "finalDispositor": null
+  },
+  "aspects": {
+    "major": {
+      "conjunctions": [
+        {
+          "point1": "Moon",
+          "point2": "Sun",
+          "orb": "8°40'",
+          "applying": true
+        },
+        {
+          "point1": "Moon",
+          "point2": "Venus",
+          "orb": "8°41'",
+          "applying": true
+        },
+        {
+          "point1": "Sun",
+          "point2": "Vulcan",
+          "orb": "3°02'",
+          "applying": false
+        },
+        {
+          "point1": "Sun",
+          "point2": "Venus",
+          "orb": "0°01'",
+          "applying": true
+        },
+        {
+          "point1": "Sun",
+          "point2": "NorthNode",
+          "orb": "4°36'",
+          "applying": true
+        },
+        {
+          "point1": "Sun",
+          "point2": "Descendant",
+          "orb": "0°46'",
+          "applying": false
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "Venus",
+          "orb": "3°01'",
+          "applying": false
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "Jupiter",
+          "orb": "8°37'",
+          "applying": true
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "Juno",
+          "orb": "7°25'",
+          "applying": true
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "NorthNode",
+          "orb": "1°33'",
+          "applying": true
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "Descendant",
+          "orb": "2°16'",
+          "applying": true
+        },
+        {
+          "point1": "Venus",
+          "point2": "NorthNode",
+          "orb": "4°35'",
+          "applying": false
+        },
+        {
+          "point1": "Venus",
+          "point2": "Descendant",
+          "orb": "0°45'",
+          "applying": false
+        },
+        {
+          "point1": "Jupiter",
+          "point2": "Pluto",
+          "orb": "5°19'",
+          "applying": true
+        },
+        {
+          "point1": "Jupiter",
+          "point2": "Juno",
+          "orb": "1°11'",
+          "applying": true
+        },
+        {
+          "point1": "Uranus",
+          "point2": "Neptune",
+          "orb": "1°58'",
+          "applying": false
+        },
+        {
+          "point1": "Uranus",
+          "point2": "MC",
+          "orb": "1°48'",
+          "applying": false
+        },
+        {
+          "point1": "Neptune",
+          "point2": "MC",
+          "orb": "3°46'",
+          "applying": false
+        },
+        {
+          "point1": "Mars",
+          "point2": "Ceres",
+          "orb": "1°42'",
+          "applying": false
+        },
+        {
+          "point1": "Pallas",
+          "point2": "SouthNode",
+          "orb": "3°11'",
+          "applying": true
+        },
+        {
+          "point1": "Juno",
+          "point2": "NorthNode",
+          "orb": "5°52'",
+          "applying": false
+        },
+        {
+          "point1": "PartOfFortune",
+          "point2": "BlackMoonLilith",
+          "orb": "3°32'",
+          "applying": true
+        }
+      ],
+      "oppositions": [
+        {
+          "point1": "Sun",
+          "point2": "Pallas",
+          "orb": "7°47'",
+          "applying": true
+        },
+        {
+          "point1": "Sun",
+          "point2": "SouthNode",
+          "orb": "4°36'",
+          "applying": true
+        },
+        {
+          "point1": "Sun",
+          "point2": "Ascendant",
+          "orb": "0°46'",
+          "applying": false
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "Pallas",
+          "orb": "4°44'",
+          "applying": true
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "SouthNode",
+          "orb": "1°33'",
+          "applying": true
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "Ascendant",
+          "orb": "2°16'",
+          "applying": true
+        },
+        {
+          "point1": "Venus",
+          "point2": "SouthNode",
+          "orb": "4°35'",
+          "applying": false
+        },
+        {
+          "point1": "Venus",
+          "point2": "Ascendant",
+          "orb": "0°45'",
+          "applying": false
+        },
+        {
+          "point1": "Jupiter",
+          "point2": "Pallas",
+          "orb": "3°52'",
+          "applying": false
+        },
+        {
+          "point1": "Jupiter",
+          "point2": "PartOfFortune",
+          "orb": "2°13'",
+          "applying": true
+        },
+        {
+          "point1": "Jupiter",
+          "point2": "BlackMoonLilith",
+          "orb": "1°18'",
+          "applying": true
+        },
+        {
+          "point1": "Pluto",
+          "point2": "PartOfFortune",
+          "orb": "7°32'",
+          "applying": true
+        },
+        {
+          "point1": "Pluto",
+          "point2": "BlackMoonLilith",
+          "orb": "4°00'",
+          "applying": true
+        },
+        {
+          "point1": "Pallas",
+          "point2": "Juno",
+          "orb": "2°40'",
+          "applying": false
+        },
+        {
+          "point1": "Juno",
+          "point2": "PartOfFortune",
+          "orb": "1°02'",
+          "applying": true
+        },
+        {
+          "point1": "Juno",
+          "point2": "BlackMoonLilith",
+          "orb": "2°30'",
+          "applying": true
+        },
+        {
+          "point1": "NorthNode",
+          "point2": "SouthNode",
+          "orb": "0°00'",
+          "applying": false
+        },
+        {
+          "point1": "NorthNode",
+          "point2": "Ascendant",
+          "orb": "3°50'",
+          "applying": true
+        },
+        {
+          "point1": "Uranus",
+          "point2": "IC",
+          "orb": "1°48'",
+          "applying": false
+        },
+        {
+          "point1": "Neptune",
+          "point2": "IC",
+          "orb": "3°46'",
+          "applying": false
+        }
+      ],
+      "trines": [
+        {
+          "point1": "Moon",
+          "point2": "Saturn",
+          "orb": "4°05'",
+          "applying": true
+        },
+        {
+          "point1": "Sun",
+          "point2": "Saturn",
+          "orb": "4°34'",
+          "applying": false
+        },
+        {
+          "point1": "Sun",
+          "point2": "Vesta",
+          "orb": "0°31'",
+          "applying": true
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "Vesta",
+          "orb": "2°30'",
+          "applying": false
+        },
+        {
+          "point1": "Venus",
+          "point2": "Saturn",
+          "orb": "4°35'",
+          "applying": true
+        },
+        {
+          "point1": "Venus",
+          "point2": "Vesta",
+          "orb": "0°30'",
+          "applying": false
+        },
+        {
+          "point1": "Jupiter",
+          "point2": "IC",
+          "orb": "2°40'",
+          "applying": false
+        },
+        {
+          "point1": "Saturn",
+          "point2": "Vesta",
+          "orb": "5°06'",
+          "applying": false
+        },
+        {
+          "point1": "Saturn",
+          "point2": "Descendant",
+          "orb": "5°20'",
+          "applying": false
+        },
+        {
+          "point1": "Uranus",
+          "point2": "Chiron",
+          "orb": "0°38'",
+          "applying": true
+        },
+        {
+          "point1": "Uranus",
+          "point2": "Pallas",
+          "orb": "4°44'",
+          "applying": false
+        },
+        {
+          "point1": "Uranus",
+          "point2": "PartOfFortune",
+          "orb": "3°05'",
+          "applying": true
+        },
+        {
+          "point1": "Uranus",
+          "point2": "BlackMoonLilith",
+          "orb": "0°26'",
+          "applying": false
+        },
+        {
+          "point1": "Neptune",
+          "point2": "Chiron",
+          "orb": "1°20'",
+          "applying": false
+        },
+        {
+          "point1": "Neptune",
+          "point2": "Pallas",
+          "orb": "2°45'",
+          "applying": false
+        },
+        {
+          "point1": "Neptune",
+          "point2": "SouthNode",
+          "orb": "5°57'",
+          "applying": false
+        },
+        {
+          "point1": "Neptune",
+          "point2": "PartOfFortune",
+          "orb": "1°06'",
+          "applying": true
+        },
+        {
+          "point1": "Neptune",
+          "point2": "BlackMoonLilith",
+          "orb": "2°25'",
+          "applying": false
+        },
+        {
+          "point1": "Pluto",
+          "point2": "IC",
+          "orb": "2°39'",
+          "applying": true
+        },
+        {
+          "point1": "Chiron",
+          "point2": "Pallas",
+          "orb": "4°06'",
+          "applying": false
+        },
+        {
+          "point1": "Chiron",
+          "point2": "MC",
+          "orb": "2°26'",
+          "applying": false
+        },
+        {
+          "point1": "Chiron",
+          "point2": "PartOfFortune",
+          "orb": "2°27'",
+          "applying": true
+        },
+        {
+          "point1": "Chiron",
+          "point2": "BlackMoonLilith",
+          "orb": "1°05'",
+          "applying": true
+        },
+        {
+          "point1": "Vesta",
+          "point2": "NorthNode",
+          "orb": "4°04'",
+          "applying": true
+        },
+        {
+          "point1": "Vesta",
+          "point2": "Descendant",
+          "orb": "0°14'",
+          "applying": false
+        },
+        {
+          "point1": "Juno",
+          "point2": "IC",
+          "orb": "3°51'",
+          "applying": false
+        },
+        {
+          "point1": "MC",
+          "point2": "PartOfFortune",
+          "orb": "4°53'",
+          "applying": true
+        },
+        {
+          "point1": "MC",
+          "point2": "BlackMoonLilith",
+          "orb": "1°21'",
+          "applying": false
+        }
+      ],
+      "squares": [
+        {
+          "point1": "Sun",
+          "point2": "Mars",
+          "orb": "5°03'",
+          "applying": true
+        },
+        {
+          "point1": "Sun",
+          "point2": "Ceres",
+          "orb": "3°20'",
+          "applying": true
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "Mars",
+          "orb": "2°00'",
+          "applying": true
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "Ceres",
+          "orb": "0°18'",
+          "applying": true
+        },
+        {
+          "point1": "Mercury",
+          "point2": "Uranus",
+          "orb": "0°44'",
+          "applying": true
+        },
+        {
+          "point1": "Mercury",
+          "point2": "Neptune",
+          "orb": "1°13'",
+          "applying": false
+        },
+        {
+          "point1": "Mercury",
+          "point2": "MC",
+          "orb": "2°32'",
+          "applying": false
+        },
+        {
+          "point1": "Mercury",
+          "point2": "IC",
+          "orb": "2°32'",
+          "applying": false
+        },
+        {
+          "point1": "Venus",
+          "point2": "Ceres",
+          "orb": "3°19'",
+          "applying": false
+        },
+        {
+          "point1": "Mars",
+          "point2": "Pallas",
+          "orb": "2°44'",
+          "applying": true
+        },
+        {
+          "point1": "Mars",
+          "point2": "Juno",
+          "orb": "5°25'",
+          "applying": true
+        },
+        {
+          "point1": "Mars",
+          "point2": "NorthNode",
+          "orb": "0°26'",
+          "applying": false
+        },
+        {
+          "point1": "Mars",
+          "point2": "SouthNode",
+          "orb": "0°26'",
+          "applying": false
+        },
+        {
+          "point1": "Mars",
+          "point2": "Ascendant",
+          "orb": "4°17'",
+          "applying": true
+        },
+        {
+          "point1": "Mars",
+          "point2": "PartOfFortune",
+          "orb": "4°23'",
+          "applying": false
+        },
+        {
+          "point1": "Mars",
+          "point2": "Descendant",
+          "orb": "4°17'",
+          "applying": true
+        },
+        {
+          "point1": "Pallas",
+          "point2": "Ceres",
+          "orb": "4°26'",
+          "applying": true
+        },
+        {
+          "point1": "Ceres",
+          "point2": "NorthNode",
+          "orb": "1°15'",
+          "applying": true
+        },
+        {
+          "point1": "Ceres",
+          "point2": "SouthNode",
+          "orb": "1°15'",
+          "applying": true
+        },
+        {
+          "point1": "Ceres",
+          "point2": "Ascendant",
+          "orb": "2°34'",
+          "applying": true
+        },
+        {
+          "point1": "Ceres",
+          "point2": "Descendant",
+          "orb": "2°34'",
+          "applying": true
+        }
+      ],
+      "sextiles": [
+        {
+          "point1": "Jupiter",
+          "point2": "Uranus",
+          "orb": "0°51'",
+          "applying": true
+        },
+        {
+          "point1": "Jupiter",
+          "point2": "Neptune",
+          "orb": "1°06'",
+          "applying": false
+        },
+        {
+          "point1": "Jupiter",
+          "point2": "Chiron",
+          "orb": "0°13'",
+          "applying": true
+        },
+        {
+          "point1": "Uranus",
+          "point2": "Juno",
+          "orb": "2°03'",
+          "applying": true
+        },
+        {
+          "point1": "Neptune",
+          "point2": "Juno",
+          "orb": "0°04'",
+          "applying": true
+        },
+        {
+          "point1": "Pluto",
+          "point2": "MC",
+          "orb": "2°39'",
+          "applying": true
+        },
+        {
+          "point1": "Chiron",
+          "point2": "Juno",
+          "orb": "1°25'",
+          "applying": true
+        },
+        {
+          "point1": "Chiron",
+          "point2": "IC",
+          "orb": "2°26'",
+          "applying": false
+        },
+        {
+          "point1": "Vesta",
+          "point2": "Ascendant",
+          "orb": "0°14'",
+          "applying": false
+        },
+        {
+          "point1": "BlackMoonLilith",
+          "point2": "IC",
+          "orb": "1°21'",
+          "applying": false
+        }
+      ]
+    },
+    "minor": {
+      "semisquare": [
+        {
+          "point1": "Saturn",
+          "point2": "Neptune",
+          "orb": "0°07'",
+          "applying": false
+        }
+      ],
+      "sesquiquadrate": [
+        {
+          "point1": "Mercury",
+          "point2": "Saturn",
+          "orb": "1°21'",
+          "applying": false
+        },
+        {
+          "point1": "Pluto",
+          "point2": "Vesta",
+          "orb": "1°27'",
+          "applying": false
+        }
+      ],
+      "quincunx": [
+        {
+          "point1": "Mercury",
+          "point2": "PartOfFortune",
+          "orb": "2°20'",
+          "applying": true
+        },
+        {
+          "point1": "Mercury",
+          "point2": "BlackMoonLilith",
+          "orb": "1°11'",
+          "applying": true
+        }
+      ]
+    },
+    "declination": {
+      "parallel": [
+        {
+          "point1": "Sun",
+          "point2": "Descendant",
+          "orb": "0°14'"
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "NorthNode",
+          "orb": "0°10'"
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "Descendant",
+          "orb": "0°58'"
+        },
+        {
+          "point1": "Mercury",
+          "point2": "Pluto",
+          "orb": "0°07'"
+        },
+        {
+          "point1": "Jupiter",
+          "point2": "Mars",
+          "orb": "0°18'"
+        },
+        {
+          "point1": "Jupiter",
+          "point2": "BlackMoonLilith",
+          "orb": "0°22'"
+        },
+        {
+          "point1": "Uranus",
+          "point2": "Neptune",
+          "orb": "0°45'"
+        },
+        {
+          "point1": "Uranus",
+          "point2": "MC",
+          "orb": "0°48'"
+        },
+        {
+          "point1": "Uranus",
+          "point2": "Ceres",
+          "orb": "0°12'"
+        },
+        {
+          "point1": "Uranus",
+          "point2": "IC",
+          "orb": "0°48'"
+        },
+        {
+          "point1": "Neptune",
+          "point2": "MC",
+          "orb": "0°03'"
+        },
+        {
+          "point1": "Neptune",
+          "point2": "Ceres",
+          "orb": "0°57'"
+        },
+        {
+          "point1": "Neptune",
+          "point2": "IC",
+          "orb": "0°03'"
+        },
+        {
+          "point1": "Vesta",
+          "point2": "PartOfFortune",
+          "orb": "0°29'"
+        },
+        {
+          "point1": "Mars",
+          "point2": "BlackMoonLilith",
+          "orb": "0°04'"
+        },
+        {
+          "point1": "PartOfFortune",
+          "point2": "BlackMoonLilith",
+          "orb": "0°58'"
+        }
+      ],
+      "contraparallel": [
+        {
+          "point1": "Sun",
+          "point2": "Ascendant",
+          "orb": "0°14'"
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "SouthNode",
+          "orb": "0°10'"
+        },
+        {
+          "point1": "Vulcan",
+          "point2": "Ascendant",
+          "orb": "0°58'"
+        },
+        {
+          "point1": "Venus",
+          "point2": "Vesta",
+          "orb": "0°41'"
+        }
+      ]
+    }
+  }
+}

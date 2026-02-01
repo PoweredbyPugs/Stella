@@ -1,0 +1,5 @@
+mcp
+chromadb
+openai
+httpx
+pydantic
