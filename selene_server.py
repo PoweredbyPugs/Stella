@@ -1576,90 +1576,101 @@ CHART_SIZES = {
     "xs": {
         "label": "XS — The Glance",
         "target_length": "3-5 sentences",
-        "depth": """Distilled framework. Every lens touched in a phrase or sentence.
-Core identity (Sun/Moon/Rising), dominant dignity/debility, lord of the year,
-current ZR chapter, one key transit. Like reading the weather before you walk outside.
-The bones of the chart in concise, precise language.""",
+        "depth": """Distilled portrait. Every lens touched in a phrase or sentence.
+Who this person is at their core, their dominant strength, their central tension,
+where they are right now in life. Like a therapist's first-session impression.
+No astrology language — pure human insight, compressed to its essence.""",
         "knowledge_results": 1,  # per query
     },
     "s": {
         "label": "S — Key Themes",
         "target_length": "2-3 paragraphs",
-        "depth": """Framework plus the 2-3 most dominant themes fleshed out.
-Sect analysis and what it means for this person. Most/least dignified planets
-and how they shape daily experience. The depositor chain's central node.
-Current timing (profections + ZR) as context for everything.
-Knowledge sources cited where they illuminate.""",
+        "depth": """Portrait plus the 2-3 most dominant life themes fleshed out.
+What drives this person, what holds them back, how they relate to others.
+The central psychological tension and the primary coping strategy.
+Where they are in their life's arc right now and why it matters.
+Written as insight, not analysis. Like a letter from someone who understands.""",
         "knowledge_results": 2,
     },
     "m": {
         "label": "M — Working Reading",
         "target_length": "1-2 pages",
         "depth": """All interpretive lenses addressed with moderate depth.
-Each planet gets its dignity assessment woven into the narrative of how this
-person navigates life. House rulerships traced — where does each house lord
-fall and what does that mean for that domain? Aspect patterns interpreted as
-psychological dynamics, not just geometric facts. Depositor chains as power
-flows. Timing techniques integrated as "where you are now in the story."
-Knowledge graph sources woven naturally — Brennan on technique, Lehman on
-dignities, Tarnas on archetypes, Sasportas on houses. No deep psychological
-excavation yet, but the emotional body and relational patterns are addressed.""",
+How this person presents to the world vs. who they are inside. Their emotional
+patterns — what feels safe, what triggers defense, how they process experience.
+What they attract in relationships and why. How early life shaped their coping.
+Their natural gifts and where they overcompensate. How motivation and purpose
+flow through their life. The current chapter and what it's asking of them.
+Written as a continuous narrative — warm, direct, psychologically grounded.
+Knowledge graph material absorbed and synthesized, never cited as astrology.""",
         "knowledge_results": 3,
     },
     "l": {
         "label": "L — Full Narrative",
         "target_length": "3-5 pages",
         "depth": """Full narrative interpretation across all lenses.
-External self vs. internal self traced through Sun/ASC/1H ruler vs. Moon/4H/IC.
-The emotional body — how this person takes in the world (Moon, water houses,
-aspects to Moon) and how that resonates outward. The mirror — 7th house, DSC,
-what people reflect back. Conscious vs. unconscious (hemispheric emphasis,
-12th house, Pluto/Neptune as buried material). Strengths and weaknesses as
-expression patterns, not judgments. Depositor chains as the chart's internal
-logic. Every house ruler traced to its placement.
 
-Knowledge graph sources integrated throughout — direct quotes and concepts
-from the corpus that illuminate specific placements. Psychological frameworks
-(attachment, shadow, individuation) woven where they add depth.
-Timing as life chapters — where has this person been, where are they going.""",
+How the face this person shows the world differs from who they are when
+alone. The emotional interior — how they take in experience, what soothes
+them, what overwhelms them, and how that resonates outward into how people
+perceive them. What they attract in relationships and why — the feedback
+loop between self and other. How early life conditions shaped their coping
+strategies, attachment patterns, and sense of safety. What operates below
+awareness — the patterns they can't see but others can. Where their life
+is more private vs. public-facing and what that means.
+
+Strengths described not as gifts but as *developed capacities* — things
+this person has built through effort. Challenges described not as flaws
+but as friction points where growth is available. The internal logic of
+how motivation, energy, and purpose flow through their life.
+
+Psychological frameworks woven throughout: attachment theory, Jungian
+individuation, shadow work, internal family systems, developmental stages.
+The knowledge graph material fully absorbed and expressed as insight.
+The current life chapter given biographical weight — where have they been,
+where are they now, what's being asked of them.""",
         "knowledge_results": 4,
     },
     "xl": {
         "label": "XL — The Deep Dive",
         "target_length": "5-10+ pages",
-        "depth": """Exhaustive meaning-making. The full operating system.
+        "depth": """Exhaustive meaning-making. The full operating system of a person.
 
-Every lens explored in full depth:
-- External self / Internal self: How the projected identity (Sun, ASC, 1H ruler)
-  interacts with the felt inner world (Moon, 4H, IC). Where they align, where
-  they create tension.
-- The emotional body: Moon sign, house, aspects. Water house activity. How this
-  person receives and processes experience. What feels safe, what triggers defense.
-- The mirror: 7H, DSC ruler, planets there. What this person attracts in others,
-  what gets projected outward, the feedback loop between self and world.
-- Formative imprints: 4H, Moon, Saturn aspects, IC. What childhood conditions
-  shaped the expression of the chart. Not deterministic — but the soil the seed
-  grew in.
-- Conscious / Unconscious: Hemispheric emphasis. Above/below horizon. 12H as
-  the hidden room. Pluto/Neptune aspects as material that operates below awareness.
-- Personal / Public: Houses 1-6 vs 7-12. Where is the weight? Private builder
-  or public performer?
-- Strengths / Weaknesses: Dignities and debilities as expression patterns.
-  A planet in detriment isn't broken — it expresses with friction, with effort,
-  sometimes with compensatory brilliance.
-- Depositor chains: Follow the rulership. Where does power flow? Where does it
-  pool? Where does it leak?
+Every lens explored in full depth, expressed entirely as human experience:
 
-Knowledge graph pulled extensively — Brennan for Hellenistic technique, Lehman
-for dignity analysis, Tarnas for archetypal framing, Sasportas for house
-psychology, planet PDFs for detailed delineations. Direct concepts and frameworks
-from the corpus woven throughout.
+- The face and the interior: How the identity they project interacts with
+  who they actually feel themselves to be. Where these align, where they
+  create tension, where one compensates for the other.
+- The emotional body: How this person receives and processes experience.
+  What feels safe. What triggers defense. What they do with difficult
+  feelings — intellectualize, somatize, project, suppress, act out.
+  The attachment style implied by their emotional patterning.
+- The mirror: What this person attracts in others. What gets projected
+  outward. The feedback loop between how they see themselves and how
+  the world reflects them back. Relationship patterns.
+- Formative imprints: What childhood and early family conditions likely
+  shaped their coping strategies. Not deterministic — but the soil the
+  seed grew in. The internalized parent. The wound that became a skill.
+- The conscious and the unconscious: What this person manages deliberately
+  vs. what operates below awareness. The blind spots. The shadow material.
+  What they've exiled from identity that still runs the show.
+- Private and public: Where the weight of their life falls — inward builder
+  or outward performer? Where do they invest energy that nobody sees?
+- Strengths and overcompensation: Natural capacities — and the places
+  where strength becomes rigidity, where a gift gets overused because
+  the alternative feels too vulnerable.
+- The internal economy: How motivation, energy, and purpose flow through
+  their life. Where it pools (obsession, hyperfocus). Where it leaks
+  (avoidance, scattered attention, chronic depletion).
+- The current chapter: Where are they in the larger arc? What season of
+  life is this? What's ending, what's beginning, what's being demanded?
 
-Timing integration as biographical context — profections as annual chapters,
-ZR as decades-long arcs. Current transits as the weather within the season.
+The knowledge graph provides the scholarly depth. Absorb it completely.
+Express it as human truth. The reader should feel *seen* — not analyzed.
 
-Actionable synthesis: What does this person need to understand about themselves?
-Where are the growth edges? What's the invitation of the current chapter?""",
+Actionable synthesis: What does this person need to understand about
+themselves right now? Where are the growth edges? What's the invitation?
+What would a wise friend who could see everything say to them?""",
         "knowledge_results": 5,
     },
 }
@@ -1670,18 +1681,30 @@ Where are the growth edges? What's the invitation of the current chapter?""",
 PERSPECTIVES = {
     "psychological": """Interpretive philosophy: NON-FATALIST, NON-DETERMINISTIC.
 The chart describes archetypal fields of possibility, not fixed outcomes.
-Planets in challenging conditions (detriment, fall) represent areas where
-expression requires more conscious effort — not doom. Use psychological
-frameworks where they illuminate: attachment patterns, individuation,
-shadow work, defense mechanisms. The goal is self-understanding that
-increases agency and autonomy.
 
-Voice: Warm but precise. Speak to the person, not about them. Second person
-where natural. No cookbook platitudes. Specific to THIS chart.
+CRITICAL RULES FOR THE NARRATIVE:
+- Write for a HUMAN who does NOT know astrology. No jargon. No "Mercury rules
+  your 1st house" or "peregrine Sun in the 9th." Translate everything into
+  lived experience, psychology, and felt human reality.
+- Do NOT name planets, signs, houses, or aspects explicitly. Instead, describe
+  what they MEAN in this person's life. "You lead with analytical precision
+  and a restless need to solve things" rather than "Mercury in Aries in the 8th."
+- The astrological data is your SOURCE MATERIAL, not your output. You read it,
+  synthesize it, and deliver human insight. Like a doctor who reads bloodwork
+  but tells the patient "you need more rest" — not "your cortisol is 22 µg/dL."
+- Use psychological frameworks: attachment patterns, individuation, shadow work,
+  defense mechanisms, internal family systems, developmental psychology.
+  These are the LANGUAGE of the output.
+- Speak about patterns of experience: how this person takes in the world,
+  what feels safe, where they overcompensate, what they project onto others,
+  where their blind spots live, what strengths they undervalue.
+- The knowledge graph excerpts are your scholarly foundation. Absorb their
+  insights but express them in everyday language. Never cite authors by name
+  unless the reader would benefit from the reference.
 
-Source integration: Weave knowledge graph material naturally — "as Brennan
-notes about sect..." or "Tarnas describes this archetypal pattern as..."
-Don't just list sources; let them inform the interpretation.""",
+Voice: Warm, direct, insightful. Like a brilliant therapist who also happens
+to understand your whole life structure. Speak to the person. Second person.
+No filler, no flattery. Say the true thing.""",
 
     "deterministic": """Interpretive philosophy: DETERMINISTIC (GTEI framework).
 The chart is a necessitated expression of Absolute Self-Consistency (ASC).
@@ -2071,25 +2094,31 @@ Target length: {size_config['target_length']}
 {size_config['depth']}
 
 === INTERPRETIVE LENSES ===
-Weave these throughout the narrative (do not use as section headers):
-- External self / Internal self (Sun, ASC, 1H ruler vs Moon, 4H, IC)
-- The emotional body (Moon sign/house/aspects, water houses)
-- The mirror (7H, DSC, what others reflect back)
-- Formative imprints (4H, Moon, Saturn aspects, IC)
-- Conscious / Unconscious (hemispheric emphasis, 12H, Pluto/Neptune)
-- Personal / Public (houses 1-6 vs 7-12)
-- Strengths / Weaknesses (dignities as expression patterns, not judgments)
-- Depositor chains (where power flows, pools, and leaks)
-- Current chapter (profections + ZR as biographical timing)
+Weave these throughout the narrative as HUMAN EXPERIENCES, not astrological categories.
+Do NOT use these as section headers. Do NOT name the astrological source of each insight.
+
+- How you present yourself vs. how you actually feel inside
+- How you process emotions and what makes you feel safe or threatened
+- What you attract in other people and what gets reflected back to you
+- How early life and family shaped your patterns of relating and coping
+- What operates below your awareness vs. what you consciously manage
+- Where your life is more private vs. more public-facing
+- Your natural strengths and where you compensate or overwork
+- How energy, motivation, and purpose flow through your life — where it pools, where it leaks
+- Where you are right now in your life's larger arc — what chapter this is
 
 === PERSPECTIVE ===
 {perspective_text}
 
-=== IMPORTANT ===
-- Ground every claim in the computation data below. Cite degrees, signs, houses.
-- Draw from the knowledge graph material — these are your source texts.
-- Weave, don't section. This is a narrative, not a list.
-- Every size gets full computation. The sizing controls elaboration depth.
+=== CRITICAL OUTPUT RULES ===
+- NO astrological jargon in the narrative. No planet names, sign names, house
+  numbers, aspect names, or degree positions. Translate EVERYTHING into
+  psychology, behavior, felt experience, and human reality.
+- The computation data and knowledge graph are your RAW MATERIALS. Read them,
+  synthesize them, and output HUMAN INSIGHT.
+- The reader should feel deeply understood, not lectured about their chart.
+- Weave, don't section. This is a continuous narrative, not a report.
+- Every size gets full computation. The sizing controls elaboration depth only.
 """,
         "computation": computation,
         "knowledge_graph": knowledge,
