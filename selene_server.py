@@ -205,6 +205,7 @@ async def get_natal_chart(
         "latitude": latitude, "longitude": longitude,
     })
     data = await call_sweph(f"/natal-chart?{params}")
+    data = _apply_whole_sign_houses(data)
     return json.dumps(data, indent=2)
 
 
@@ -247,6 +248,10 @@ async def generate_chart(
     if save is not None:
         body["save"] = save
     data = await call_sweph("/generate-chart", method="POST", body=body)
+    if "chart" in data:
+        data["chart"] = _apply_whole_sign_houses(data["chart"])
+    else:
+        data = _apply_whole_sign_houses(data)
     return json.dumps(data, indent=2)
 
 
@@ -258,6 +263,7 @@ async def get_chart(name: str) -> str:
         name: Name of the stored chart
     """
     data = await call_sweph(f"/chart/{name}")
+    data = _apply_whole_sign_houses(data)
     return json.dumps(data, indent=2)
 
 
@@ -1762,64 +1768,72 @@ coherence-aiding question for the reader.""",
 
 
 @mcp.tool()
-def _convert_to_whole_sign(chart: dict) -> dict:
-    """Convert Placidus chart data to whole sign houses.
+# ── Whole Sign Houses ──
+# Selene uses whole sign houses natively. The ASC sign = 1st house,
+# each subsequent sign = next house. One sign per house. No interceptions.
+# Planet house placement is determined by sign alone.
+# Helios provides planetary longitudes and the ASC degree. Selene computes
+# the houses. Helios's Placidus house cusps are discarded.
 
-    In whole sign houses:
-    - The ASC sign = 1st house
-    - Each subsequent sign = next house
-    - One sign per house, no interceptions
-    - Planet house assignments based purely on sign
+SIGNS = [
+    "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+    "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
+]
+SIGN_RULERS = {
+    "Aries": "Mars", "Taurus": "Venus", "Gemini": "Mercury",
+    "Cancer": "Moon", "Leo": "Sun", "Virgo": "Mercury",
+    "Libra": "Venus", "Scorpio": "Mars", "Sagittarius": "Jupiter",
+    "Capricorn": "Saturn", "Aquarius": "Saturn", "Pisces": "Jupiter",
+}
+
+
+def _sign_index(sign: str) -> int:
+    """Return 0-11 index for a zodiac sign."""
+    return SIGNS.index(sign)
+
+
+def _whole_sign_house(planet_sign: str, asc_sign: str) -> int:
+    """Which whole sign house (1-12) does a planet occupy?"""
+    return ((_sign_index(planet_sign) - _sign_index(asc_sign)) % 12) + 1
+
+
+def _apply_whole_sign_houses(chart: dict) -> dict:
+    """Compute whole sign houses from ASC sign and assign planet houses.
+
+    This is not a conversion — it is the primary house calculation.
+    Helios provides longitudes and ASC. Selene computes houses.
     """
-    SIGNS = [
-        "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
-        "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
-    ]
-    RULERS = {
-        "Aries": "Mars", "Taurus": "Venus", "Gemini": "Mercury",
-        "Cancer": "Moon", "Leo": "Sun", "Virgo": "Mercury",
-        "Libra": "Venus", "Scorpio": "Mars", "Sagittarius": "Jupiter",
-        "Capricorn": "Saturn", "Aquarius": "Saturn", "Pisces": "Jupiter",
-    }
-
-    # Find ASC sign from angles or houses
+    # Determine ASC sign
     asc_sign = None
     angles = chart.get("angles", {})
     if isinstance(angles, dict):
         asc_sign = angles.get("ascendant", {}).get("sign")
     if not asc_sign:
+        # Fallback: first house from Helios (always the ASC sign)
         houses = chart.get("houses", [])
         if houses:
             asc_sign = houses[0].get("sign")
     if not asc_sign:
-        return chart  # can't convert without ASC
+        return chart  # Cannot compute without ASC
 
-    asc_idx = SIGNS.index(asc_sign)
+    asc_idx = _sign_index(asc_sign)
 
-    # Build whole sign houses
-    ws_houses = []
-    for i in range(12):
-        sign_idx = (asc_idx + i) % 12
-        sign = SIGNS[sign_idx]
-        ws_houses.append({
+    # Build the 12 whole sign houses
+    chart["houses"] = [
+        {
             "house": i + 1,
-            "sign": sign,
-            "ruler": RULERS[sign],
-            "system": "whole_sign",
-        })
+            "sign": SIGNS[(asc_idx + i) % 12],
+            "ruler": SIGN_RULERS[SIGNS[(asc_idx + i) % 12]],
+        }
+        for i in range(12)
+    ]
+    chart["house_system"] = "whole_sign"
 
-    # Reassign planet houses based on sign
-    planets = chart.get("planets", [])
-    for p in planets:
+    # Assign planet houses from sign
+    for p in chart.get("planets", []):
         p_sign = p.get("sign")
         if p_sign and p_sign in SIGNS:
-            p_sign_idx = SIGNS.index(p_sign)
-            ws_house = ((p_sign_idx - asc_idx) % 12) + 1
-            p["house"] = ws_house
-            p["house_system"] = "whole_sign"
-
-    chart["houses"] = ws_houses
-    chart["house_system"] = "whole_sign"
+            p["house"] = _whole_sign_house(p_sign, asc_sign)
 
     return chart
 
@@ -1853,8 +1867,8 @@ async def full_chart_computation(name: str) -> str:
         else:
             return json.dumps({"error": f"Chart '{name}' not found", "details": errors})
 
-    # 1b. Convert to whole sign houses
-    results["chart"] = _convert_to_whole_sign(results["chart"])
+    # 1b. Compute whole sign houses (Selene's native house system)
+    results["chart"] = _apply_whole_sign_houses(results["chart"])
 
     # 2. Essential dignities for every planet in the chart
     chart = results.get("chart", {})
