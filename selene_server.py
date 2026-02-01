@@ -24,6 +24,7 @@ from urllib.parse import urlencode
 import httpx
 import chromadb
 from openai import OpenAI
+from neo4j import GraphDatabase
 from mcp.server.fastmcp import FastMCP
 
 # ── Config ──
@@ -33,6 +34,11 @@ COLLECTION_NAME = "astro_knowledge"
 EMBEDDING_MODEL = "text-embedding-3-small"
 SWEPH_API_BASE = os.environ.get("SWEPH_API_BASE", "http://baratie:3000")
 TRUST_LABELS = {1: "PRIMARY", 2: "BRIDGE", 3: "REFERENCE", 4: "PERIPHERAL"}
+
+# Neo4j
+NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+NEO4J_USER = os.environ.get("NEO4J_USER", "neo4j")
+NEO4J_PASS = os.environ.get("NEO4J_PASS", "selene_gnosis")
 
 # ── Init ──
 mcp = FastMCP("selene")
@@ -93,6 +99,27 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
     client = get_openai_client()
     response = client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
     return [item.embedding for item in sorted(response.data, key=lambda x: x.index)]
+
+
+# ── Neo4j ──
+
+_neo4j_driver = None
+
+
+def get_neo4j():
+    """Get or create Neo4j driver singleton."""
+    global _neo4j_driver
+    if _neo4j_driver is None:
+        _neo4j_driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASS))
+    return _neo4j_driver
+
+
+def neo4j_query(cypher: str, **params) -> list[dict]:
+    """Run a Cypher query and return results as list of dicts."""
+    driver = get_neo4j()
+    with driver.session() as session:
+        result = session.run(cypher, **params)
+        return [dict(record) for record in result]
 
 
 def load_json(filename: str):
@@ -1306,6 +1333,231 @@ Include a section on which life areas (houses) are most activated this week base
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 5b: GRAPH QUERIES — Direct Neo4j knowledge traversals
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@mcp.tool()
+def graph_query(
+    planet: Optional[str] = None,
+    sign: Optional[str] = None,
+    house: Optional[int] = None,
+    layer: Optional[str] = None,
+    author: Optional[str] = None,
+    technique: Optional[str] = None,
+    limit: int = 5,
+) -> str:
+    """Query the Neo4j knowledge graph with structured filters. No embeddings needed.
+
+    This is a direct graph traversal — instant results. Use for structured lookups
+    like "what does Brennan say about Mars in Aries" or "all psychological
+    interpretations of the 12th house."
+
+    Args:
+        planet: Planet id (sun, moon, mercury, venus, mars, jupiter, saturn, etc.)
+        sign: Sign id (aries, taurus, gemini, etc.)
+        house: House number (1-12)
+        layer: Interpretive layer (technical, psychological, archetypal, philosophical, reference)
+        author: Author name (e.g. 'Chris Brennan', 'Richard Tarnas')
+        technique: Technique id (essential_dignities, sect, profections, zodiacal_releasing, etc.)
+        limit: Max results (default 5)
+    """
+    # Build dynamic Cypher query
+    matches = ["(i:Interpretation)"]
+    wheres = []
+
+    if planet:
+        matches.append("(i)-[:DESCRIBES]->(p:Planet {id: $planet})")
+    if sign:
+        matches.append("(i)-[:DESCRIBES]->(s:Sign {id: $sign})")
+    if house is not None:
+        matches.append("(i)-[:DESCRIBES]->(h:House {number: $house})")
+    if layer:
+        matches.append("(i)-[:IN_LAYER]->(l:Layer {id: $layer})")
+    if author:
+        matches.append("(i)-[:AUTHORED_BY]->(a:Author {name: $author})")
+    else:
+        matches.append("(i)-[:AUTHORED_BY]->(a:Author)")
+    if technique:
+        matches.append("(i)-[:DESCRIBES]->(t:Technique {id: $technique})")
+
+    cypher = f"""
+        MATCH {', '.join(matches)}
+        RETURN i.text AS text, a.name AS author, i.source_title AS title,
+               i.trust_tier AS tier
+        ORDER BY i.trust_tier ASC
+        LIMIT $limit
+    """
+
+    params = {"limit": limit}
+    if planet: params["planet"] = planet
+    if sign: params["sign"] = sign
+    if house is not None: params["house"] = house
+    if layer: params["layer"] = layer
+    if author: params["author"] = author
+    if technique: params["technique"] = technique
+
+    results = neo4j_query(cypher, **params)
+
+    if not results:
+        return "No results found for this combination."
+
+    # Format output
+    parts = [f"Found {len(results)} results:\n"]
+    for i, r in enumerate(results):
+        text = r["text"][:600] + "..." if len(r["text"]) > 600 else r["text"]
+        parts.append(f"[{i+1}] [{r['author']}] (Tier {r['tier']})")
+        parts.append(f"    {r['title']}")
+        parts.append(f"    {text}\n")
+
+    return "\n".join(parts)
+
+
+@mcp.tool()
+def graph_rulership_web(sign: str) -> str:
+    """Get the complete rulership web for a sign from the graph.
+
+    Returns which planet rules it, is exalted in it, in detriment, in fall,
+    and the triplicity rulers. Pure graph traversal, instant.
+
+    Args:
+        sign: Sign id (aries, taurus, gemini, etc.)
+    """
+    results = neo4j_query("""
+        MATCH (s:Sign {id: $sign})
+        OPTIONAL MATCH (ruler:Planet)-[:RULES]->(s)
+        OPTIONAL MATCH (exalted:Planet)-[:EXALTED_IN]->(s)
+        OPTIONAL MATCH (detriment:Planet)-[:DETRIMENT_IN]->(s)
+        OPTIONAL MATCH (fall:Planet)-[:FALL_IN]->(s)
+        OPTIONAL MATCH (trip_day:Planet)-[:TRIPLICITY_RULER {sect: 'day'}]->(s)
+        OPTIONAL MATCH (trip_night:Planet)-[:TRIPLICITY_RULER {sect: 'night'}]->(s)
+        OPTIONAL MATCH (trip_part:Planet)-[:TRIPLICITY_RULER {sect: 'participating'}]->(s)
+        OPTIONAL MATCH (s)-[:OF_ELEMENT]->(e:Element)
+        OPTIONAL MATCH (s)-[:OF_MODALITY]->(m:Modality)
+        OPTIONAL MATCH (s)-[:NATURAL_HOUSE]->(h:House)
+        OPTIONAL MATCH (opp:Sign)<-[:OPPOSES]-(s)
+        RETURN s.name AS sign, s.symbol AS symbol,
+               e.name AS element, m.name AS modality,
+               h.number AS natural_house, h.topics AS house_topics,
+               ruler.name AS ruler, exalted.name AS exalted,
+               collect(DISTINCT detriment.name) AS detriments,
+               collect(DISTINCT fall.name) AS falls,
+               trip_day.name AS triplicity_day,
+               trip_night.name AS triplicity_night,
+               trip_part.name AS triplicity_participating,
+               opp.name AS opposite_sign
+    """, sign=sign.lower())
+
+    if not results:
+        return f"Sign '{sign}' not found."
+
+    return json.dumps(results[0], indent=2, default=str)
+
+
+@mcp.tool()
+def graph_planet_condition(planet: str, sign: str) -> str:
+    """Get a planet's full condition in a given sign from the graph.
+
+    Returns all dignity relationships plus relevant interpretations
+    from the knowledge graph. No embeddings needed.
+
+    Args:
+        planet: Planet id (sun, moon, mercury, etc.)
+        sign: Sign id (aries, taurus, etc.)
+    """
+    # Structural dignities
+    dignities = neo4j_query("""
+        MATCH (p:Planet {id: $planet})
+        OPTIONAL MATCH (p)-[r:RULES]->(s:Sign {id: $sign})
+        OPTIONAL MATCH (p)-[e:EXALTED_IN]->(s2:Sign {id: $sign})
+        OPTIONAL MATCH (p)-[d:DETRIMENT_IN]->(s3:Sign {id: $sign})
+        OPTIONAL MATCH (p)-[f:FALL_IN]->(s4:Sign {id: $sign})
+        OPTIONAL MATCH (p)-[t:TRIPLICITY_RULER]->(s5:Sign {id: $sign})
+        RETURN p.name AS planet, p.sect AS sect, p.type AS type,
+               r IS NOT NULL AS domicile,
+               e IS NOT NULL AS exaltation,
+               d IS NOT NULL AS detriment,
+               f IS NOT NULL AS fall,
+               t IS NOT NULL AS triplicity
+    """, planet=planet.lower(), sign=sign.lower())
+
+    # Top interpretations from each layer
+    interpretations = neo4j_query("""
+        MATCH (i:Interpretation)-[:DESCRIBES]->(p:Planet {id: $planet}),
+              (i)-[:DESCRIBES]->(s:Sign {id: $sign}),
+              (i)-[:IN_LAYER]->(l:Layer),
+              (i)-[:AUTHORED_BY]->(a:Author)
+        RETURN l.id AS layer, a.name AS author, left(i.text, 300) AS excerpt,
+               i.trust_tier AS tier
+        ORDER BY l.id, i.trust_tier ASC
+        LIMIT 10
+    """, planet=planet.lower(), sign=sign.lower())
+
+    output = {
+        "condition": dignities[0] if dignities else {},
+        "interpretations_by_layer": {},
+    }
+
+    for interp in interpretations:
+        layer = interp["layer"]
+        if layer not in output["interpretations_by_layer"]:
+            output["interpretations_by_layer"][layer] = []
+        output["interpretations_by_layer"][layer].append({
+            "author": interp["author"],
+            "excerpt": interp["excerpt"],
+            "tier": interp["tier"],
+        })
+
+    return json.dumps(output, indent=2)
+
+
+@mcp.tool()
+def graph_stats() -> str:
+    """Get statistics about the Neo4j knowledge graph."""
+    stats = {}
+
+    counts = neo4j_query("""
+        MATCH (i:Interpretation) WITH count(i) AS interps
+        MATCH (p:Planet) WITH interps, count(p) AS planets
+        MATCH (s:Sign) WITH interps, planets, count(s) AS signs
+        MATCH (h:House) WITH interps, planets, signs, count(h) AS houses
+        MATCH (a:Author) WITH interps, planets, signs, houses, count(a) AS authors
+        MATCH ()-[r:DESCRIBES]->() WITH interps, planets, signs, houses, authors, count(r) AS describes
+        MATCH ()-[r2:RULES]->() WITH interps, planets, signs, houses, authors, describes, count(r2) AS rules
+        RETURN interps, planets, signs, houses, authors, describes, rules
+    """)
+
+    if counts:
+        c = counts[0]
+        stats = {
+            "interpretations": c["interps"],
+            "planets": c["planets"],
+            "signs": c["signs"],
+            "houses": c["houses"],
+            "authors": c["authors"],
+            "describes_relationships": c["describes"],
+            "rules_relationships": c["rules"],
+        }
+
+    # Author breakdown
+    authors = neo4j_query("""
+        MATCH (i:Interpretation)-[:AUTHORED_BY]->(a:Author)
+        RETURN a.name AS author, count(i) AS chunks
+        ORDER BY chunks DESC
+    """)
+    stats["authors_detail"] = {a["author"]: a["chunks"] for a in authors}
+
+    # Layer breakdown
+    layers = neo4j_query("""
+        MATCH (i:Interpretation)-[:IN_LAYER]->(l:Layer)
+        RETURN l.id AS layer, count(i) AS chunks
+        ORDER BY chunks DESC
+    """)
+    stats["layers"] = {l["layer"]: l["chunks"] for l in layers}
+
+    return json.dumps(stats, indent=2)
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # SECTION 6: CHART READING — Full Computation + Knowledge-Grounded Narrative
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1550,121 +1802,209 @@ async def full_chart_computation(name: str) -> str:
 
 
 def _gather_knowledge_for_chart(chart_data: dict, results_per_query: int = 3) -> list[dict]:
-    """Query the knowledge graph for every significant placement in the chart.
+    """Query the Neo4j knowledge graph for every significant placement in the chart.
 
-    Batches all embedding calls into a single API request for speed.
+    Uses graph traversals — NO embedding API calls. Instant.
+
     Pulls interpretive material across all layers for every planet,
     plus timing techniques (profections, ZR).
 
     Returns a list of {query, layer, results} dicts.
     """
-    collection = get_collection()
-
+    knowledge_hits = []
     chart = chart_data.get("chart", {})
     planets = chart.get("planets", [])
 
-    # ── Build all queries upfront ──
-    queries = []  # list of (query_text, label, where_filter)
+    # Map planet names to graph IDs
+    name_to_id = {
+        "Sun": "sun", "Moon": "moon", "Mercury": "mercury", "Venus": "venus",
+        "Mars": "mars", "Jupiter": "jupiter", "Saturn": "saturn",
+        "Uranus": "uranus", "Neptune": "neptune", "Pluto": "pluto",
+        "North Node": "north_node", "South Node": "south_node", "Chiron": None,
+    }
 
     for p in planets:
-        name = p.get("name", "")
+        pname = p.get("name", "")
         sign = p.get("sign", "")
         house = p.get("house", "")
-        if not name or name in ("Chiron",):
+        planet_id = name_to_id.get(pname)
+        if not planet_id:
             continue
+        sign_id = sign.lower() if sign else None
+        house_num = int(house) if house and str(house).isdigit() else None
 
-        # Technical: dignity, rulership, condition
-        queries.append((
-            f"{name} in {sign} essential dignity condition",
-            f"{name} in {sign} (technical)",
-            {"layer": "technical"},
-        ))
+        # ── Planet + Sign: technical layer (dignity, rulership) ──
+        if sign_id:
+            results = neo4j_query("""
+                MATCH (i:Interpretation)-[:DESCRIBES]->(p:Planet {id: $planet}),
+                      (i)-[:DESCRIBES]->(s:Sign {id: $sign}),
+                      (i)-[:IN_LAYER]->(l:Layer {id: 'technical'}),
+                      (i)-[:AUTHORED_BY]->(a:Author)
+                RETURN i.text AS text, a.name AS author, i.source_title AS title,
+                       i.trust_tier AS tier
+                ORDER BY i.trust_tier ASC
+                LIMIT $limit
+            """, planet=planet_id, sign=sign_id, limit=results_per_query)
 
-        # Psychological: house meaning
-        if house:
-            queries.append((
-                f"{name} in {house} house psychological meaning",
-                f"{name} in house {house} (psychological)",
-                {"layer": "psychological"},
-            ))
+            if results:
+                knowledge_hits.append({
+                    "query": f"{pname} in {sign} (technical)",
+                    "results": [{"text": r["text"][:500], "author": r["author"],
+                                 "title": r["title"], "tier": r["tier"]} for r in results],
+                })
 
-        # Reference: delineation
-        queries.append((
-            f"{name} in {sign} {house} house delineation interpretation",
-            f"{name} in {sign} in {house}H (reference)",
-            {"layer": "reference"},
-        ))
+        # ── Planet + House: psychological layer ──
+        if house_num:
+            results = neo4j_query("""
+                MATCH (i:Interpretation)-[:DESCRIBES]->(p:Planet {id: $planet}),
+                      (i)-[:DESCRIBES]->(h:House {number: $house}),
+                      (i)-[:IN_LAYER]->(l:Layer {id: 'psychological'}),
+                      (i)-[:AUTHORED_BY]->(a:Author)
+                RETURN i.text AS text, a.name AS author, i.source_title AS title,
+                       i.trust_tier AS tier
+                ORDER BY i.trust_tier ASC
+                LIMIT $limit
+            """, planet=planet_id, house=house_num, limit=results_per_query)
 
-    # Archetypal: notable dignities/debilities
+            if results:
+                knowledge_hits.append({
+                    "query": f"{pname} in house {house} (psychological)",
+                    "results": [{"text": r["text"][:500], "author": r["author"],
+                                 "title": r["title"], "tier": r["tier"]} for r in results],
+                })
+
+        # ── Planet + Sign: reference layer (delineations) ──
+        if sign_id:
+            results = neo4j_query("""
+                MATCH (i:Interpretation)-[:DESCRIBES]->(p:Planet {id: $planet}),
+                      (i)-[:DESCRIBES]->(s:Sign {id: $sign}),
+                      (i)-[:IN_LAYER]->(l:Layer {id: 'reference'}),
+                      (i)-[:AUTHORED_BY]->(a:Author)
+                RETURN i.text AS text, a.name AS author, i.source_title AS title,
+                       i.trust_tier AS tier
+                ORDER BY i.trust_tier ASC
+                LIMIT $limit
+            """, planet=planet_id, sign=sign_id, limit=results_per_query)
+
+            if results:
+                knowledge_hits.append({
+                    "query": f"{pname} in {sign} (reference)",
+                    "results": [{"text": r["text"][:500], "author": r["author"],
+                                 "title": r["title"], "tier": r["tier"]} for r in results],
+                })
+
+    # ── Archetypal layer: notable dignities/debilities ──
     dignities = chart_data.get("dignities", [])
     for d in dignities:
         if d.get("detriment") or d.get("fall") or d.get("domicile") or d.get("exaltation"):
-            planet = d.get("planet", "")
-            sign = d.get("sign", "")
+            planet_name = d.get("planet", "")
+            sign_name = d.get("sign", "")
             condition = d.get("condition", "")
-            queries.append((
-                f"{planet} in {sign} {condition} archetypal meaning",
-                f"{planet} in {sign} ({condition}, archetypal)",
-                {"layer": "archetypal"},
-            ))
+            planet_id = planet_name.lower()
+            sign_id = sign_name.lower()
 
-    # Timing: profections
+            results = neo4j_query("""
+                MATCH (i:Interpretation)-[:DESCRIBES]->(p:Planet {id: $planet}),
+                      (i)-[:DESCRIBES]->(s:Sign {id: $sign}),
+                      (i)-[:IN_LAYER]->(l:Layer {id: 'archetypal'}),
+                      (i)-[:AUTHORED_BY]->(a:Author)
+                RETURN i.text AS text, a.name AS author, i.source_title AS title,
+                       i.trust_tier AS tier
+                ORDER BY i.trust_tier ASC
+                LIMIT $limit
+            """, planet=planet_id, sign=sign_id, limit=results_per_query)
+
+            if results:
+                knowledge_hits.append({
+                    "query": f"{planet_name} in {sign_name} ({condition}, archetypal)",
+                    "results": [{"text": r["text"][:500], "author": r["author"],
+                                 "title": r["title"], "tier": r["tier"]} for r in results],
+                })
+
+    # ── Timing: profections ──
     profections = chart_data.get("profections", {})
     lord_of_year = profections.get("profection", {}).get("lordOfYear", "")
     if lord_of_year:
-        queries.append((
-            f"{lord_of_year} profection year lord annual profections",
-            f"Lord of year: {lord_of_year} (profections)",
-            None,
-        ))
+        lord_id = lord_of_year.lower()
+        results = neo4j_query("""
+            MATCH (i:Interpretation)-[:DESCRIBES]->(t:Technique {id: 'profections'}),
+                  (i)-[:DESCRIBES]->(p:Planet {id: $planet}),
+                  (i)-[:AUTHORED_BY]->(a:Author)
+            RETURN i.text AS text, a.name AS author, i.source_title AS title,
+                   i.trust_tier AS tier
+            ORDER BY i.trust_tier ASC
+            LIMIT $limit
+        """, planet=lord_id, limit=results_per_query)
 
-    # Timing: ZR
+        if results:
+            knowledge_hits.append({
+                "query": f"Lord of year: {lord_of_year} (profections)",
+                "results": [{"text": r["text"][:500], "author": r["author"],
+                             "title": r["title"], "tier": r["tier"]} for r in results],
+            })
+
+    # ── Timing: ZR ──
     zr_spirit = chart_data.get("zr_spirit", {})
     zr_sign = zr_spirit.get("activePeriod", {}).get("sign", "")
     zr_ruler = zr_spirit.get("activePeriod", {}).get("ruler", "")
     if zr_sign:
-        queries.append((
-            f"zodiacal releasing {zr_sign} {zr_ruler} spirit period",
-            f"ZR Spirit L1: {zr_sign} ruled by {zr_ruler}",
-            {"layer": "technical"},
-        ))
+        results = neo4j_query("""
+            MATCH (i:Interpretation)-[:DESCRIBES]->(t:Technique {id: 'zodiacal_releasing'}),
+                  (i)-[:IN_LAYER]->(l:Layer {id: 'technical'}),
+                  (i)-[:AUTHORED_BY]->(a:Author)
+            RETURN i.text AS text, a.name AS author, i.source_title AS title,
+                   i.trust_tier AS tier
+            ORDER BY i.trust_tier ASC
+            LIMIT $limit
+        """, limit=results_per_query)
 
-    # ── Batch embed all queries in ONE API call ──
-    query_texts = [q[0] for q in queries]
-    embeddings = embed_batch(query_texts)
+        if results:
+            knowledge_hits.append({
+                "query": f"ZR Spirit L1: {zr_sign} ruled by {zr_ruler}",
+                "results": [{"text": r["text"][:500], "author": r["author"],
+                             "title": r["title"], "tier": r["tier"]} for r in results],
+            })
 
-    # ── Run ChromaDB queries with pre-computed embeddings ──
-    knowledge_hits = []
-    for (query_text, label, where_filter), embedding in zip(queries, embeddings):
-        try:
-            kwargs = {
-                "query_embeddings": [embedding],
-                "n_results": results_per_query,
-            }
-            if where_filter:
-                kwargs["where"] = where_filter
+    # ── Structural context: rulership web for key planets ──
+    # Get the dignity relationships for the chart from the graph itself
+    for p in planets[:7]:  # Traditional planets only
+        planet_id = name_to_id.get(p.get("name", ""))
+        if not planet_id:
+            continue
+        sign_id = p.get("sign", "").lower()
+        if not sign_id:
+            continue
 
-            results = collection.query(**kwargs)
+        # What dignity does this planet have in this sign?
+        dignity_info = neo4j_query("""
+            MATCH (p:Planet {id: $planet})
+            OPTIONAL MATCH (p)-[:RULES]->(s:Sign {id: $sign})
+            OPTIONAL MATCH (p)-[:EXALTED_IN]->(s2:Sign {id: $sign})
+            OPTIONAL MATCH (p)-[:DETRIMENT_IN]->(s3:Sign {id: $sign})
+            OPTIONAL MATCH (p)-[:FALL_IN]->(s4:Sign {id: $sign})
+            OPTIONAL MATCH (p)-[:TRIPLICITY_RULER]->(s5:Sign {id: $sign})
+            RETURN s IS NOT NULL AS domicile,
+                   s2 IS NOT NULL AS exalted,
+                   s3 IS NOT NULL AS detriment,
+                   s4 IS NOT NULL AS fall,
+                   s5 IS NOT NULL AS triplicity
+        """, planet=planet_id, sign=sign_id)
 
-            if results["documents"][0]:
+        if dignity_info:
+            d = dignity_info[0]
+            conditions = []
+            if d["domicile"]: conditions.append("domicile")
+            if d["exalted"]: conditions.append("exaltation")
+            if d["detriment"]: conditions.append("detriment")
+            if d["fall"]: conditions.append("fall")
+            if d["triplicity"]: conditions.append("triplicity ruler")
+            if conditions:
                 knowledge_hits.append({
-                    "query": label,
-                    "results": [
-                        {
-                            "text": doc[:500],
-                            "author": meta.get("source_author", "?"),
-                            "title": meta.get("source_title", "?"),
-                            "relevance": round(1 - dist, 3),
-                        }
-                        for doc, meta, dist in zip(
-                            results["documents"][0],
-                            results["metadatas"][0],
-                            results["distances"][0],
-                        )
-                    ],
+                    "query": f"{p['name']} in {p['sign']} (graph dignity)",
+                    "results": [{"text": f"{p['name']} is in {', '.join(conditions)} in {p['sign']}. "
+                                         f"This is a structural relationship from the astrological ontology.",
+                                 "author": "graph", "title": "Structural Ontology", "tier": 0}],
                 })
-        except Exception:
-            pass
 
     return knowledge_hits
 
