@@ -1612,10 +1612,9 @@ flow through their life. The current chapter and what it's asking of them.
 Written as a continuous narrative — warm, direct, psychologically grounded.
 Knowledge graph material absorbed and synthesized, never cited as astrology.
 
-SECTION CLOSINGS: At the end of 2-3 key sections, include a one-sentence
-summary written beautifully — in the spirit of a Stoic, Jung, or Alan Watts.
-These are distillations, not decorations. End the full reading with a quote
-from the knowledge graph if one fits, or compose a closing aphorism.""",
+SECTION QUOTES: For 2-3 key sections, include either an opening quote
+from the knowledge graph or a closing composed aphorism (Stoic/Jung/Watts).
+One or the other per section. End the full reading with one that captures the whole.""",
         "knowledge_results": 3,
     },
     "l": {
@@ -1643,11 +1642,10 @@ The knowledge graph material fully absorbed and expressed as insight.
 The current life chapter given biographical weight — where have they been,
 where are they now, what's being asked of them.
 
-SECTION CLOSINGS: End most sections with a one-sentence closing —
-beautifully written in the voice of a Stoic, Jung, or Alan Watts.
-If the knowledge graph contains a passage that captures the section's
-essence, quote it directly (attributed). Otherwise compose an aphorism
-that distills the section. These closings are the heartbeat of the reading.""",
+SECTION QUOTES: Most sections get either an opening quote (from the
+knowledge graph — Tarnas, Sasportas, Gnostic Book of Changes, Stoics)
+or a closing aphorism (composed, in the spirit of Stoics/Jung/Watts).
+One or the other per section, never both. Choose whichever fits.""",
         "knowledge_results": 4,
     },
     "xl": {
@@ -1691,20 +1689,22 @@ Actionable synthesis: What does this person need to understand about
 themselves right now? Where are the growth edges? What's the invitation?
 What would a wise friend who could see everything say to them?
 
-SECTION CLOSINGS — CRITICAL:
-After EVERY section, include a closing quote or aphorism. Two options:
-1. PREFERRED: A direct quote from the knowledge graph source material
-   that resonates with the section's insight. Attribute it:
-   *"The soul becomes dyed with the color of its thoughts." — Marcus Aurelius*
-   Search the knowledge graph excerpts for passages from Tarnas, Sasportas,
-   the Gnostic Book of Changes, Stoic philosophy, or the archetypal layer
-   that match the section's theme. Use the actual text when it fits.
-2. FALLBACK: If no knowledge graph passage fits, compose a one-sentence
-   aphorism in the spirit of the Stoics, Jung, or Alan Watts. Make it
-   beautiful, specific to this section, not generic.
+SECTION QUOTES — CRITICAL:
+For EVERY section, choose ONE of these two options (never both):
 
-These closings are not decoration. They are the resonant frequency of each
-section — the thing that lingers after the analysis fades.""",
+OPTION A — OPENING QUOTE: A direct quote from the knowledge graph source
+material that sets the tone for the section. Place it at the TOP, before
+the narrative begins. Italicized, attributed. Drawn from Tarnas, Sasportas,
+the Gnostic Book of Changes, Stoic philosophy, or the archetypal layer.
+The reader enters the section through someone else's wisdom.
+
+OPTION B — CLOSING APHORISM: A composed one-sentence aphorism at the END
+of the section, in the spirit of the Stoics, Jung, or Alan Watts. Beautiful,
+specific to this section's insight, not generic. The reader leaves the
+section with a distilled truth that lingers.
+
+Choose whichever serves the section better. Alternate naturally — don't
+use the same option for every section. These are the heartbeat of the reading.""",
         "knowledge_results": 5,
     },
 }
