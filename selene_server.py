@@ -1767,7 +1767,6 @@ coherence-aiding question for the reader.""",
 }
 
 
-@mcp.tool()
 # ── Whole Sign Houses ──
 # Selene uses whole sign houses natively. The ASC sign = 1st house,
 # each subsequent sign = next house. One sign per house. No interceptions.
