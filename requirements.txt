@@ -3,3 +3,4 @@ chromadb
 openai
 httpx
 pydantic
+neo4j
