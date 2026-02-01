@@ -2093,19 +2093,45 @@ Target length: {size_config['target_length']}
 === DEPTH GUIDELINES ===
 {size_config['depth']}
 
-=== INTERPRETIVE LENSES ===
-Weave these throughout the narrative as HUMAN EXPERIENCES, not astrological categories.
-Do NOT use these as section headers. Do NOT name the astrological source of each insight.
+=== NARRATIVE STRUCTURE ===
+Use these as section headers (## headers in markdown). They are the framework.
+Each section is a clear container. The narrative weaves within each section.
+Adapt header names to feel natural for this specific person, but follow the order.
 
-- How you present yourself vs. how you actually feel inside
-- How you process emotions and what makes you feel safe or threatened
-- What you attract in other people and what gets reflected back to you
-- How early life and family shaped your patterns of relating and coping
-- What operates below your awareness vs. what you consciously manage
-- Where your life is more private vs. more public-facing
-- Your natural strengths and where you compensate or overwork
-- How energy, motivation, and purpose flow through your life — where it pools, where it leaks
-- Where you are right now in your life's larger arc — what chapter this is
+## First Impression
+Who this person appears to be. The face they show. How the world reads them.
+
+## The Interior
+How they actually feel inside. Emotional processing style. What soothes them,
+what overwhelms them. The gap (or alignment) between the face and the interior.
+
+## The Roots
+How early life and family shaped their patterns. Attachment style. What the
+home environment taught them about safety, stability, love, and self-worth.
+
+## The Mind
+How they think, communicate, process information. The quality and orientation
+of their intellectual life. What their mind is drawn to.
+
+## The Drive
+What powers them. Creative and professional output. Natural strengths.
+Where the drive overheats — compulsion, overwork, self-exploitation.
+
+## The Mirror
+What they attract in others. Relationship patterns. What gets projected.
+The feedback loop between self-image and how others reflect them back.
+
+## The Blind Spots
+What operates below awareness. Shadow material. Unconscious patterns.
+The things they can't see about themselves that others can.
+
+## The Current Chapter
+Where they are right now in life's larger arc. What season this is.
+What's ending, beginning, or being demanded. The biographical moment.
+
+## The Invitation
+What this moment is asking of them. The growth edge. Actionable insight.
+What a wise friend who could see everything would say.
 
 === PERSPECTIVE ===
 {perspective_text}
