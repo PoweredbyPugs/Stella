@@ -13,7 +13,7 @@
       "st0": "01:41:54",
       "lst": "19:46:10"
     },
-    "obliquity": "23°26'23\"",
+    "obliquity": "23\u00b026'23\"",
     "equationOfTime": "+16m25s",
     "acdDates": {
       "acd0h": "1994-11-19",
@@ -107,12 +107,12 @@
         "minute": 37,
         "second": 23
       },
-      "travel": "+15°07'",
-      "latitude": "-01°12'",
-      "rightAscension": "209°02'",
-      "declination": "-13°10'",
-      "azimuth": "258°02'",
-      "altitude": "-06°05'",
+      "travel": "+15\u00b007'",
+      "latitude": "-01\u00b012'",
+      "rightAscension": "209\u00b002'",
+      "declination": "-13\u00b010'",
+      "azimuth": "258\u00b002'",
+      "altitude": "-06\u00b005'",
       "house": 7,
       "dispositor": "Pluto",
       "rulesHouse": 3
@@ -124,12 +124,12 @@
         "minute": 17,
         "second": 26
       },
-      "travel": "+01°00'",
-      "latitude": "+00°00'",
-      "rightAscension": "217°52'",
-      "declination": "-14°54'",
-      "azimuth": "251°21'",
-      "altitude": "-00°24'",
+      "travel": "+01\u00b000'",
+      "latitude": "+00\u00b000'",
+      "rightAscension": "217\u00b052'",
+      "declination": "-14\u00b054'",
+      "azimuth": "251\u00b021'",
+      "altitude": "-00\u00b024'",
       "house": 7,
       "dispositor": "Pluto",
       "rulesHouse": 4
@@ -142,11 +142,11 @@
         "second": 24
       },
       "travel": "+38'11\"",
-      "latitude": "+02°02'",
-      "rightAscension": "201°10'",
-      "declination": "-06°42'",
-      "azimuth": "267°56'",
-      "altitude": "-08°20'",
+      "latitude": "+02\u00b002'",
+      "rightAscension": "201\u00b010'",
+      "declination": "-06\u00b042'",
+      "azimuth": "267\u00b056'",
+      "altitude": "-08\u00b020'",
       "house": 6,
       "dispositor": "Venus",
       "rulesHouses": [
@@ -164,11 +164,11 @@
       },
       "retrograde": true,
       "travel": "-36'28\"",
-      "latitude": "-05°23'",
-      "rightAscension": "216°05'",
-      "declination": "-20°01'",
-      "azimuth": "248°25'",
-      "altitude": "-04°56'",
+      "latitude": "-05\u00b023'",
+      "rightAscension": "216\u00b005'",
+      "declination": "-20\u00b001'",
+      "azimuth": "248\u00b025'",
+      "altitude": "-04\u00b056'",
       "house": 7,
       "dispositor": "Pluto",
       "rulesHouses": [
@@ -186,11 +186,11 @@
         "second": 38
       },
       "travel": "+28'29\"",
-      "latitude": "+01°37'",
-      "rightAscension": "138°18'",
-      "declination": "+17°47'",
-      "azimuth": "335°43'",
-      "altitude": "-30°49'",
+      "latitude": "+01\u00b037'",
+      "rightAscension": "138\u00b018'",
+      "declination": "+17\u00b047'",
+      "azimuth": "335\u00b043'",
+      "altitude": "-30\u00b049'",
       "house": 4,
       "dispositor": "Sun",
       "rulesHouse": 12
@@ -203,11 +203,11 @@
         "second": 21
       },
       "travel": "+13'07\"",
-      "latitude": "+00°48'",
-      "rightAscension": "229°45'",
-      "declination": "-17°28'",
-      "azimuth": "241°55'",
-      "altitude": "+06°30'",
+      "latitude": "+00\u00b048'",
+      "rightAscension": "229\u00b045'",
+      "declination": "-17\u00b028'",
+      "azimuth": "241\u00b055'",
+      "altitude": "+06\u00b030'",
       "house": 7,
       "dispositor": "Pluto",
       "rulesHouse": 8
@@ -221,11 +221,11 @@
       },
       "retrograde": true,
       "travel": "-00'40\"",
-      "latitude": "-01°55'",
-      "rightAscension": "338°13'",
-      "declination": "-11°12'",
-      "azimuth": "132°41'",
-      "altitude": "+27°24'",
+      "latitude": "-01\u00b055'",
+      "rightAscension": "338\u00b013'",
+      "declination": "-11\u00b012'",
+      "azimuth": "132\u00b041'",
+      "altitude": "+27\u00b024'",
       "house": 11,
       "dispositor": "Neptune",
       "rulesHouse": 9,
@@ -239,11 +239,11 @@
         "second": 5
       },
       "travel": "+01'35\"",
-      "latitude": "-00°30'",
-      "rightAscension": "294°43'",
-      "declination": "-22°00'",
-      "azimuth": "181°57'",
-      "altitude": "+30°14'",
+      "latitude": "-00\u00b030'",
+      "rightAscension": "294\u00b043'",
+      "declination": "-22\u00b000'",
+      "azimuth": "181\u00b057'",
+      "altitude": "+30\u00b014'",
       "house": 9,
       "dispositor": "Saturn",
       "rulesHouse": 10
@@ -256,11 +256,11 @@
         "second": 40
       },
       "travel": "+01'01\"",
-      "latitude": "+00°34'",
-      "rightAscension": "292°26'",
-      "declination": "-21°15'",
-      "azimuth": "184°27'",
-      "altitude": "+30°53'",
+      "latitude": "+00\u00b034'",
+      "rightAscension": "292\u00b026'",
+      "declination": "-21\u00b015'",
+      "azimuth": "184\u00b027'",
+      "altitude": "+30\u00b053'",
       "house": 9,
       "dispositor": "Saturn",
       "rulesHouse": 11,
@@ -274,11 +274,11 @@
         "second": 34
       },
       "travel": "+02'18\"",
-      "latitude": "+13°18'",
-      "rightAscension": "238°01'",
-      "declination": "-06°34'",
-      "azimuth": "244°17'",
-      "altitude": "+19°53'",
+      "latitude": "+13\u00b018'",
+      "rightAscension": "238\u00b001'",
+      "declination": "-06\u00b034'",
+      "azimuth": "244\u00b017'",
+      "altitude": "+19\u00b053'",
       "house": 7,
       "dispositor": "Pluto",
       "rulesHouse": 7,
@@ -294,11 +294,11 @@
         "second": 58
       },
       "travel": "+06'47\"",
-      "latitude": "-04°20'",
-      "rightAscension": "171°06'",
-      "declination": "-00°53'",
-      "azimuth": "292°48'",
-      "altitude": "-27°53'",
+      "latitude": "-04\u00b020'",
+      "rightAscension": "171\u00b006'",
+      "declination": "-00\u00b053'",
+      "azimuth": "292\u00b048'",
+      "altitude": "-27\u00b053'",
       "house": 5,
       "dispositor": "Mercury"
     },
@@ -310,11 +310,11 @@
         "second": 20
       },
       "travel": "+01'30\"",
-      "latitude": "-03°40'",
-      "rightAscension": "101°27'",
-      "declination": "+19°19'",
-      "azimuth": "016°41'",
-      "altitude": "-31°12'",
+      "latitude": "-03\u00b040'",
+      "rightAscension": "101\u00b027'",
+      "declination": "+19\u00b019'",
+      "azimuth": "016\u00b041'",
+      "altitude": "-31\u00b012'",
       "house": 3,
       "dispositor": "Moon"
     },
@@ -327,11 +327,11 @@
       },
       "retrograde": true,
       "travel": "-18'46\"",
-      "latitude": "-45°00'",
-      "rightAscension": "058°16'",
-      "declination": "-26°04'",
-      "azimuth": "094°23'",
-      "altitude": "-39°59'",
+      "latitude": "-45\u00b000'",
+      "rightAscension": "058\u00b016'",
+      "declination": "-26\u00b004'",
+      "azimuth": "094\u00b023'",
+      "altitude": "-39\u00b059'",
       "house": 1,
       "dispositor": "Venus"
     },
@@ -343,11 +343,11 @@
         "second": 46
       },
       "travel": "+20'17\"",
-      "latitude": "+09°02'",
-      "rightAscension": "230°44'",
-      "declination": "-09°12'",
-      "azimuth": "247°26'",
-      "altitude": "+12°49'",
+      "latitude": "+09\u00b002'",
+      "rightAscension": "230\u00b044'",
+      "declination": "-09\u00b012'",
+      "azimuth": "247\u00b026'",
+      "altitude": "+12\u00b049'",
       "house": 7,
       "dispositor": "Pluto"
     },
@@ -359,11 +359,11 @@
         "second": 13
       },
       "travel": "+15'28\"",
-      "latitude": "+05°44'",
-      "rightAscension": "137°52'",
-      "declination": "+22°13'",
-      "azimuth": "337°50'",
-      "altitude": "-26°46'",
+      "latitude": "+05\u00b044'",
+      "rightAscension": "137\u00b052'",
+      "declination": "+22\u00b013'",
+      "azimuth": "337\u00b050'",
+      "altitude": "-26\u00b046'",
       "house": 4,
       "dispositor": "Sun"
     },
@@ -374,12 +374,12 @@
         "minute": 20,
         "second": 10
       },
-      "travel": "+03°02'",
-      "latitude": "-00°17'",
-      "rightAscension": "220°47'",
-      "declination": "-16°07'",
-      "azimuth": "248°37'",
-      "altitude": "+00°58'",
+      "travel": "+03\u00b002'",
+      "latitude": "-00\u00b017'",
+      "rightAscension": "220\u00b047'",
+      "declination": "-16\u00b007'",
+      "azimuth": "248\u00b037'",
+      "altitude": "+00\u00b058'",
       "house": 7,
       "dispositor": "Pluto"
     }
@@ -628,133 +628,133 @@
         {
           "point1": "Moon",
           "point2": "Sun",
-          "orb": "8°40'",
+          "orb": "8\u00b040'",
           "applying": true
         },
         {
           "point1": "Moon",
           "point2": "Venus",
-          "orb": "8°41'",
+          "orb": "8\u00b041'",
           "applying": true
         },
         {
           "point1": "Sun",
           "point2": "Vulcan",
-          "orb": "3°02'",
+          "orb": "3\u00b002'",
           "applying": false
         },
         {
           "point1": "Sun",
           "point2": "Venus",
-          "orb": "0°01'",
+          "orb": "0\u00b001'",
           "applying": true
         },
         {
           "point1": "Sun",
           "point2": "NorthNode",
-          "orb": "4°36'",
+          "orb": "4\u00b036'",
           "applying": true
         },
         {
           "point1": "Sun",
           "point2": "Descendant",
-          "orb": "0°46'",
+          "orb": "0\u00b046'",
           "applying": false
         },
         {
           "point1": "Vulcan",
           "point2": "Venus",
-          "orb": "3°01'",
+          "orb": "3\u00b001'",
           "applying": false
         },
         {
           "point1": "Vulcan",
           "point2": "Jupiter",
-          "orb": "8°37'",
+          "orb": "8\u00b037'",
           "applying": true
         },
         {
           "point1": "Vulcan",
           "point2": "Juno",
-          "orb": "7°25'",
+          "orb": "7\u00b025'",
           "applying": true
         },
         {
           "point1": "Vulcan",
           "point2": "NorthNode",
-          "orb": "1°33'",
+          "orb": "1\u00b033'",
           "applying": true
         },
         {
           "point1": "Vulcan",
           "point2": "Descendant",
-          "orb": "2°16'",
+          "orb": "2\u00b016'",
           "applying": true
         },
         {
           "point1": "Venus",
           "point2": "NorthNode",
-          "orb": "4°35'",
+          "orb": "4\u00b035'",
           "applying": false
         },
         {
           "point1": "Venus",
           "point2": "Descendant",
-          "orb": "0°45'",
+          "orb": "0\u00b045'",
           "applying": false
         },
         {
           "point1": "Jupiter",
           "point2": "Pluto",
-          "orb": "5°19'",
+          "orb": "5\u00b019'",
           "applying": true
         },
         {
           "point1": "Jupiter",
           "point2": "Juno",
-          "orb": "1°11'",
+          "orb": "1\u00b011'",
           "applying": true
         },
         {
           "point1": "Uranus",
           "point2": "Neptune",
-          "orb": "1°58'",
+          "orb": "1\u00b058'",
           "applying": false
         },
         {
           "point1": "Uranus",
           "point2": "MC",
-          "orb": "1°48'",
+          "orb": "1\u00b048'",
           "applying": false
         },
         {
           "point1": "Neptune",
           "point2": "MC",
-          "orb": "3°46'",
+          "orb": "3\u00b046'",
           "applying": false
         },
         {
           "point1": "Mars",
           "point2": "Ceres",
-          "orb": "1°42'",
+          "orb": "1\u00b042'",
           "applying": false
         },
         {
           "point1": "Pallas",
           "point2": "SouthNode",
-          "orb": "3°11'",
+          "orb": "3\u00b011'",
           "applying": true
         },
         {
           "point1": "Juno",
           "point2": "NorthNode",
-          "orb": "5°52'",
+          "orb": "5\u00b052'",
           "applying": false
         },
         {
           "point1": "PartOfFortune",
           "point2": "BlackMoonLilith",
-          "orb": "3°32'",
+          "orb": "3\u00b032'",
           "applying": true
         }
       ],
@@ -762,121 +762,121 @@
         {
           "point1": "Sun",
           "point2": "Pallas",
-          "orb": "7°47'",
+          "orb": "7\u00b047'",
           "applying": true
         },
         {
           "point1": "Sun",
           "point2": "SouthNode",
-          "orb": "4°36'",
+          "orb": "4\u00b036'",
           "applying": true
         },
         {
           "point1": "Sun",
           "point2": "Ascendant",
-          "orb": "0°46'",
+          "orb": "0\u00b046'",
           "applying": false
         },
         {
           "point1": "Vulcan",
           "point2": "Pallas",
-          "orb": "4°44'",
+          "orb": "4\u00b044'",
           "applying": true
         },
         {
           "point1": "Vulcan",
           "point2": "SouthNode",
-          "orb": "1°33'",
+          "orb": "1\u00b033'",
           "applying": true
         },
         {
           "point1": "Vulcan",
           "point2": "Ascendant",
-          "orb": "2°16'",
+          "orb": "2\u00b016'",
           "applying": true
         },
         {
           "point1": "Venus",
           "point2": "SouthNode",
-          "orb": "4°35'",
+          "orb": "4\u00b035'",
           "applying": false
         },
         {
           "point1": "Venus",
           "point2": "Ascendant",
-          "orb": "0°45'",
+          "orb": "0\u00b045'",
           "applying": false
         },
         {
           "point1": "Jupiter",
           "point2": "Pallas",
-          "orb": "3°52'",
+          "orb": "3\u00b052'",
           "applying": false
         },
         {
           "point1": "Jupiter",
           "point2": "PartOfFortune",
-          "orb": "2°13'",
+          "orb": "2\u00b013'",
           "applying": true
         },
         {
           "point1": "Jupiter",
           "point2": "BlackMoonLilith",
-          "orb": "1°18'",
+          "orb": "1\u00b018'",
           "applying": true
         },
         {
           "point1": "Pluto",
           "point2": "PartOfFortune",
-          "orb": "7°32'",
+          "orb": "7\u00b032'",
           "applying": true
         },
         {
           "point1": "Pluto",
           "point2": "BlackMoonLilith",
-          "orb": "4°00'",
+          "orb": "4\u00b000'",
           "applying": true
         },
         {
           "point1": "Pallas",
           "point2": "Juno",
-          "orb": "2°40'",
+          "orb": "2\u00b040'",
           "applying": false
         },
         {
           "point1": "Juno",
           "point2": "PartOfFortune",
-          "orb": "1°02'",
+          "orb": "1\u00b002'",
           "applying": true
         },
         {
           "point1": "Juno",
           "point2": "BlackMoonLilith",
-          "orb": "2°30'",
+          "orb": "2\u00b030'",
           "applying": true
         },
         {
           "point1": "NorthNode",
           "point2": "SouthNode",
-          "orb": "0°00'",
+          "orb": "0\u00b000'",
           "applying": false
         },
         {
           "point1": "NorthNode",
           "point2": "Ascendant",
-          "orb": "3°50'",
+          "orb": "3\u00b050'",
           "applying": true
         },
         {
           "point1": "Uranus",
           "point2": "IC",
-          "orb": "1°48'",
+          "orb": "1\u00b048'",
           "applying": false
         },
         {
           "point1": "Neptune",
           "point2": "IC",
-          "orb": "3°46'",
+          "orb": "3\u00b046'",
           "applying": false
         }
       ],
@@ -884,169 +884,169 @@
         {
           "point1": "Moon",
           "point2": "Saturn",
-          "orb": "4°05'",
+          "orb": "4\u00b005'",
           "applying": true
         },
         {
           "point1": "Sun",
           "point2": "Saturn",
-          "orb": "4°34'",
+          "orb": "4\u00b034'",
           "applying": false
         },
         {
           "point1": "Sun",
           "point2": "Vesta",
-          "orb": "0°31'",
+          "orb": "0\u00b031'",
           "applying": true
         },
         {
           "point1": "Vulcan",
           "point2": "Vesta",
-          "orb": "2°30'",
+          "orb": "2\u00b030'",
           "applying": false
         },
         {
           "point1": "Venus",
           "point2": "Saturn",
-          "orb": "4°35'",
+          "orb": "4\u00b035'",
           "applying": true
         },
         {
           "point1": "Venus",
           "point2": "Vesta",
-          "orb": "0°30'",
+          "orb": "0\u00b030'",
           "applying": false
         },
         {
           "point1": "Jupiter",
           "point2": "IC",
-          "orb": "2°40'",
+          "orb": "2\u00b040'",
           "applying": false
         },
         {
           "point1": "Saturn",
           "point2": "Vesta",
-          "orb": "5°06'",
+          "orb": "5\u00b006'",
           "applying": false
         },
         {
           "point1": "Saturn",
           "point2": "Descendant",
-          "orb": "5°20'",
+          "orb": "5\u00b020'",
           "applying": false
         },
         {
           "point1": "Uranus",
           "point2": "Chiron",
-          "orb": "0°38'",
+          "orb": "0\u00b038'",
           "applying": true
         },
         {
           "point1": "Uranus",
           "point2": "Pallas",
-          "orb": "4°44'",
+          "orb": "4\u00b044'",
           "applying": false
         },
         {
           "point1": "Uranus",
           "point2": "PartOfFortune",
-          "orb": "3°05'",
+          "orb": "3\u00b005'",
           "applying": true
         },
         {
           "point1": "Uranus",
           "point2": "BlackMoonLilith",
-          "orb": "0°26'",
+          "orb": "0\u00b026'",
           "applying": false
         },
         {
           "point1": "Neptune",
           "point2": "Chiron",
-          "orb": "1°20'",
+          "orb": "1\u00b020'",
           "applying": false
         },
         {
           "point1": "Neptune",
           "point2": "Pallas",
-          "orb": "2°45'",
+          "orb": "2\u00b045'",
           "applying": false
         },
         {
           "point1": "Neptune",
           "point2": "SouthNode",
-          "orb": "5°57'",
+          "orb": "5\u00b057'",
           "applying": false
         },
         {
           "point1": "Neptune",
           "point2": "PartOfFortune",
-          "orb": "1°06'",
+          "orb": "1\u00b006'",
           "applying": true
         },
         {
           "point1": "Neptune",
           "point2": "BlackMoonLilith",
-          "orb": "2°25'",
+          "orb": "2\u00b025'",
           "applying": false
         },
         {
           "point1": "Pluto",
           "point2": "IC",
-          "orb": "2°39'",
+          "orb": "2\u00b039'",
           "applying": true
         },
         {
           "point1": "Chiron",
           "point2": "Pallas",
-          "orb": "4°06'",
+          "orb": "4\u00b006'",
           "applying": false
         },
         {
           "point1": "Chiron",
           "point2": "MC",
-          "orb": "2°26'",
+          "orb": "2\u00b026'",
           "applying": false
         },
         {
           "point1": "Chiron",
           "point2": "PartOfFortune",
-          "orb": "2°27'",
+          "orb": "2\u00b027'",
           "applying": true
         },
         {
           "point1": "Chiron",
           "point2": "BlackMoonLilith",
-          "orb": "1°05'",
+          "orb": "1\u00b005'",
           "applying": true
         },
         {
           "point1": "Vesta",
           "point2": "NorthNode",
-          "orb": "4°04'",
+          "orb": "4\u00b004'",
           "applying": true
         },
         {
           "point1": "Vesta",
           "point2": "Descendant",
-          "orb": "0°14'",
+          "orb": "0\u00b014'",
           "applying": false
         },
         {
           "point1": "Juno",
           "point2": "IC",
-          "orb": "3°51'",
+          "orb": "3\u00b051'",
           "applying": false
         },
         {
           "point1": "MC",
           "point2": "PartOfFortune",
-          "orb": "4°53'",
+          "orb": "4\u00b053'",
           "applying": true
         },
         {
           "point1": "MC",
           "point2": "BlackMoonLilith",
-          "orb": "1°21'",
+          "orb": "1\u00b021'",
           "applying": false
         }
       ],
@@ -1054,127 +1054,127 @@
         {
           "point1": "Sun",
           "point2": "Mars",
-          "orb": "5°03'",
+          "orb": "5\u00b003'",
           "applying": true
         },
         {
           "point1": "Sun",
           "point2": "Ceres",
-          "orb": "3°20'",
+          "orb": "3\u00b020'",
           "applying": true
         },
         {
           "point1": "Vulcan",
           "point2": "Mars",
-          "orb": "2°00'",
+          "orb": "2\u00b000'",
           "applying": true
         },
         {
           "point1": "Vulcan",
           "point2": "Ceres",
-          "orb": "0°18'",
+          "orb": "0\u00b018'",
           "applying": true
         },
         {
           "point1": "Mercury",
           "point2": "Uranus",
-          "orb": "0°44'",
+          "orb": "0\u00b044'",
           "applying": true
         },
         {
           "point1": "Mercury",
           "point2": "Neptune",
-          "orb": "1°13'",
+          "orb": "1\u00b013'",
           "applying": false
         },
         {
           "point1": "Mercury",
           "point2": "MC",
-          "orb": "2°32'",
+          "orb": "2\u00b032'",
           "applying": false
         },
         {
           "point1": "Mercury",
           "point2": "IC",
-          "orb": "2°32'",
+          "orb": "2\u00b032'",
           "applying": false
         },
         {
           "point1": "Venus",
           "point2": "Ceres",
-          "orb": "3°19'",
+          "orb": "3\u00b019'",
           "applying": false
         },
         {
           "point1": "Mars",
           "point2": "Pallas",
-          "orb": "2°44'",
+          "orb": "2\u00b044'",
           "applying": true
         },
         {
           "point1": "Mars",
           "point2": "Juno",
-          "orb": "5°25'",
+          "orb": "5\u00b025'",
           "applying": true
         },
         {
           "point1": "Mars",
           "point2": "NorthNode",
-          "orb": "0°26'",
+          "orb": "0\u00b026'",
           "applying": false
         },
         {
           "point1": "Mars",
           "point2": "SouthNode",
-          "orb": "0°26'",
+          "orb": "0\u00b026'",
           "applying": false
         },
         {
           "point1": "Mars",
           "point2": "Ascendant",
-          "orb": "4°17'",
+          "orb": "4\u00b017'",
           "applying": true
         },
         {
           "point1": "Mars",
           "point2": "PartOfFortune",
-          "orb": "4°23'",
+          "orb": "4\u00b023'",
           "applying": false
         },
         {
           "point1": "Mars",
           "point2": "Descendant",
-          "orb": "4°17'",
+          "orb": "4\u00b017'",
           "applying": true
         },
         {
           "point1": "Pallas",
           "point2": "Ceres",
-          "orb": "4°26'",
+          "orb": "4\u00b026'",
           "applying": true
         },
         {
           "point1": "Ceres",
           "point2": "NorthNode",
-          "orb": "1°15'",
+          "orb": "1\u00b015'",
           "applying": true
         },
         {
           "point1": "Ceres",
           "point2": "SouthNode",
-          "orb": "1°15'",
+          "orb": "1\u00b015'",
           "applying": true
         },
         {
           "point1": "Ceres",
           "point2": "Ascendant",
-          "orb": "2°34'",
+          "orb": "2\u00b034'",
           "applying": true
         },
         {
           "point1": "Ceres",
           "point2": "Descendant",
-          "orb": "2°34'",
+          "orb": "2\u00b034'",
           "applying": true
         }
       ],
@@ -1182,61 +1182,61 @@
         {
           "point1": "Jupiter",
           "point2": "Uranus",
-          "orb": "0°51'",
+          "orb": "0\u00b051'",
           "applying": true
         },
         {
           "point1": "Jupiter",
           "point2": "Neptune",
-          "orb": "1°06'",
+          "orb": "1\u00b006'",
           "applying": false
         },
         {
           "point1": "Jupiter",
           "point2": "Chiron",
-          "orb": "0°13'",
+          "orb": "0\u00b013'",
           "applying": true
         },
         {
           "point1": "Uranus",
           "point2": "Juno",
-          "orb": "2°03'",
+          "orb": "2\u00b003'",
           "applying": true
         },
         {
           "point1": "Neptune",
           "point2": "Juno",
-          "orb": "0°04'",
+          "orb": "0\u00b004'",
           "applying": true
         },
         {
           "point1": "Pluto",
           "point2": "MC",
-          "orb": "2°39'",
+          "orb": "2\u00b039'",
           "applying": true
         },
         {
           "point1": "Chiron",
           "point2": "Juno",
-          "orb": "1°25'",
+          "orb": "1\u00b025'",
           "applying": true
         },
         {
           "point1": "Chiron",
           "point2": "IC",
-          "orb": "2°26'",
+          "orb": "2\u00b026'",
           "applying": false
         },
         {
           "point1": "Vesta",
           "point2": "Ascendant",
-          "orb": "0°14'",
+          "orb": "0\u00b014'",
           "applying": false
         },
         {
           "point1": "BlackMoonLilith",
           "point2": "IC",
-          "orb": "1°21'",
+          "orb": "1\u00b021'",
           "applying": false
         }
       ]
@@ -1246,7 +1246,7 @@
         {
           "point1": "Saturn",
           "point2": "Neptune",
-          "orb": "0°07'",
+          "orb": "0\u00b007'",
           "applying": false
         }
       ],
@@ -1254,13 +1254,13 @@
         {
           "point1": "Mercury",
           "point2": "Saturn",
-          "orb": "1°21'",
+          "orb": "1\u00b021'",
           "applying": false
         },
         {
           "point1": "Pluto",
           "point2": "Vesta",
-          "orb": "1°27'",
+          "orb": "1\u00b027'",
           "applying": false
         }
       ],
@@ -1268,13 +1268,13 @@
         {
           "point1": "Mercury",
           "point2": "PartOfFortune",
-          "orb": "2°20'",
+          "orb": "2\u00b020'",
           "applying": true
         },
         {
           "point1": "Mercury",
           "point2": "BlackMoonLilith",
-          "orb": "1°11'",
+          "orb": "1\u00b011'",
           "applying": true
         }
       ]
@@ -1284,104 +1284,104 @@
         {
           "point1": "Sun",
           "point2": "Descendant",
-          "orb": "0°14'"
+          "orb": "0\u00b014'"
         },
         {
           "point1": "Vulcan",
           "point2": "NorthNode",
-          "orb": "0°10'"
+          "orb": "0\u00b010'"
         },
         {
           "point1": "Vulcan",
           "point2": "Descendant",
-          "orb": "0°58'"
+          "orb": "0\u00b058'"
         },
         {
           "point1": "Mercury",
           "point2": "Pluto",
-          "orb": "0°07'"
+          "orb": "0\u00b007'"
         },
         {
           "point1": "Jupiter",
           "point2": "Mars",
-          "orb": "0°18'"
+          "orb": "0\u00b018'"
         },
         {
           "point1": "Jupiter",
           "point2": "BlackMoonLilith",
-          "orb": "0°22'"
+          "orb": "0\u00b022'"
         },
         {
           "point1": "Uranus",
           "point2": "Neptune",
-          "orb": "0°45'"
+          "orb": "0\u00b045'"
         },
         {
           "point1": "Uranus",
           "point2": "MC",
-          "orb": "0°48'"
+          "orb": "0\u00b048'"
         },
         {
           "point1": "Uranus",
           "point2": "Ceres",
-          "orb": "0°12'"
+          "orb": "0\u00b012'"
         },
         {
           "point1": "Uranus",
           "point2": "IC",
-          "orb": "0°48'"
+          "orb": "0\u00b048'"
         },
         {
           "point1": "Neptune",
           "point2": "MC",
-          "orb": "0°03'"
+          "orb": "0\u00b003'"
         },
         {
           "point1": "Neptune",
           "point2": "Ceres",
-          "orb": "0°57'"
+          "orb": "0\u00b057'"
         },
         {
           "point1": "Neptune",
           "point2": "IC",
-          "orb": "0°03'"
+          "orb": "0\u00b003'"
         },
         {
           "point1": "Vesta",
           "point2": "PartOfFortune",
-          "orb": "0°29'"
+          "orb": "0\u00b029'"
         },
         {
           "point1": "Mars",
           "point2": "BlackMoonLilith",
-          "orb": "0°04'"
+          "orb": "0\u00b004'"
         },
         {
           "point1": "PartOfFortune",
           "point2": "BlackMoonLilith",
-          "orb": "0°58'"
+          "orb": "0\u00b058'"
         }
       ],
       "contraparallel": [
         {
           "point1": "Sun",
           "point2": "Ascendant",
-          "orb": "0°14'"
+          "orb": "0\u00b014'"
         },
         {
           "point1": "Vulcan",
           "point2": "SouthNode",
-          "orb": "0°10'"
+          "orb": "0\u00b010'"
         },
         {
           "point1": "Vulcan",
           "point2": "Ascendant",
-          "orb": "0°58'"
+          "orb": "0\u00b058'"
         },
         {
           "point1": "Venus",
           "point2": "Vesta",
-          "orb": "0°41'"
+          "orb": "0\u00b041'"
         }
       ]
     }

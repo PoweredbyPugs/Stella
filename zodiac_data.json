@@ -1,13 +1,7 @@
 [
   {
-    "sign": "Aries",
-    "symbol": "♈",
-    "element": "Fire",
-    "quality": "Cardinal",
-    "ruling_planet": {
-      "traditional": "Mars",
-      "modern": "Mars"
-    },
+    "sign": "Aries", "symbol": "♈", "element": "Fire", "quality": "Cardinal",
+    "ruling_planet": { "traditional": "Mars", "modern": "Mars" },
     "archetypal_energy": "The Pioneer",
     "archetypal_description": "Brave, bold, and action-oriented. The initiator who leads the way into new territory. The warrior energy that faces challenges head-on.",
     "traditional_meaning": "Hot and dry in nature. Associated with leadership, courage, and direct action. The ram that charges forward without hesitation.",
@@ -16,14 +10,8 @@
     "psychological_function": "Establishing individual identity and autonomy through direct action and self-assertion."
   },
   {
-    "sign": "Taurus",
-    "symbol": "♉",
-    "element": "Earth",
-    "quality": "Fixed",
-    "ruling_planet": {
-      "traditional": "Venus",
-      "modern": "Venus"
-    },
+    "sign": "Taurus", "symbol": "♉", "element": "Earth", "quality": "Fixed",
+    "ruling_planet": { "traditional": "Venus", "modern": "Venus" },
     "archetypal_energy": "The Builder",
     "archetypal_description": "Grounded, sensual, and resource-oriented. The sustainer who builds lasting structures and values stability and security.",
     "traditional_meaning": "Cold and dry in nature. Associated with fertility, resources, and physical pleasure. The bull that is strong, patient, and territorial.",
@@ -32,14 +20,8 @@
     "psychological_function": "Establishing security and worth through the cultivation and management of resources and values."
   },
   {
-    "sign": "Gemini",
-    "symbol": "♊",
-    "element": "Air",
-    "quality": "Mutable",
-    "ruling_planet": {
-      "traditional": "Mercury",
-      "modern": "Mercury"
-    },
+    "sign": "Gemini", "symbol": "♊", "element": "Air", "quality": "Mutable",
+    "ruling_planet": { "traditional": "Mercury", "modern": "Mercury" },
     "archetypal_energy": "The Messenger",
     "archetypal_description": "Curious, communicative, and intellectually versatile. The connector who bridges different ideas, people, and perspectives.",
     "traditional_meaning": "Hot and moist in nature. Associated with communication, trade, and duality. The twins representing versatility and adaptation.",
@@ -48,14 +30,8 @@
     "psychological_function": "Processing and exchanging information through communication, connection, and mental adaptability."
   },
   {
-    "sign": "Cancer",
-    "symbol": "♋",
-    "element": "Water",
-    "quality": "Cardinal",
-    "ruling_planet": {
-      "traditional": "Moon",
-      "modern": "Moon"
-    },
+    "sign": "Cancer", "symbol": "♋", "element": "Water", "quality": "Cardinal",
+    "ruling_planet": { "traditional": "Moon", "modern": "Moon" },
     "archetypal_energy": "The Nurturer",
     "archetypal_description": "Protective, emotionally sensitive, and caregiving. The maternal figure who creates safe spaces and emotional bonds.",
     "traditional_meaning": "Cold and moist in nature. Associated with home, family, and emotional security. The crab with hard shell and soft interior.",
@@ -64,14 +40,8 @@
     "psychological_function": "Creating emotional security through nurturing connections, intuitive awareness, and protective boundaries."
   },
   {
-    "sign": "Leo",
-    "symbol": "♌",
-    "element": "Fire",
-    "quality": "Fixed",
-    "ruling_planet": {
-      "traditional": "Sun",
-      "modern": "Sun"
-    },
+    "sign": "Leo", "symbol": "♌", "element": "Fire", "quality": "Fixed",
+    "ruling_planet": { "traditional": "Sun", "modern": "Sun" },
     "archetypal_energy": "The Sovereign",
     "archetypal_description": "Creative, expressive, and magnanimous. The royal figure who radiates warmth and seeks recognition for authentic self-expression.",
     "traditional_meaning": "Hot and dry in nature. Associated with nobility, royalty, and creative power. The lion representing courage and dignity.",
@@ -80,14 +50,8 @@
     "psychological_function": "Expressing authentic creativity and vitality through self-confidence, generosity, and heartfelt expression."
   },
   {
-    "sign": "Virgo",
-    "symbol": "♍",
-    "element": "Earth",
-    "quality": "Mutable",
-    "ruling_planet": {
-      "traditional": "Mercury",
-      "modern": "Mercury"
-    },
+    "sign": "Virgo", "symbol": "♍", "element": "Earth", "quality": "Mutable",
+    "ruling_planet": { "traditional": "Mercury", "modern": "Mercury" },
     "archetypal_energy": "The Analyst",
     "archetypal_description": "Precise, practical, and service-oriented. The craftsperson who refines, improves, and brings order to chaos through discernment.",
     "traditional_meaning": "Cold and dry in nature. Associated with harvest, health, and practical service. The virgin representing purity and discernment.",
@@ -96,14 +60,8 @@
     "psychological_function": "Refining and improving through discernment, analysis, and practical application of intelligence."
   },
   {
-    "sign": "Libra",
-    "symbol": "♎",
-    "element": "Air",
-    "quality": "Cardinal",
-    "ruling_planet": {
-      "traditional": "Venus",
-      "modern": "Venus"
-    },
+    "sign": "Libra", "symbol": "♎", "element": "Air", "quality": "Cardinal",
+    "ruling_planet": { "traditional": "Venus", "modern": "Venus" },
     "archetypal_energy": "The Diplomat",
     "archetypal_description": "Harmonious, relationship-oriented, and fair-minded. The mediator who seeks balance and cooperates to create beauty and justice.",
     "traditional_meaning": "Hot and moist in nature. Associated with balance, harmony, and relationships. The scales representing justice and equilibrium.",
@@ -112,14 +70,8 @@
     "psychological_function": "Balancing self and other through reciprocity, cooperation, and the pursuit of harmony and justice."
   },
   {
-    "sign": "Scorpio",
-    "symbol": "♏",
-    "element": "Water",
-    "quality": "Fixed",
-    "ruling_planet": {
-      "traditional": "Mars",
-      "modern": "Pluto"
-    },
+    "sign": "Scorpio", "symbol": "♏", "element": "Water", "quality": "Fixed",
+    "ruling_planet": { "traditional": "Mars", "modern": "Pluto" },
     "archetypal_energy": "The Transformer",
     "archetypal_description": "Intense, profound, and transformative. The investigator who probes beneath surfaces to discover hidden truths and catalyze change.",
     "traditional_meaning": "Cold and moist in nature. Associated with death, rebirth, and shared resources. The scorpion representing power and intensity.",
@@ -128,14 +80,8 @@
     "psychological_function": "Transforming through emotional intensity, psychological depth, and the integration of shadow material."
   },
   {
-    "sign": "Sagittarius",
-    "symbol": "♐",
-    "element": "Fire",
-    "quality": "Mutable",
-    "ruling_planet": {
-      "traditional": "Jupiter",
-      "modern": "Jupiter"
-    },
+    "sign": "Sagittarius", "symbol": "♐", "element": "Fire", "quality": "Mutable",
+    "ruling_planet": { "traditional": "Jupiter", "modern": "Jupiter" },
     "archetypal_energy": "The Explorer",
     "archetypal_description": "Adventurous, philosophical, and freedom-loving. The seeker who expands horizons through travel, education, and belief systems.",
     "traditional_meaning": "Hot and dry in nature. Associated with religion, higher learning, and long journeys. The archer aiming for distant targets.",
@@ -144,14 +90,8 @@
     "psychological_function": "Expanding consciousness through exploration, meaning-making, and belief in greater possibilities."
   },
   {
-    "sign": "Capricorn",
-    "symbol": "♑",
-    "element": "Earth",
-    "quality": "Cardinal",
-    "ruling_planet": {
-      "traditional": "Saturn",
-      "modern": "Saturn"
-    },
+    "sign": "Capricorn", "symbol": "♑", "element": "Earth", "quality": "Cardinal",
+    "ruling_planet": { "traditional": "Saturn", "modern": "Saturn" },
     "archetypal_energy": "The Authority",
     "archetypal_description": "Disciplined, ambitious, and structured. The manager who builds lasting systems through patience, integrity, and strategic thinking.",
     "traditional_meaning": "Cold and dry in nature. Associated with time, social structures, and achievement. The mountain goat climbing steadily upward.",
@@ -160,14 +100,8 @@
     "psychological_function": "Establishing structure and mastery through discipline, responsibility, and the setting of appropriate boundaries."
   },
   {
-    "sign": "Aquarius",
-    "symbol": "♒",
-    "element": "Air",
-    "quality": "Fixed",
-    "ruling_planet": {
-      "traditional": "Saturn",
-      "modern": "Uranus"
-    },
+    "sign": "Aquarius", "symbol": "♒", "element": "Air", "quality": "Fixed",
+    "ruling_planet": { "traditional": "Saturn", "modern": "Uranus" },
     "archetypal_energy": "The Visionary",
     "archetypal_description": "Innovative, humanitarian, and independent. The reformer who envisions new possibilities for society through detached observation.",
     "traditional_meaning": "Hot and moist in nature. Associated with groups, collective knowledge, and innovation. The water-bearer distributing wisdom.",
@@ -176,14 +110,8 @@
     "psychological_function": "Innovating through detached perspective, intellectual freedom, and collaborative social exchange."
   },
   {
-    "sign": "Pisces",
-    "symbol": "♓",
-    "element": "Water",
-    "quality": "Mutable",
-    "ruling_planet": {
-      "traditional": "Jupiter",
-      "modern": "Neptune"
-    },
+    "sign": "Pisces", "symbol": "♓", "element": "Water", "quality": "Mutable",
+    "ruling_planet": { "traditional": "Jupiter", "modern": "Neptune" },
     "archetypal_energy": "The Mystic",
     "archetypal_description": "Compassionate, intuitive, and receptive. The dreamer who dissolves boundaries through empathy, imagination, and spiritual connection.",
     "traditional_meaning": "Cold and moist in nature. Associated with surrender, hidden knowledge, and collective unconscious. The two fish swimming in opposite directions.",
