@@ -1,119 +1,120 @@
-# 🌙 Selene — Unified Astrology MCP Server
+# Selene — Unified Astrology & Divination MCP Server 🌙
 
-> *Σελήνη — The Moon. She reflects the light of Helios through knowledge, making meaning from data.*
+The Moon of Gnosis. Merges three MCP servers into a single Python server:
 
-Selene is the interpretive intelligence layer of **Gnosis**, a modular astrology system. She unifies ephemeris calculations, a curated knowledge graph, and I Ching divination into a single MCP (Model Context Protocol) server.
+1. **Helios Bridge** — 14+ ephemeris tools wrapping the Swiss Ephemeris REST API (+ auto-discovered endpoints)
+2. **Knowledge Graph** — ChromaDB-backed semantic search across 6,160+ chunks from 25 astrological texts
+3. **I Ching / Gnostic** — Hexagram casting (King Wen sequence) and wisdom retrieval
 
-## Architecture
+## Summary
 
-```
-Gnosis (the system)
-├── Helios ☀️  — Swiss Ephemeris REST API (planetary calculations)
-│   └── Docker: sweph @ baratie:3000
-├── Selene 🌙  — This server (MCP interface for LLMs)
-│   ├── Helios Bridge (14 ephemeris tools)
-│   ├── Knowledge Graph (6,160+ chunks, 25 texts, ChromaDB)
-│   ├── I Ching Divination (hexagram casting + Gnostic wisdom)
-│   ├── Resources (zodiac, planets, houses, aspects, charts)
-│   └── Prompts (11 interpretation templates)
-└── [Future: Orchestrator — Helios → Selene → Narrative]
-```
+| Component | Count |
+|-----------|-------|
+| Tools | 24 static + dynamic |
+| Resources | 13 |
+| Prompts | 11 |
 
-## Tools (20)
+## Tools (24+)
 
-### ☀️ Helios Bridge — Ephemeris
+### Ephemeris (Helios Bridge)
 | Tool | Description |
-|---|---|
+|------|-------------|
 | `get_current_moon` | Current moon phase and sign |
-| `get_planet_positions` | All current planetary positions |
+| `get_planet_positions` | Current positions of all planets |
 | `get_planet_aspects` | Current aspects between planets |
 | `get_weekly_moon_phase` | This week's major moon phase |
-| `get_natal_chart` | Calculate natal chart (date, time, location) |
-| `generate_chart` | Generate + store a natal chart |
-| `get_chart` | Retrieve stored chart by name |
+| `get_natal_chart` | Full natal chart calculation |
+| `generate_chart` | Generate and optionally save a natal chart |
+| `get_chart` | Retrieve a stored chart by name |
 | `list_charts` | List all stored charts |
 | `get_profections` | Annual profections for a chart |
-| `get_zodiacal_releasing` | ZR L1/L2 periods (Spirit/Fortune) |
+| `get_zodiacal_releasing` | ZR L1/L2 periods |
 | `get_transits_now` | Current transits to a natal chart |
-| `get_transit_summary` | Major outer planet transit summary |
-| `get_dignity_score` | Essential dignity for any placement |
-| `get_current_dignities` | All planets' dignity scores now |
+| `get_transit_summary` | High-level transit summary |
+| `get_dignity_score` | Essential dignity score for a planet |
+| `get_current_dignities` | Dignity scores for all current planets |
+| `sweph_*` | Auto-discovered additional endpoints |
 
-### 📚 Knowledge Graph
+### Local Chart Storage
 | Tool | Description |
-|---|---|
-| `knowledge_search` | Semantic search across 25 astrological texts |
-| `knowledge_search_json` | Same, structured JSON output |
+|------|-------------|
+| `store_chart` | Persist chart data locally |
+| `load_chart` | Load from local storage (falls back to Helios) |
+| `list_stored_charts` | List locally stored charts |
+| `delete_chart` | Remove a chart from local storage |
+
+### Knowledge Graph
+| Tool | Description |
+|------|-------------|
+| `knowledge_search` | Semantic search across all texts |
+| `knowledge_search_json` | Same, returns JSON |
 | `knowledge_stats` | Collection statistics |
-| `interpret_placement` | Multi-layered interpretation (technical → archetypal) |
+| `interpret_placement` | Multi-layered interpretation of a placement |
 
-### 🎴 I Ching
+### I Ching / Gnostic
 | Tool | Description |
-|---|---|
-| `cast_hexagram` | Traditional I Ching divination (coins/yarrow) |
-| `retrieve_wisdom` | Search the Gnostic Book of Changes |
+|------|-------------|
+| `cast_hexagram` | I Ching divination (coins or yarrow) |
+| `retrieve_wisdom` | Search I Ching / Gnostic wisdom texts |
 
 ## Resources (13)
 
-- `astrology://zodiac-signs` — 12 signs with elements, rulers, archetypes
-- `astrology://planets` — 10 planets with dignities and meanings
-- `astrology://houses` — 12 houses with themes and rulers
-- `astrology://aspects` — Aspect types with orbs and interpretations
-- `astrology://traditional-astrology` — Hellenistic technique reference
-- `astrology://natal-chart` — Chandra's natal chart
-- `astrology://natal-chart/{name}` — Personal charts (chris, katy, micheal, betsy, megan, kelsea, lisa)
+| URI | Description |
+|-----|-------------|
+| `astrology://zodiac-signs` | 12 zodiac signs with full data |
+| `astrology://planets` | 10 planets with dignities & archetypes |
+| `astrology://houses` | 12 houses with Rudhyar perspectives |
+| `astrology://aspects` | 10 aspects with orbs & meanings |
+| `astrology://traditional-astrology` | Hellenistic framework reference |
+| `astrology://natal-chart` | Chandra's natal chart |
+| `astrology://natal-chart/{name}` | 7 personal charts (chris, katy, micheal, betsy, megan, kelsea, lisa) |
 
 ## Prompts (11)
 
-Interpretation templates for LLMs: narrative weekly forecast, Hellenistic analysis, archetypal analysis, profection year, transit analysis, weekly planning, and more.
-
-## Knowledge Graph
-
-6,160+ chunks from 25 curated texts across 5 interpretive layers:
-
-| Layer | Color | Sources |
-|---|---|---|
-| **Technical** | 🔵 | Brennan (Hellenistic), Lehman (Dignities) |
-| **Psychological** | 🟣 | Sasportas (Houses), Green (Outer Planets) |
-| **Archetypal** | 🟡 | Tarnas (Cosmos & Psyche) |
-| **Philosophical** | 🔷 | Stoic essays, fate/free will |
-| **Reference** | 🟢 | Planet PDFs (Sun–Pluto + Nodes), Wen, ZR materials |
+| Prompt | Description |
+|--------|-------------|
+| `narrative_weekly_forecast` | Poetic narrative forecast weaving natal + transits |
+| `interpret_traditional_chart` | Traditional interpretation (Chris Brennan style) |
+| `hellenistic_chart_analysis` | Hellenistic techniques analysis |
+| `archetypal_chart_analysis` | Archetypal astrology (Richard Tarnas style) |
+| `profection_year_analysis` | Annual profection year analysis |
+| `traditional_transits_analysis` | Traditional transit analysis |
+| `interpret_natal_chart` | House rulership focused interpretation |
+| `analyze_current_transits` | Current transits with house rulership |
+| `interpret_planets` | Current planetary positions interpretation |
+| `moon_energy` | Moon phase & influence analysis |
+| `weekly_planning` | Weekly astrological planning guide |
 
 ## Setup
 
+Uses the existing astro-knowledge venv:
+
 ```bash
-# Dependencies (uses existing astro-knowledge venv)
-cd /path/to/selene
-pip install mcp chromadb openai httpx pydantic
-
-# Run
-python selene_server.py
-
-# Or via mcporter
-npx mcporter call selene.get_current_moon
-npx mcporter call selene.knowledge_search query="Saturn return"
-npx mcporter call selene.cast_hexagram question="What now?"
+/home/atlas/clawd/astro-knowledge/.venv/bin/python selene_server.py
 ```
 
-### mcporter config
+## mcporter config
+
+In `~/.mcporter/mcporter.json`:
+
 ```json
-{
-  "selene": {
-    "type": "stdio",
-    "command": "python",
-    "args": ["selene_server.py"]
-  }
+"selene": {
+  "type": "stdio",
+  "command": "/home/atlas/clawd/astro-knowledge/.venv/bin/python",
+  "args": ["/home/atlas/clawd/selene/selene_server.py"]
 }
 ```
 
-### Environment
-- `SWEPH_API_BASE` — Helios REST API URL (default: `http://baratie:3000`)
-- `OPENAI_API_KEY` — For embeddings (or auto-reads from clawdbot config)
+## Environment
 
-## Naming
+- `SWEPH_API_BASE` — Sweph REST API URL (default: `http://baratie:3000`)
+- `OPENAI_API_KEY` — OpenAI key (or auto-read from `~/.clawdbot/clawdbot.json`)
 
-From the Greek Σελήνη (Selene), goddess of the Moon. Where Helios (the Sun) provides raw astronomical truth, Selene reflects that light through curated knowledge to create meaning. Part of the **Gnosis** (Γνῶσις — Knowledge) system.
+## Architecture
 
-## License
-
-Private. Part of the Gnosis astrology project.
+- **FastMCP** server with stdio transport
+- **httpx** async client for Helios API calls
+- **ChromaDB** PersistentClient for knowledge graph (6,160+ chunks)
+- **OpenAI** text-embedding-3-small for embeddings
+- **King Wen sequence** for I Ching hexagram mapping (verified correct)
+- Auto-discovers additional sweph endpoints via `/api-info` at startup
