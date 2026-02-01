@@ -1581,10 +1581,8 @@ Who this person is at their core, their dominant strength, their central tension
 where they are right now in life. Like a therapist's first-session impression.
 No astrology language — pure human insight, compressed to its essence.
 
-CLOSING: End the entire reading with ONE quote or beautifully written sentence
-in the spirit of a Stoic, Jung, or Alan Watts — something that captures
-the essence of this person's chart. If the knowledge graph has a perfect
-passage, use it. Otherwise, compose one.""",
+CLOSING: End with ONE quote from the knowledge graph (only if it specifically
+supports the reading) OR one composed aphorism. Not both.""",
         "knowledge_results": 1,  # per query
     },
     "s": {
@@ -1596,8 +1594,8 @@ The central psychological tension and the primary coping strategy.
 Where they are in their life's arc right now and why it matters.
 Written as insight, not analysis. Like a letter from someone who understands.
 
-CLOSING: End with ONE quote or beautifully written sentence — Stoic, Jungian,
-or contemplative in tone — that captures the whole.""",
+CLOSING: End with ONE quote from the knowledge graph (only if directly
+relevant) OR one composed aphorism. Not both.""",
         "knowledge_results": 2,
     },
     "m": {
@@ -1612,9 +1610,9 @@ flow through their life. The current chapter and what it's asking of them.
 Written as a continuous narrative — warm, direct, psychologically grounded.
 Knowledge graph material absorbed and synthesized, never cited as astrology.
 
-SECTION QUOTES: For 2-3 key sections, include either an opening quote
-from the knowledge graph or a closing composed aphorism (Stoic/Jung/Watts).
-One or the other per section. End the full reading with one that captures the whole.""",
+SECTION QUOTES: For 1-2 key sections, include ONE opening quote from the
+knowledge graph (only if it specifically supports the text) OR ONE closing
+aphorism. End the full reading with one that captures the whole. Restraint.""",
         "knowledge_results": 3,
     },
     "l": {
@@ -1642,10 +1640,10 @@ The knowledge graph material fully absorbed and expressed as insight.
 The current life chapter given biographical weight — where have they been,
 where are they now, what's being asked of them.
 
-SECTION QUOTES: Most sections get either an opening quote (from the
-knowledge graph — Tarnas, Sasportas, Gnostic Book of Changes, Stoics)
-or a closing aphorism (composed, in the spirit of Stoics/Jung/Watts).
-One or the other per section, never both. Choose whichever fits.""",
+SECTION QUOTES: A section may get ONE opening quote from the knowledge
+graph (only if it specifically supports the text that follows) OR ONE
+closing aphorism (only if the section earns it). Never both. 2-3 total
+across the whole reading. Restraint over decoration.""",
         "knowledge_results": 4,
     },
     "xl": {
@@ -1689,22 +1687,24 @@ Actionable synthesis: What does this person need to understand about
 themselves right now? Where are the growth edges? What's the invitation?
 What would a wise friend who could see everything say to them?
 
-SECTION QUOTES — CRITICAL:
-For EVERY section, choose ONE of these two options (never both):
+SECTION QUOTES — EXPLICIT RULES:
+Each section gets at most ONE of these two options. Never both. Many sections
+may get neither — only use one when it truly earns its place.
 
-OPTION A — OPENING QUOTE: A direct quote from the knowledge graph source
-material that sets the tone for the section. Place it at the TOP, before
-the narrative begins. Italicized, attributed. Drawn from Tarnas, Sasportas,
-the Gnostic Book of Changes, Stoic philosophy, or the archetypal layer.
-The reader enters the section through someone else's wisdom.
+OPTION A — OPENING QUOTE: A direct quote from the knowledge graph excerpts
+that SPECIFICALLY supports the narrative that follows. It must be directly
+relevant to the content of THAT section — not decorative, not thematic,
+not loosely related. If no knowledge graph passage specifically supports
+the section's content, DO NOT force one. Place at the TOP, italicized,
+attributed. The quote earns its place by illuminating what comes next.
 
 OPTION B — CLOSING APHORISM: A composed one-sentence aphorism at the END
-of the section, in the spirit of the Stoics, Jung, or Alan Watts. Beautiful,
-specific to this section's insight, not generic. The reader leaves the
-section with a distilled truth that lingers.
+of the section. In the spirit of the Stoics, Jung, or Alan Watts. Must be
+specific to THIS section's insight — never generic wisdom. Only use when
+the section earns a closing that crystallizes its meaning.
 
-Choose whichever serves the section better. Alternate naturally — don't
-use the same option for every section. These are the heartbeat of the reading.""",
+Most sections should use ONE or NEITHER. Never both. A reading with 3-4
+quotes/aphorisms total is better than one with 9. Restraint is the rule.""",
         "knowledge_results": 5,
     },
 }
@@ -1762,12 +1762,76 @@ coherence-aiding question for the reader.""",
 
 
 @mcp.tool()
+def _convert_to_whole_sign(chart: dict) -> dict:
+    """Convert Placidus chart data to whole sign houses.
+
+    In whole sign houses:
+    - The ASC sign = 1st house
+    - Each subsequent sign = next house
+    - One sign per house, no interceptions
+    - Planet house assignments based purely on sign
+    """
+    SIGNS = [
+        "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+        "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
+    ]
+    RULERS = {
+        "Aries": "Mars", "Taurus": "Venus", "Gemini": "Mercury",
+        "Cancer": "Moon", "Leo": "Sun", "Virgo": "Mercury",
+        "Libra": "Venus", "Scorpio": "Mars", "Sagittarius": "Jupiter",
+        "Capricorn": "Saturn", "Aquarius": "Saturn", "Pisces": "Jupiter",
+    }
+
+    # Find ASC sign from angles or houses
+    asc_sign = None
+    angles = chart.get("angles", {})
+    if isinstance(angles, dict):
+        asc_sign = angles.get("ascendant", {}).get("sign")
+    if not asc_sign:
+        houses = chart.get("houses", [])
+        if houses:
+            asc_sign = houses[0].get("sign")
+    if not asc_sign:
+        return chart  # can't convert without ASC
+
+    asc_idx = SIGNS.index(asc_sign)
+
+    # Build whole sign houses
+    ws_houses = []
+    for i in range(12):
+        sign_idx = (asc_idx + i) % 12
+        sign = SIGNS[sign_idx]
+        ws_houses.append({
+            "house": i + 1,
+            "sign": sign,
+            "ruler": RULERS[sign],
+            "system": "whole_sign",
+        })
+
+    # Reassign planet houses based on sign
+    planets = chart.get("planets", [])
+    for p in planets:
+        p_sign = p.get("sign")
+        if p_sign and p_sign in SIGNS:
+            p_sign_idx = SIGNS.index(p_sign)
+            ws_house = ((p_sign_idx - asc_idx) % 12) + 1
+            p["house"] = ws_house
+            p["house_system"] = "whole_sign"
+
+    chart["houses"] = ws_houses
+    chart["house_system"] = "whole_sign"
+
+    return chart
+
+
 async def full_chart_computation(name: str) -> str:
     """Gather ALL computational data for a natal chart in one call.
 
     Returns every piece of astrological data Helios can compute:
     planets, dignities, depositors, houses, angles, lots, sect,
     aspects, profections, zodiacal releasing, and current transits.
+
+    All house assignments converted to whole sign houses.
 
     This is the raw data layer. Always maximal, regardless of report size.
 
@@ -1788,6 +1852,9 @@ async def full_chart_computation(name: str) -> str:
             results["chart"] = local
         else:
             return json.dumps({"error": f"Chart '{name}' not found", "details": errors})
+
+    # 1b. Convert to whole sign houses
+    results["chart"] = _convert_to_whole_sign(results["chart"])
 
     # 2. Essential dignities for every planet in the chart
     chart = results.get("chart", {})
