@@ -1,4 +1,4 @@
-# Selene — Unified Astrology & Divination MCP Server 🌙
+# Stella — Unified Astrology & Divination MCP Server 🌙
 
 The Moon of Gnosis. Merges three MCP servers into a single Python server:
 
@@ -40,7 +40,7 @@ The core feature. Generates complete chart readings through three independent ax
 
 Every reading runs the full computation regardless of size:
 1. **Natal chart** (planets, angles, lots, depositors, sect)
-2. **Whole sign houses** (computed by Selene from ASC sign)
+2. **Whole sign houses** (computed by Stella from ASC sign)
 3. **Essential dignities** (domicile, exaltation, triplicity, term, face, detriment, fall)
 4. **Derivative houses** (Pelletier system — house-to-house relationships + aspect geometry)
 5. **Dignity-weighted narrative priority** (strongest planets drive narrative weight)
@@ -156,7 +156,7 @@ A key calibration: dignity score determines which planets dominate the narrative
 Uses the existing astro-knowledge venv:
 
 ```bash
-/home/atlas/clawd/astro-knowledge/.venv/bin/python selene_server.py
+/home/atlas/clawd/astro-knowledge/.venv/bin/python stella_server.py
 ```
 
 ## mcporter config
@@ -164,10 +164,10 @@ Uses the existing astro-knowledge venv:
 In `~/.mcporter/mcporter.json`:
 
 ```json
-"selene": {
+"stella": {
   "type": "stdio",
   "command": "/home/atlas/clawd/astro-knowledge/.venv/bin/python",
-  "args": ["/home/atlas/clawd/selene/selene_server.py"]
+  "args": ["/home/atlas/clawd/stella/stella_server.py"]
 }
 ```
 

@@ -1,4 +1,4 @@
-# Selene Changelog
+# Stella Changelog
 
 ## 2026-02-02 — The Three-Axis Report System
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Selene — Unified Astrology & Divination MCP Server
+Stella — Unified Astrology & Divination MCP Server
 
 The Moon of Gnosis. Reflects the light of Helios (sweph API) through
 the knowledge graph, I Ching divination, and interpretive layers.
@@ -28,8 +28,8 @@ from neo4j import GraphDatabase
 from mcp.server.fastmcp import FastMCP
 
 # ── Config ──
-SELENE_DIR = Path(__file__).parent
-CHROMA_DIR = SELENE_DIR.parent / "astro-knowledge" / "chromadb_store"
+STELLA_DIR = Path(__file__).parent
+CHROMA_DIR = STELLA_DIR.parent / "astro-knowledge" / "chromadb_store"
 COLLECTION_NAME = "astro_knowledge"
 EMBEDDING_MODEL = "text-embedding-3-large"
 SWEPH_API_BASE = os.environ.get("SWEPH_API_BASE", "http://baratie:3000")
@@ -38,10 +38,10 @@ TRUST_LABELS = {1: "PRIMARY", 2: "BRIDGE", 3: "REFERENCE", 4: "PERIPHERAL"}
 # Neo4j
 NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USER = os.environ.get("NEO4J_USER", "neo4j")
-NEO4J_PASS = os.environ.get("NEO4J_PASS", "selene_gnosis")
+NEO4J_PASS = os.environ.get("NEO4J_PASS", "stella_gnosis")
 
 # ── Init ──
-mcp = FastMCP("selene")
+mcp = FastMCP("stella")
 
 
 # ── Helpers ──
@@ -123,7 +123,7 @@ def neo4j_query(cypher: str, **params) -> list[dict]:
 
 
 def load_json(filename: str):
-    filepath = SELENE_DIR / filename
+    filepath = STELLA_DIR / filename
     if filepath.exists():
         return json.loads(filepath.read_text())
     return None
@@ -446,23 +446,23 @@ async def discover_and_register():
 
             mcp.tool()(_make_tool(path, description))
             registered += 1
-            print(f"[selene] Registered: {tool_name} → {path}", file=sys.stderr)
+            print(f"[stella] Registered: {tool_name} → {path}", file=sys.stderr)
 
-        print(f"[selene] {registered} dynamic endpoints registered", file=sys.stderr)
+        print(f"[stella] {registered} dynamic endpoints registered", file=sys.stderr)
     except Exception as e:
-        print(f"[selene] Endpoint discovery skipped: {e}", file=sys.stderr)
+        print(f"[stella] Endpoint discovery skipped: {e}", file=sys.stderr)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# SECTION 1b: CHART STORAGE — Selene-managed chart persistence
+# SECTION 1b: CHART STORAGE — Stella-managed chart persistence
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-CHARTS_DIR = SELENE_DIR / "charts"
+CHARTS_DIR = STELLA_DIR / "charts"
 CHARTS_DIR.mkdir(exist_ok=True)
 
 
 def _load_local_chart(name: str) -> dict | None:
-    """Load a chart from Selene's local storage."""
+    """Load a chart from Stella's local storage."""
     path = CHARTS_DIR / f"{name.lower()}.json"
     if path.exists():
         return json.loads(path.read_text())
@@ -470,7 +470,7 @@ def _load_local_chart(name: str) -> dict | None:
 
 
 def _save_local_chart(name: str, data: dict):
-    """Save a chart to Selene's local storage."""
+    """Save a chart to Stella's local storage."""
     path = CHARTS_DIR / f"{name.lower()}.json"
     path.write_text(json.dumps(data, indent=2))
 
@@ -484,7 +484,7 @@ def _list_local_charts() -> list[str]:
 
 @mcp.tool()
 def store_chart(name: str, chart_data: str) -> str:
-    """Store a natal chart in Selene's local storage.
+    """Store a natal chart in Stella's local storage.
     
     Use this to persist chart data that was calculated via get_natal_chart or generate_chart.
     Charts stored here survive container rebuilds and are the source of truth.
@@ -499,14 +499,14 @@ def store_chart(name: str, chart_data: str) -> str:
         return "Error: chart_data must be valid JSON"
     
     _save_local_chart(name, data)
-    return f"Chart '{name}' saved to Selene storage. {len(json.dumps(data))} bytes."
+    return f"Chart '{name}' saved to Stella storage. {len(json.dumps(data))} bytes."
 
 
 @mcp.tool()
 def load_chart(name: str) -> str:
-    """Load a natal chart from Selene's local storage.
+    """Load a natal chart from Stella's local storage.
     
-    Checks Selene's local storage first, then falls back to the Helios (sweph) API.
+    Checks Stella's local storage first, then falls back to the Helios (sweph) API.
     
     Args:
         name: Name of the chart to load
@@ -517,15 +517,15 @@ def load_chart(name: str) -> str:
         return json.dumps(data, indent=2)
     
     # Fall back to sweph API
-    return f"Chart '{name}' not found in Selene storage. Use get_chart(name) to fetch from Helios, then store_chart() to save locally."
+    return f"Chart '{name}' not found in Stella storage. Use get_chart(name) to fetch from Helios, then store_chart() to save locally."
 
 
 @mcp.tool()
 def list_stored_charts() -> str:
-    """List all charts stored in Selene's local storage."""
+    """List all charts stored in Stella's local storage."""
     charts = _list_local_charts()
     return json.dumps({
-        "source": "selene_local",
+        "source": "stella_local",
         "count": len(charts),
         "charts": charts,
     }, indent=2)
@@ -533,7 +533,7 @@ def list_stored_charts() -> str:
 
 @mcp.tool()
 def delete_chart(name: str) -> str:
-    """Delete a chart from Selene's local storage.
+    """Delete a chart from Stella's local storage.
     
     Args:
         name: Name of the chart to delete
@@ -541,8 +541,8 @@ def delete_chart(name: str) -> str:
     path = CHARTS_DIR / f"{name.lower()}.json"
     if path.exists():
         path.unlink()
-        return f"Chart '{name}' deleted from Selene storage."
-    return f"Chart '{name}' not found in Selene storage."
+        return f"Chart '{name}' deleted from Stella storage."
+    return f"Chart '{name}' not found in Stella storage."
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1573,7 +1573,7 @@ def graph_stats() -> str:
 #   3. chart_reading(name, size, perspective) — returns computation + knowledge + narrative prompt
 #
 # The LLM receives everything it needs to write the interpretation.
-# Selene provides data + sources + guidelines. The LLM synthesizes.
+# Stella provides data + sources + guidelines. The LLM synthesizes.
 
 
 # ── Size definitions ──
@@ -1900,10 +1900,10 @@ PERSPECTIVES = {k: v["instructions"] for k, v in FRAMEWORKS.items()}
 
 
 # ── Whole Sign Houses ──
-# Selene uses whole sign houses natively. The ASC sign = 1st house,
+# Stella uses whole sign houses natively. The ASC sign = 1st house,
 # each subsequent sign = next house. One sign per house. No interceptions.
 # Planet house placement is determined by sign alone.
-# Helios provides planetary longitudes and the ASC degree. Selene computes
+# Helios provides planetary longitudes and the ASC degree. Stella computes
 # the houses. Helios's Placidus house cusps are discarded.
 
 SIGNS = [
@@ -1963,7 +1963,7 @@ def _apply_whole_sign_houses(chart: dict) -> dict:
     """Compute whole sign houses from ASC sign and assign planet houses.
 
     This is not a conversion — it is the primary house calculation.
-    Helios provides longitudes and ASC. Selene computes houses.
+    Helios provides longitudes and ASC. Stella computes houses.
     """
     # Determine ASC sign
     asc_sign = None
@@ -2241,7 +2241,7 @@ async def full_chart_computation(name: str) -> str:
         else:
             return json.dumps({"error": f"Chart '{name}' not found", "details": errors})
 
-    # 1b. Compute whole sign houses (Selene's native house system)
+    # 1b. Compute whole sign houses (Stella's native house system)
     results["chart"] = _apply_whole_sign_houses(results["chart"])
 
     # 1c. Derivative houses (planet-to-house relationships + aspect geometry)
@@ -2862,6 +2862,6 @@ if __name__ == "__main__":
     try:
         asyncio.get_event_loop().run_until_complete(discover_and_register())
     except Exception as e:
-        print(f"[selene] Startup discovery skipped: {e}", file=sys.stderr)
+        print(f"[stella] Startup discovery skipped: {e}", file=sys.stderr)
 
     mcp.run(transport="stdio")
