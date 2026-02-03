@@ -3,18 +3,79 @@
 The Moon of Gnosis. Merges three MCP servers into a single Python server:
 
 1. **Helios Bridge** — 14+ ephemeris tools wrapping the Swiss Ephemeris REST API (+ auto-discovered endpoints)
-2. **Knowledge Graph** — ChromaDB-backed semantic search across 6,160+ chunks from 25 astrological texts
-3. **I Ching / Gnostic** — Hexagram casting (King Wen sequence) and wisdom retrieval
+2. **Knowledge Graph** — ChromaDB-backed semantic search across 6,500+ chunks from 26 astrological texts
+3. **Chart Reading System** — 3-axis report generation (Type × Framework × Size = 75 combinations)
+4. **I Ching / Gnostic** — Hexagram casting (King Wen sequence) and wisdom retrieval
+
+## Chart Reading System
+
+The core feature. Generates complete chart readings through three independent axes:
+
+### Type (the medium — HOW)
+| Type | Description |
+|------|-------------|
+| `technical` | Data-forward. Astro language preserved. For practitioners. |
+| `narrative` | Human-first portrait. No jargon. Tech appendix at end. |
+| `poem` | Artistic distillation. Verse or lyric prose. Tech appendix. |
+
+### Framework (the lens — WHAT)
+| Framework | Description |
+|-----------|-------------|
+| `psychological` | Attachment, shadow, individuation. Non-fatalist. |
+| `deterministic` | GTEI. Necessitated unfolding via Absolute Self-Consistency. |
+| `hellenistic` | Sect, dignity, lots, timing. Vettius Valens lineage. |
+| `stoic` | Virtue, fate, discipline of assent. Marcus Aurelius meets the chart. |
+| `mythological` | Gods, archetypes, hero's journey. |
+
+### Size (the depth — HOW MUCH)
+| Size | Length | Description |
+|------|--------|-------------|
+| `xs` | 3-5 sentences | The Glance |
+| `s` | 2-3 paragraphs | Key Themes |
+| `m` | 1-2 pages | Working Reading |
+| `l` | 3-5 pages | Full Narrative |
+| `xl` | 5-10+ pages | The Deep Dive |
+
+### Computation Pipeline
+
+Every reading runs the full computation regardless of size:
+1. **Natal chart** (planets, angles, lots, depositors, sect)
+2. **Whole sign houses** (computed by Selene from ASC sign)
+3. **Essential dignities** (domicile, exaltation, triplicity, term, face, detriment, fall)
+4. **Derivative houses** (Pelletier system — house-to-house relationships + aspect geometry)
+5. **Dignity-weighted narrative priority** (strongest planets drive narrative weight)
+6. **Current aspects** between all planets
+7. **Profections** (annual, lord of year)
+8. **Zodiacal Releasing** (Spirit + Fortune, L1/L2, peak periods)
+9. **Transits** to natal chart
+10. **Knowledge graph queries** (grounded in 26-text corpus)
+
+### Dignity-Weighted Narrative Priority
+
+A key calibration: dignity score determines which planets dominate the narrative.
+- Strongest planet by score → most narrative real estate
+- Weak/peregrine chart ruler → ASC archetype treated as CONDITIONAL
+- Debilitated planets → shadows named directly, not softened
+- The gap between ASC mask and dominant planet = central narrative tension
 
 ## Summary
 
 | Component | Count |
 |-----------|-------|
-| Tools | 24 static + dynamic |
+| Tools | 24+ static + dynamic |
 | Resources | 13 |
 | Prompts | 11 |
+| Knowledge chunks | 6,500+ |
+| Source texts | 26 |
+| Embedding model | text-embedding-3-large (3072 dims) |
 
 ## Tools (24+)
+
+### Chart Reading
+| Tool | Description |
+|------|-------------|
+| `chart_reading` | **Main tool.** Full computation + knowledge graph + narrative synthesis. 3-axis: type × framework × size. |
+| `full_chart_computation` | Raw computation only (all data, no narrative instructions) |
 
 ### Ephemeris (Helios Bridge)
 | Tool | Description |
@@ -33,7 +94,6 @@ The Moon of Gnosis. Merges three MCP servers into a single Python server:
 | `get_transit_summary` | High-level transit summary |
 | `get_dignity_score` | Essential dignity score for a planet |
 | `get_current_dignities` | Dignity scores for all current planets |
-| `sweph_*` | Auto-discovered additional endpoints |
 
 ### Local Chart Storage
 | Tool | Description |
@@ -67,7 +127,7 @@ The Moon of Gnosis. Merges three MCP servers into a single Python server:
 | `astrology://aspects` | 10 aspects with orbs & meanings |
 | `astrology://traditional-astrology` | Hellenistic framework reference |
 | `astrology://natal-chart` | Chandra's natal chart |
-| `astrology://natal-chart/{name}` | 7 personal charts (chris, katy, micheal, betsy, megan, kelsea, lisa) |
+| `astrology://natal-chart/{name}` | Personal charts (chris, lisa, robin, + others) |
 
 ## Prompts (11)
 
@@ -84,6 +144,12 @@ The Moon of Gnosis. Merges three MCP servers into a single Python server:
 | `interpret_planets` | Current planetary positions interpretation |
 | `moon_energy` | Moon phase & influence analysis |
 | `weekly_planning` | Weekly astrological planning guide |
+
+## Elections
+
+2026 electional astrology data from Brennan & Schaim stored in `elections/`:
+- `2026-elections-summary.md` — Quick reference for all 24 election windows
+- Full PDF reports for detailed analysis
 
 ## Setup
 
@@ -114,7 +180,18 @@ In `~/.mcporter/mcporter.json`:
 
 - **FastMCP** server with stdio transport
 - **httpx** async client for Helios API calls
-- **ChromaDB** PersistentClient for knowledge graph (6,160+ chunks)
-- **OpenAI** text-embedding-3-small for embeddings
+- **ChromaDB** PersistentClient for knowledge graph (6,500+ chunks, text-embedding-3-large)
+- **Neo4j** graph database for structural ontology (planets, signs, houses, aspects, authors)
+- **OpenAI** text-embedding-3-large (3072 dims) for embeddings
 - **King Wen sequence** for I Ching hexagram mapping (verified correct)
 - Auto-discovers additional sweph endpoints via `/api-info` at startup
+
+## Roadmap
+
+- [ ] Evolutionary Astrology framework (Pluto polarity, nodal story, skipped steps)
+- [ ] Archetypal Astrology framework (Tarnas, outer planet cycles)
+- [ ] Framework-specific computation adjuncts (extra data per framework)
+- [ ] "What the chart wants" auto-detection (recommend framework from chart signatures)
+- [ ] Interactive Telegram flow (inline buttons for chart → type → framework → size)
+- [ ] Transit query language (drill into specific transit periods)
+- [ ] Full transit cycle tracking (planetary returns, progressions)

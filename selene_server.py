@@ -31,7 +31,7 @@ from mcp.server.fastmcp import FastMCP
 SELENE_DIR = Path(__file__).parent
 CHROMA_DIR = SELENE_DIR.parent / "astro-knowledge" / "chromadb_store"
 COLLECTION_NAME = "astro_knowledge"
-EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_MODEL = "text-embedding-3-large"
 SWEPH_API_BASE = os.environ.get("SWEPH_API_BASE", "http://baratie:3000")
 TRUST_LABELS = {1: "PRIMARY", 2: "BRIDGE", 3: "REFERENCE", 4: "PERIPHERAL"}
 
@@ -1718,38 +1718,103 @@ quotes/aphorisms total is better than one with 9. Restraint is the rule.""",
 
 # ── Perspectives ──
 
-PERSPECTIVES = {
-    "psychological": """Interpretive philosophy: NON-FATALIST, NON-DETERMINISTIC.
-The chart describes archetypal fields of possibility, not fixed outcomes.
+# ── Report Types (the medium — HOW the reading is delivered) ──
+# Named after Venus — the planet of art, beauty, and form.
 
-CRITICAL RULES FOR THE NARRATIVE:
-- Write for a HUMAN who does NOT know astrology. No jargon. No "Mercury rules
-  your 1st house" or "peregrine Sun in the 9th." Translate everything into
-  lived experience, psychology, and felt human reality.
-- Do NOT name planets, signs, houses, or aspects explicitly. Instead, describe
-  what they MEAN in this person's life. "You lead with analytical precision
-  and a restless need to solve things" rather than "Mercury in Aries in the 8th."
-- The astrological data is your SOURCE MATERIAL, not your output. You read it,
-  synthesize it, and deliver human insight. Like a doctor who reads bloodwork
-  but tells the patient "you need more rest" — not "your cortisol is 22 µg/dL."
-- Use psychological frameworks: attachment patterns, individuation, shadow work,
-  defense mechanisms, internal family systems, developmental psychology.
-  These are the LANGUAGE of the output.
-- Speak about patterns of experience: how this person takes in the world,
-  what feels safe, where they overcompensate, what they project onto others,
-  where their blind spots live, what strengths they undervalue.
-- The knowledge graph excerpts are your scholarly foundation. Absorb their
-  insights but express them in everyday language. Never cite authors by name
-  unless the reader would benefit from the reference.
+REPORT_TYPES = {
+    "technical": {
+        "label": "Technical",
+        "description": "Data-forward. Astrological language preserved. For practitioners.",
+        "instructions": """REPORT TYPE: TECHNICAL
+This reading is for someone who KNOWS astrology. Use proper terminology:
+planet names, sign placements, house numbers, aspect names, dignity scores.
+
+Structure: Lead with data, follow with interpretation.
+For each major placement, give: position → dignity → aspects → interpretation.
+Include the derivative house relationships explicitly.
+Knowledge graph citations welcome — name authors and traditions.
+
+The math goes in the body. The appendix contains raw computation tables.
+
+Voice: Precise, authoritative, collegial. Like a senior astrologer presenting
+to peers. Show your work.""",
+    },
+    "narrative": {
+        "label": "Narrative",
+        "description": "Human-first portrait. No jargon. Math in appendix only.",
+        "instructions": """REPORT TYPE: NARRATIVE
+This reading is for a HUMAN who may not know astrology. Translate everything
+into lived experience, psychology, and felt human reality.
+
+- Do NOT name planets, signs, houses, or aspects in the narrative body.
+- "You lead with analytical precision and a restless need to solve things"
+  rather than "Mercury in Aries in the 8th."
+- The astrological data is your SOURCE MATERIAL, not your output.
+- Like a doctor who reads bloodwork but tells the patient "you need more rest"
+  — not "your cortisol is 22 µg/dL."
+- Knowledge graph insights absorbed and expressed in everyday language.
+
+The narrative is the reading. A technical appendix follows with all
+astrological data, dignities, and computation results for those who want it.
 
 Voice: Warm, direct, insightful. Like a brilliant therapist who also happens
-to understand your whole life structure. Speak to the person. Second person.
-No filler, no flattery. Say the true thing.""",
+to understand your whole life structure. Speak to the person. Second person.""",
+    },
+    "poem": {
+        "label": "Poem",
+        "description": "Artistic distillation. Verse or lyric prose. Math in appendix.",
+        "instructions": """REPORT TYPE: POEM
+Distill the chart into verse, lyric prose, or mythological narrative.
+The chart becomes a story, a myth, a prayer, a letter from the cosmos.
 
-    "deterministic": """Interpretive philosophy: DETERMINISTIC (GTEI framework).
+No astrological jargon in the poem itself. The images carry the meaning.
+Mars exalted in the 5th becomes "a warrior who builds cathedrals from play."
+Moon in Aquarius in the 6th becomes "feelings that arrive as equations,
+the heart's algebra computed through the body's honest labor."
+
+Structure options (choose what fits the chart):
+- Free verse poem with stanzas for each life domain
+- A mythological narrative (the hero's journey of this chart)
+- A letter addressed to the person from their chart itself
+- A series of short lyrics, each capturing a placement
+
+A technical appendix follows with full computation data.
+
+Voice: Evocative, precise in its images, emotionally resonant.
+Beauty is not decoration — it's compression of truth.""",
+    },
+}
+
+
+# ── Frameworks (the lens — WHAT interpretive tradition shapes the reading) ──
+# Named after Mercury — the planet of thought, interpretation, and meaning-making.
+
+FRAMEWORKS = {
+    "psychological": {
+        "label": "Psychological",
+        "description": "Modern depth psychology. Attachment, shadow, individuation.",
+        "instructions": """FRAMEWORK: PSYCHOLOGICAL (NON-FATALIST, NON-DETERMINISTIC)
+The chart describes archetypal fields of possibility, not fixed outcomes.
+
+Use psychological frameworks as the language of interpretation:
+- Attachment theory (secure, anxious, avoidant, disorganized patterns)
+- Jungian individuation and shadow work
+- Internal Family Systems (exiles, managers, firefighters)
+- Developmental psychology and formative imprints
+- Defense mechanisms and coping strategies
+- Cognitive-behavioral patterns
+
+Speak about patterns of experience: how this person takes in the world,
+what feels safe, where they overcompensate, what they project onto others,
+where their blind spots live, what strengths they undervalue.""",
+    },
+    "deterministic": {
+        "label": "Deterministic (GTEI)",
+        "description": "Necessitated unfolding through Absolute Self-Consistency.",
+        "instructions": """FRAMEWORK: DETERMINISTIC (GTEI)
 The chart is a necessitated expression of Absolute Self-Consistency (ASC).
-Every placement, aspect, and timing event is the only possible configuration
-— the singular, self-consistent solution to this person's coherence equation.
+Every placement is the only possible configuration — the singular,
+self-consistent solution to this person's coherence equation.
 
 Analyze through the 5 Primordial Categories:
 - Distinction/Unity: This individual chart within the collective
@@ -1759,12 +1824,79 @@ Analyze through the 5 Primordial Categories:
 - Process/State: Timing techniques as process, natal positions as state
 
 "Free will" is reinterpreted as self-generated determinism — the maximally
-coherent pathway from this IEI's internal potentials.
+coherent pathway from this person's internal potentials.
 
-Voice: Authoritative, philosophical. Frame everything as necessitated unfolding.
-End with a human-readable synthesis in everyday language and one
-coherence-aiding question for the reader.""",
+End with a human-readable synthesis and one coherence-aiding question.""",
+    },
+    "hellenistic": {
+        "label": "Hellenistic",
+        "description": "Traditional techniques: sect, dignity, lots, timing. Vettius Valens lineage.",
+        "instructions": """FRAMEWORK: HELLENISTIC TRADITIONAL
+Interpret through the lens of classical Hellenistic astrology.
+
+Priority techniques:
+- Sect (day/night chart — benefic/malefic modulation)
+- Essential dignities (domicile, exaltation, triplicity, term, face)
+- The lots (Fortune for body/material, Spirit for mind/purpose)
+- Profections (annual, monthly)
+- Zodiacal Releasing (Spirit for career/purpose, Fortune for material)
+- Derivative houses (Pelletier system — house-to-house relationships)
+- Depositor chains and final dispositor
+- Reception between planets
+
+Emphasize what the tradition emphasizes: the condition of the planet matters
+more than what sign it's in. A well-dignified Saturn is better than a
+peregrine Jupiter. Context over cookbook.
+
+Voice: Scholarly but accessible. In the lineage of Vettius Valens, Firmicus,
+and Chris Brennan's modern synthesis.""",
+    },
+    "stoic": {
+        "label": "Stoic",
+        "description": "Virtue, fate, and the discipline of assent. Marcus Aurelius meets the chart.",
+        "instructions": """FRAMEWORK: STOIC
+Read the chart through Stoic philosophy. What is "up to us" (prohairesis)
+and what is not? The chart shows both the given conditions (fate, heimarmenē)
+and the capacity for virtue within those conditions.
+
+For each placement, distinguish:
+- What is given (the placement, the condition, the circumstances)
+- What is available (the virtue, the response, the discipline)
+- Where the person's ruling faculty (hēgemonikon) is strongest/weakest
+
+Use Stoic frameworks: the dichotomy of control, the discipline of assent,
+the discipline of desire, the discipline of action. Preferred and
+dispreferred indifferents. The view from above.
+
+Quote the Stoics where fitting: Marcus Aurelius, Epictetus, Seneca.
+The chart is not a cage — it's the specific arena in which virtue is practiced.
+
+Voice: Measured, clear-eyed, grounding. Like Meditations written for one person.""",
+    },
+    "mythological": {
+        "label": "Mythological",
+        "description": "The chart as myth. Gods, archetypes, and the hero's journey.",
+        "instructions": """FRAMEWORK: MYTHOLOGICAL
+Read the chart as a living myth. Each planet is a god or archetypal force.
+Each house is a stage in the journey. The aspects are the relationships
+between these forces — alliances, conflicts, hidden bonds.
+
+Draw from:
+- Greek/Roman mythology (the original planetary myths)
+- Joseph Campbell's monomyth (the hero's journey structure)
+- Jungian archetypes (anima/animus, shadow, self, trickster)
+- World mythology where relevant (Norse, Egyptian, Hindu parallels)
+
+The person's life is a story being told by these forces.
+What myth are they living? What chapter are they in?
+Who is the ally, who is the threshold guardian, what is the boon?
+
+Voice: Epic but intimate. Like a storyteller who knows this is YOUR story.""",
+    },
 }
+
+# Legacy compatibility — PERSPECTIVES maps to the new FRAMEWORKS
+PERSPECTIVES = {k: v["instructions"] for k, v in FRAMEWORKS.items()}
 
 
 # ── Whole Sign Houses ──
@@ -1784,6 +1916,37 @@ SIGN_RULERS = {
     "Libra": "Venus", "Scorpio": "Mars", "Sagittarius": "Jupiter",
     "Capricorn": "Saturn", "Aquarius": "Saturn", "Pisces": "Jupiter",
 }
+
+# ── Derivative Houses ──
+# Counting from one house to another reveals how life areas relate.
+# The derivative number = (source_house - target_house) % 12 + 1
+
+DERIVATIVE_HOUSES = {
+    1: "identity, self, vitality",
+    2: "resources, values, sustenance",
+    3: "communication, siblings, local environment",
+    4: "foundations, home, roots, endings",
+    5: "creativity, pleasure, children, joy",
+    6: "service, health, daily work, adversity",
+    7: "partnership, the other, open enemies",
+    8: "shared resources, transformation, death",
+    9: "philosophy, travel, higher learning, faith",
+    10: "career, reputation, public role, authority",
+    11: "friends, aspirations, community, hopes",
+    12: "isolation, hidden matters, self-undoing, transcendence",
+}
+
+ASPECT_GEOMETRY = {
+    1: {"type": "conjunction", "quality": "fusion, identity"},
+    2: {"type": "semisextile", "quality": "adjustment, resource exchange", "pairs": [(2, 12)]},
+    3: {"type": "sextile", "quality": "opportunity, communication", "pairs": [(3, 11)]},
+    4: {"type": "square", "quality": "tension, action required", "pairs": [(4, 10)]},
+    5: {"type": "trine", "quality": "flow, natural harmony", "pairs": [(5, 9)]},
+    6: {"type": "quincunx", "quality": "crisis, forced adaptation", "pairs": [(6, 8)]},
+    7: {"type": "opposition", "quality": "polarity, awareness through other", "pairs": [(7, 7)]},
+}
+
+ANGULAR_HOUSES = {1, 4, 7, 10}
 
 
 def _sign_index(sign: str) -> int:
@@ -1837,6 +2000,218 @@ def _apply_whole_sign_houses(chart: dict) -> dict:
     return chart
 
 
+def compute_derivative_houses(chart_data: dict) -> dict:
+    """Compute derivative house relationships for every planet in the chart.
+
+    For each planet in house H, calculates what every other house "is" from
+    that planet's perspective. E.g., if Mars is in house 3, house 7 is the
+    5th from Mars (creativity/joy of communication).
+
+    Groups results by aspect geometry (sextile, square, trine, etc.) and
+    identifies key connections where dignified planets link to angular houses.
+
+    Args:
+        chart_data: Chart dict with whole sign houses and planet placements.
+
+    Returns:
+        Dict with planet_relationships, aspect_groups, and key_connections.
+    """
+    planets = chart_data.get("planets", [])
+    houses = chart_data.get("houses", [])
+    if not planets or not houses:
+        return {"planet_relationships": {}, "aspect_groups": {}, "key_connections": []}
+
+    # Build house lookup: house_number -> house info
+    house_lookup = {h["house"]: h for h in houses}
+
+    planet_relationships = {}
+    all_connections = []  # flat list for grouping
+
+    for p in planets:
+        pname = p.get("name", "")
+        p_house = p.get("house")
+        if not p_house or not pname:
+            continue
+        p_house = int(p_house)
+
+        relationships = []
+        for x in range(1, 13):
+            # Clockwise counting (Pelletier): from planet's house DOWN to target
+            # E.g., H=6, X=2: (6-2)%12+1 = 5 → house 2 is the 5th from house 6
+            # E.g., H=2, X=6: (2-6)%12+1 = 9 → house 6 is the 9th from house 2
+            derivative_num = (p_house - x) % 12 + 1
+
+            # Minimum arc distance for aspect geometry mapping
+            forward = (x - p_house) % 12  # 0 = same house
+            if forward > 6:
+                forward = 12 - forward
+            geo_key = forward + 1  # 1=conjunction, 2=semisextile, ..., 7=opposition
+
+            geo = ASPECT_GEOMETRY.get(geo_key, {})
+            house_info = house_lookup.get(x, {})
+
+            conn = {
+                "house": x,
+                "house_sign": house_info.get("sign", ""),
+                "house_ruler": house_info.get("ruler", ""),
+                "derivative_number": derivative_num,
+                "derivative_meaning": DERIVATIVE_HOUSES.get(derivative_num, ""),
+                "aspect_type": geo.get("type", ""),
+                "aspect_quality": geo.get("quality", ""),
+            }
+            relationships.append(conn)
+            all_connections.append({
+                "planet": pname,
+                "planet_house": p_house,
+                **conn,
+            })
+
+        planet_relationships[pname] = {
+            "house": p_house,
+            "sign": p.get("sign", ""),
+            "connections": relationships,
+        }
+
+    # Group by aspect geometry
+    aspect_groups = {}
+    for geo_key, geo_info in ASPECT_GEOMETRY.items():
+        asp_type = geo_info["type"]
+        matching = [c for c in all_connections if c["aspect_type"] == asp_type]
+        if matching:
+            aspect_groups[asp_type] = {
+                "quality": geo_info["quality"],
+                "connections": matching,
+            }
+
+    # Identify key connections: dignified planets linking to angular houses
+    key_connections = []
+    # Check dignity info if available on planet objects
+    for c in all_connections:
+        target_house = c["house"]
+        is_angular = target_house in ANGULAR_HOUSES
+        if not is_angular:
+            continue
+
+        # Find the planet data
+        planet_data = next((p for p in planets if p.get("name") == c["planet"]), None)
+        if not planet_data:
+            continue
+
+        # Check for dignity markers (set by dignity computation)
+        dignity = planet_data.get("dignity", {})
+        is_dignified = False
+        if isinstance(dignity, dict):
+            is_dignified = dignity.get("domicile") or dignity.get("exaltation")
+        elif isinstance(dignity, str):
+            is_dignified = dignity.lower() in ("domicile", "exaltation")
+
+        # Also flag any traditional planet connecting to an angle via trine/sextile
+        is_traditional = c["planet"] in ("Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn")
+        is_harmonious = c["aspect_type"] in ("trine", "sextile")
+
+        if is_dignified or (is_traditional and is_harmonious):
+            key_connections.append({
+                **c,
+                "significance": "dignified planet to angle" if is_dignified
+                    else f"traditional planet {c['aspect_type']} to angular house {target_house}",
+            })
+
+    return {
+        "planet_relationships": planet_relationships,
+        "aspect_groups": aspect_groups,
+        "key_connections": key_connections,
+    }
+
+
+def _normalize_legacy_chart(data: dict) -> dict:
+    """Convert legacy chart format (dict-keyed planets, string angles) to Helios format.
+
+    Legacy format has planets as {name: {sign, house, position, ...}}.
+    Helios format has planets as [{name, sign, house, longitude, ...}].
+    """
+    normalized = dict(data)
+
+    # ── Normalize planets from dict to list ──
+    planets_raw = data.get("planets", {})
+    if isinstance(planets_raw, dict):
+        PLANET_NAME_MAP = {
+            "sun": "Sun", "moon": "Moon", "mercury": "Mercury",
+            "venus": "Venus", "mars": "Mars", "jupiter": "Jupiter",
+            "saturn": "Saturn", "uranus": "Uranus", "neptune": "Neptune",
+            "pluto": "Pluto", "chiron": "Chiron",
+            "northNode": "North Node", "north_node": "North Node",
+            "southNode": "South Node", "south_node": "South Node",
+        }
+        planet_list = []
+        for key, pdata in planets_raw.items():
+            if not isinstance(pdata, dict):
+                continue
+            name_clean = PLANET_NAME_MAP.get(key, key.capitalize())
+            # Parse degree from position string like "27°Sg01'11''"
+            pos = pdata.get("position", "")
+            degree_str = ""
+            try:
+                degree_str = pos.split("°")[0]
+                deg_num = float(degree_str)
+            except (ValueError, IndexError):
+                deg_num = 0.0
+
+            planet_list.append({
+                "name": name_clean,
+                "sign": pdata.get("sign", ""),
+                "house": pdata.get("house"),
+                "degreeInSign": str(round(deg_num, 2)),
+                "isRetrograde": pdata.get("isRetrograde", False),
+            })
+        normalized["planets"] = planet_list
+
+    # ── Normalize angles from string format ──
+    chart_angles = data.get("chartAngles", {})
+    if chart_angles and "angles" not in data:
+        SIGN_ABBREVS = {
+            "Ar": "Aries", "Ta": "Taurus", "Ge": "Gemini", "Cn": "Cancer",
+            "Le": "Leo", "Vi": "Virgo", "Li": "Libra", "Sc": "Scorpio",
+            "Sg": "Sagittarius", "Cp": "Capricorn", "Aq": "Aquarius", "Pi": "Pisces",
+        }
+
+        def _parse_angle(s):
+            """Parse '09°Le46'22''' into {sign, degreeInSign}."""
+            if not s:
+                return {}
+            try:
+                parts = s.split("°")
+                deg = float(parts[0])
+                rest = parts[1] if len(parts) > 1 else ""
+                abbrev = rest[:2]
+                sign = SIGN_ABBREVS.get(abbrev, abbrev)
+                return {"sign": sign, "degreeInSign": str(round(deg, 2))}
+            except Exception:
+                return {}
+
+        normalized["angles"] = {
+            "ascendant": _parse_angle(chart_angles.get("ascendant", "")),
+            "midheaven": _parse_angle(chart_angles.get("midheaven", "")),
+        }
+
+    # ── Normalize sect (infer from Sun position if not present) ──
+    if "sect" not in data:
+        # Check if Sun is above horizon (houses 7-12 = above in whole sign)
+        sun_house = None
+        for p in normalized.get("planets", []):
+            if p.get("name") == "Sun":
+                sun_house = p.get("house")
+                break
+        if sun_house:
+            is_day = int(sun_house) >= 7 or int(sun_house) <= 1
+            normalized["sect"] = {
+                "isDaySect": is_day,
+                "sectLabel": "Day" if is_day else "Night",
+                "note": "inferred from Sun house position",
+            }
+
+    return normalized
+
+
 async def full_chart_computation(name: str) -> str:
     """Gather ALL computational data for a natal chart in one call.
 
@@ -1862,12 +2237,15 @@ async def full_chart_computation(name: str) -> str:
         # Try local storage as fallback
         local = _load_local_chart(name)
         if local:
-            results["chart"] = local
+            results["chart"] = _normalize_legacy_chart(local)
         else:
             return json.dumps({"error": f"Chart '{name}' not found", "details": errors})
 
     # 1b. Compute whole sign houses (Selene's native house system)
     results["chart"] = _apply_whole_sign_houses(results["chart"])
+
+    # 1c. Derivative houses (planet-to-house relationships + aspect geometry)
+    results["derivative_houses"] = compute_derivative_houses(results["chart"])
 
     # 2. Essential dignities for every planet in the chart
     chart = results.get("chart", {})
@@ -2030,6 +2408,73 @@ def _gather_knowledge_for_chart(chart_data: dict, results_per_query: int = 3) ->
                                  "title": r["title"], "tier": r["tier"]} for r in results],
                 })
 
+    # ── Derivative houses: Pelletier planet-in-house interpretations ──
+    derivative_data = chart_data.get("derivative_houses", {})
+    key_connections = derivative_data.get("key_connections", [])
+    for conn in key_connections[:6]:  # Limit to top 6 key connections
+        conn_planet = conn.get("planet", "")
+        conn_house = conn.get("house")
+        conn_planet_id = name_to_id.get(conn_planet)
+        if not conn_planet_id or not conn_house:
+            continue
+
+        # Try Neo4j first (Pelletier authored interpretations)
+        results = neo4j_query("""
+            MATCH (i:Interpretation)-[:DESCRIBES]->(p:Planet {id: $planet}),
+                  (i)-[:DESCRIBES]->(h:House {number: $house}),
+                  (i)-[:AUTHORED_BY]->(a:Author {name: 'Robert Pelletier'}),
+                  (i)-[:IN_LAYER]->(l:Layer)
+            RETURN i.text AS text, a.name AS author, i.source_title AS title,
+                   i.trust_tier AS tier, l.id AS layer
+            ORDER BY i.trust_tier ASC
+            LIMIT $limit
+        """, planet=conn_planet_id, house=int(conn_house), limit=results_per_query)
+
+        if results:
+            deriv_num = conn.get("derivative_number", "?")
+            deriv_meaning = conn.get("derivative_meaning", "")
+            knowledge_hits.append({
+                "query": f"{conn_planet} derivative to house {conn_house} "
+                         f"({deriv_num}th = {deriv_meaning}, Pelletier)",
+                "results": [{"text": r["text"][:500], "author": r["author"],
+                             "title": r["title"], "tier": r["tier"],
+                             "layer": r.get("layer", "")} for r in results],
+            })
+        else:
+            # Fall back to ChromaDB semantic search
+            try:
+                query_text = (
+                    f"{conn_planet} in {conn_house}th house derivative Pelletier"
+                )
+                query_embedding = embed_query(query_text)
+                collection = get_collection()
+                chroma_results = collection.query(
+                    query_embeddings=[query_embedding],
+                    n_results=results_per_query,
+                    where={"source_author": "Robert Pelletier"} if results_per_query <= 5 else None,
+                )
+                if chroma_results["documents"][0]:
+                    deriv_num = conn.get("derivative_number", "?")
+                    deriv_meaning = conn.get("derivative_meaning", "")
+                    knowledge_hits.append({
+                        "query": f"{conn_planet} derivative to house {conn_house} "
+                                 f"({deriv_num}th = {deriv_meaning}, semantic search)",
+                        "results": [
+                            {
+                                "text": doc[:500],
+                                "author": meta.get("source_author", "?"),
+                                "title": meta.get("source_title", "?"),
+                                "tier": meta.get("trust_tier", 4),
+                            }
+                            for doc, meta in zip(
+                                chroma_results["documents"][0],
+                                chroma_results["metadatas"][0],
+                            )
+                        ],
+                    })
+            except Exception:
+                pass  # ChromaDB fallback is best-effort
+
     # ── Archetypal layer: notable dignities/debilities ──
     dignities = chart_data.get("dignities", [])
     for d in dignities:
@@ -2150,33 +2595,40 @@ def _gather_knowledge_for_chart(chart_data: dict, results_per_query: int = 3) ->
 async def chart_reading(
     name: str,
     size: str = "m",
-    perspective: str = "psychological",
+    report_type: str = "narrative",
+    framework: str = "psychological",
 ) -> str:
     """Generate a complete chart reading: full computation + knowledge graph + narrative prompt.
 
-    This is the main chart interpretation tool. It:
-    1. Computes ALL chart data from Helios (always maximal)
-    2. Queries the knowledge graph for every placement (grounded in the corpus)
-    3. Returns everything packaged with narrative guidelines for the requested size
+    This is the main chart interpretation tool. Three axes control the output:
+    1. SIZE — how deep (xs/s/m/l/xl)
+    2. TYPE — how it's delivered (technical/narrative/poem)
+    3. FRAMEWORK — what interpretive lens (psychological/deterministic/hellenistic/stoic/mythological)
 
     The LLM receives: raw data + source material + interpretation instructions.
-    The LLM synthesizes the narrative.
+    The LLM synthesizes the reading.
 
     Args:
-        name: Chart name (e.g. 'chris', 'katy', 'megan')
+        name: Chart name (e.g. 'chris', 'robin')
         size: xs | s | m | l | xl (default: m)
-        perspective: psychological (default) | deterministic (GTEI)
+        report_type: technical | narrative | poem (default: narrative)
+        framework: psychological | deterministic | hellenistic | stoic | mythological (default: psychological)
     """
     size = size.lower()
     if size not in CHART_SIZES:
-        return f"Invalid size '{size}'. Choose from: xs, s, m, l, xl"
+        return f"Invalid size '{size}'. Choose from: {', '.join(CHART_SIZES.keys())}"
 
-    perspective = perspective.lower()
-    if perspective not in PERSPECTIVES:
-        return f"Invalid perspective '{perspective}'. Choose from: psychological, deterministic"
+    report_type = report_type.lower()
+    if report_type not in REPORT_TYPES:
+        return f"Invalid report_type '{report_type}'. Choose from: {', '.join(REPORT_TYPES.keys())}"
+
+    framework = framework.lower()
+    if framework not in FRAMEWORKS:
+        return f"Invalid framework '{framework}'. Choose from: {', '.join(FRAMEWORKS.keys())}"
 
     size_config = CHART_SIZES[size]
-    perspective_text = PERSPECTIVES[perspective]
+    type_config = REPORT_TYPES[report_type]
+    framework_config = FRAMEWORKS[framework]
 
     # ── Step 1: Full computation (always maximal) ──
     computation_json = await full_chart_computation(name)
@@ -2191,22 +2643,124 @@ async def chart_reading(
         results_per_query=size_config["knowledge_results"],
     )
 
-    # ── Step 3: Package everything ──
-    output = {
-        "report_config": {
-            "chart_name": name,
-            "size": size_config["label"],
-            "target_length": size_config["target_length"],
-            "perspective": perspective,
-        },
-        "narrative_instructions": f"""
-=== CHART READING: {name.upper()} ===
-Size: {size_config['label']}
-Target length: {size_config['target_length']}
+    # ── Step 2b: Dignity-weighted narrative priority analysis ──
+    # The strongest planets by dignity score drive the lived experience.
+    # A debilitated chart ruler delivers its archetype CONDITIONALLY,
+    # gated by the strongest planet's state.
+    chart = computation.get("chart", {})
+    planets = chart.get("planets", [])
+    sect = chart.get("sect", {})
+    asc_sign = None
+    angles = chart.get("angles", {})
+    if isinstance(angles, dict):
+        asc_sign = angles.get("ascendant", {}).get("sign")
 
-=== DEPTH GUIDELINES ===
-{size_config['depth']}
+    planet_weights = []
+    for p in planets:
+        pname = p.get("name", "")
+        if pname in ("Chiron", "North Node", "South Node", "Uranus", "Neptune", "Pluto"):
+            continue
+        d = p.get("dignities", {})
+        score = d.get("score", 0) if isinstance(d, dict) else 0
+        house = p.get("house", "")
+        sign = p.get("sign", "")
+        condition = d.get("condition", "neutral") if isinstance(d, dict) else "neutral"
+        is_asc_ruler = (sign == asc_sign) if asc_sign else False
+        planet_weights.append({
+            "name": pname, "sign": sign, "house": house,
+            "score": score, "condition": condition,
+        })
 
+    # Sort by score descending
+    planet_weights.sort(key=lambda x: x["score"], reverse=True)
+
+    # Find chart ruler (ASC ruler)
+    chart_ruler = None
+    asc_ruler_name = SIGN_RULERS.get(asc_sign, "") if asc_sign else ""
+    for pw in planet_weights:
+        if pw["name"] == asc_ruler_name:
+            chart_ruler = pw
+            break
+
+    # Build the priority analysis
+    strongest = planet_weights[:3] if planet_weights else []
+    weakest = [p for p in planet_weights if p["score"] < 0]
+
+    priority_lines = []
+    priority_lines.append("=== DIGNITY-WEIGHTED NARRATIVE PRIORITY ===")
+    priority_lines.append("CRITICAL: Dignity score determines which planets dominate LIVED EXPERIENCE.")
+    priority_lines.append("The strongest planet by score shapes who this person IS day-to-day.")
+    priority_lines.append("The ASC archetype is the MASK — it only expresses freely when the")
+    priority_lines.append("strongest planet's needs are met. If the chart ruler is weak/peregrine,")
+    priority_lines.append("the ASC qualities are CONDITIONAL, not constant.")
+    priority_lines.append("")
+
+    if asc_sign and chart_ruler:
+        priority_lines.append(f"Chart ruler: {chart_ruler['name']} ({asc_sign} ASC) — score {chart_ruler['score']} ({chart_ruler['condition']})")
+        if chart_ruler["score"] <= 0:
+            priority_lines.append(f"  ⚠ WEAK CHART RULER: {asc_sign} ASC qualities are NOT the default presentation.")
+            priority_lines.append(f"  They emerge conditionally — when externally validated or when the dominant")
+            priority_lines.append(f"  planet below is settled. Lead the narrative with the dominant planet, not the ASC.")
+        elif chart_ruler["score"] >= 5:
+            priority_lines.append(f"  ✓ STRONG CHART RULER: {asc_sign} ASC qualities ARE the default presentation.")
+            priority_lines.append(f"  Lead the narrative with the ASC archetype — it's reliably expressed.")
+        priority_lines.append("")
+
+    priority_lines.append("Dominant planets (highest dignity — drive the lived experience):")
+    for pw in strongest:
+        priority_lines.append(f"  {pw['name']:10s} {pw['sign']:14s} {pw['house']}H  score={pw['score']:+d} ({pw['condition']})")
+    priority_lines.append("")
+
+    if weakest:
+        priority_lines.append("Debilitated planets (these functions are DIFFICULT, not absent):")
+        for pw in weakest:
+            priority_lines.append(f"  {pw['name']:10s} {pw['sign']:14s} {pw['house']}H  score={pw['score']:+d} ({pw['condition']})")
+        priority_lines.append("  Name their shadows DIRECTLY. Debilitated Mercury = jumps to conclusions,")
+        priority_lines.append("  not 'broad thinking.' Debilitated Venus = loves intensely but not legibly,")
+        priority_lines.append("  not 'deep love style.' The reader should recognize themselves in the friction.")
+        priority_lines.append("")
+
+    priority_lines.append("NARRATIVE WEIGHT RULE: The planet with the highest dignity score gets the")
+    priority_lines.append("most narrative real estate. If a 12H planet scores highest, the person's")
+    priority_lines.append("HIDDEN life dominates their experience even if the ASC looks different.")
+    priority_lines.append("The gap between the ASC mask and the dominant planet's reality IS the story.")
+
+    narrative_priority = "\n".join(priority_lines)
+
+    # ── Step 3: Build narrative structure based on type ──
+    if report_type == "technical":
+        narrative_structure = """
+=== STRUCTURE (TECHNICAL) ===
+Lead with data, follow with interpretation. For each section:
+1. State the astrological facts (positions, dignities, aspects)
+2. Note derivative house relationships where significant
+3. Interpret through the chosen framework
+4. Cite knowledge graph sources by author/tradition
+
+Sections:
+## Chart Overview — Sect, ASC, key dignities, final dispositor
+## The Planets — Each planet: position → dignity → house → aspects → interpretation
+## House Relationships — Derivative house connections, structural geometry
+## Timing — Profections, ZR, current transits, upcoming activations
+## Synthesis — The whole picture, key tensions, growth edges
+## Appendix — Raw computation tables (auto-included)
+"""
+    elif report_type == "poem":
+        narrative_structure = """
+=== STRUCTURE (POEM) ===
+The chart becomes art. Choose the form that best fits this person's chart:
+- Free verse with stanzas for each life domain
+- Mythological narrative (the hero's journey of this chart)
+- A letter from the chart to its person
+- Lyric fragments, each capturing a placement
+
+No astrological jargon in the verse. Images carry the meaning.
+The technical appendix follows separately.
+
+End with a single distilled image or line that captures the whole chart.
+"""
+    else:  # narrative (default)
+        narrative_structure = """
 === NARRATIVE STRUCTURE ===
 Use these as section headers (## headers in markdown). They are the framework.
 Each section is a clear container. The narrative weaves within each section.
@@ -2246,19 +2800,49 @@ What's ending, beginning, or being demanded. The biographical moment.
 ## The Invitation
 What this moment is asking of them. The growth edge. Actionable insight.
 What a wise friend who could see everything would say.
+"""
 
-=== PERSPECTIVE ===
-{perspective_text}
+    # ── Step 4: Package everything ──
+    output = {
+        "report_config": {
+            "chart_name": name,
+            "size": size_config["label"],
+            "target_length": size_config["target_length"],
+            "report_type": type_config["label"],
+            "framework": framework_config["label"],
+        },
+        "narrative_instructions": f"""
+=== CHART READING: {name.upper()} ===
+Size: {size_config['label']}
+Target length: {size_config['target_length']}
+Type: {type_config['label']}
+Framework: {framework_config['label']}
 
-=== CRITICAL OUTPUT RULES ===
-- NO astrological jargon in the narrative. No planet names, sign names, house
-  numbers, aspect names, or degree positions. Translate EVERYTHING into
-  psychology, behavior, felt experience, and human reality.
-- The computation data and knowledge graph are your RAW MATERIALS. Read them,
-  synthesize them, and output HUMAN INSIGHT.
+{narrative_priority}
+
+=== DEPTH GUIDELINES ===
+{size_config['depth']}
+
+{narrative_structure}
+
+=== REPORT TYPE ===
+{type_config['instructions']}
+
+=== INTERPRETIVE FRAMEWORK ===
+{framework_config['instructions']}
+
+=== OUTPUT RULES ===
+- Every size gets full computation. Sizing controls elaboration depth only.
 - The reader should feel deeply understood, not lectured about their chart.
-- Weave, don't section. This is a continuous narrative, not a report.
-- Every size gets full computation. The sizing controls elaboration depth only.
+- The computation data and knowledge graph are your RAW MATERIALS.
+- For 'narrative' and 'poem' types: include a TECHNICAL APPENDIX at the end
+  with the raw astrological data (planets, dignities, houses, aspects, timing).
+  This lets the reader verify and go deeper.
+- For 'technical' type: data IS the body. No appendix needed.
+- DIGNITY DRIVES NARRATIVE WEIGHT. The highest-scoring planet gets the most
+  space. If the ASC ruler is weak, the ASC archetype is CONDITIONAL — describe
+  WHEN and WHY it activates, not as a constant. The gap between mask and
+  dominant planet IS the central tension of the reading.
 """,
         "computation": computation,
         "knowledge_graph": knowledge,
