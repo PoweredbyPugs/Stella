@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView, Modal, MarkdownRenderer, Menu, Notice } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, ItemView, Modal, MarkdownRenderer, Menu, Notice, TFile } from 'obsidian';
 
 // Import types from modular structure
 import {
@@ -2500,17 +2500,12 @@ class StellaChatView extends ItemView {
             if (exists) {
                 this.loadConversation(currentId);
             } else {
-                // Conversation was cleaned up, reset to default
-                this.plugin.settings.currentConversationId = null;
-                const now = new Date();
-                const localDateStr = now.toLocaleDateString('en-CA');
-                this.conversationNameInput.value = localDateStr;
+                // Conversation was cleaned up, start fresh with a backing conversation
+                this.startNewConversation();
             }
         } else {
-            // Start with default title
-            const now = new Date();
-            const localDateStr = now.toLocaleDateString('en-CA'); // Format: YYYY-MM-DD in local time
-            this.conversationNameInput.value = localDateStr;
+            // No current conversation — create a backing conversation so /name works immediately
+            this.startNewConversation();
         }
     }
 
@@ -2816,17 +2811,16 @@ class StellaChatView extends ItemView {
     }
 
     async showSystemPromptSelector() {
-        // Resolve the system prompts path
-        const resolvedPath = this.resolveVaultPath(this.plugin.settings.systemPromptsPath);
+        const promptsPath = this.plugin.settings.systemPromptsPath;
 
-        if (!resolvedPath) {
+        if (!promptsPath) {
             new Notice('System prompts directory not configured. Please set it in plugin settings.');
             return;
         }
 
         const modal = createSystemPromptModal(
             this.app,
-            resolvedPath,
+            promptsPath,
             {
                 onSelect: async (filePath: string, _filename: string) => {
                     await this.loadSystemPrompt(filePath);
@@ -2839,50 +2833,15 @@ class StellaChatView extends ItemView {
         modal.open();
     }
 
-    // Helper method to resolve vault-relative paths to absolute paths
-    private resolveVaultPath(inputPath: string): string | null {
-        if (!inputPath) return null;
-
-        // Check if path is already absolute (Windows: C:\, D:\ etc, or Unix: /)
-        const isAbsolutePath = inputPath.startsWith('/') || /^[A-Za-z]:[\\/]/.test(inputPath);
-        if (isAbsolutePath) return inputPath;
-
-        // Try to get vault path from different sources
-        const adapter = this.app.vault.adapter as any;
-        let vaultPath: string | null = null;
-
-        if (adapter.path) {
-            vaultPath = adapter.path;
-        } else if (adapter.basePath) {
-            vaultPath = adapter.basePath;
-        } else if (adapter.getBasePath) {
-            vaultPath = adapter.getBasePath();
-        }
-
-        if (vaultPath && typeof vaultPath === 'string') {
-            const path = require('path');
-            return path.join(vaultPath, inputPath);
-        }
-
-        // Fallback: use current working directory + vault name
-        const vaultName = this.app.vault.getName();
-        if (vaultName) {
-            const path = require('path');
-            const process = require('process');
-            return path.join(process.cwd(), vaultName, inputPath);
-        }
-
-        return null;
-    }
-
     async loadSystemPrompt(filepath: string) {
         try {
-            const fs = require('fs');
-            const path = require('path');
-            const content = fs.readFileSync(filepath, 'utf8');
-
-            // Extract filename from path
-            const filename = path.basename(filepath, path.extname(filepath));
+            const file = this.app.vault.getAbstractFileByPath(filepath);
+            if (!file || !(file instanceof TFile)) {
+                this.addMessage(`System prompt file not found: ${filepath}`, 'error');
+                return;
+            }
+            const content = await this.app.vault.cachedRead(file);
+            const filename = file.basename;
 
             // Set the system prompt for current conversation
             this.currentSystemPrompt = content;
@@ -3153,6 +3112,8 @@ class StellaChatView extends ItemView {
             if (systemMessage) {
                 systemMessage += '\n\n';
             }
+            systemMessage += `## Active Mental Model: ${this.currentMentalModelFilename || 'Mental Model'}\n\n`;
+            systemMessage += 'The following is your active reasoning lens. Apply this framework to evaluate, analyze, and filter your responses. Do not merely reference it — actively think through it when forming your answers.\n\n';
             systemMessage += this.currentMentalModel;
         }
 
@@ -3372,17 +3333,16 @@ class StellaChatView extends ItemView {
     }
 
     async showMentalModelSelector() {
-        // Resolve the mental models path
-        const resolvedPath = this.resolveVaultPath(this.plugin.settings.mentalModelsPath);
+        const modelsPath = this.plugin.settings.mentalModelsPath;
 
-        if (!resolvedPath) {
+        if (!modelsPath) {
             new Notice('Mental models directory not configured. Please set it in plugin settings.');
             return;
         }
 
         const modal = createMentalModelModal(
             this.app,
-            resolvedPath,
+            modelsPath,
             {
                 onSelect: async (filePath: string, _filename: string) => {
                     await this.loadMentalModel(filePath);
@@ -3397,12 +3357,13 @@ class StellaChatView extends ItemView {
 
     async loadMentalModel(filepath: string) {
         try {
-            const fs = require('fs');
-            const path = require('path');
-            const content = fs.readFileSync(filepath, 'utf8');
-
-            // Extract filename from path
-            const filename = path.basename(filepath, path.extname(filepath));
+            const file = this.app.vault.getAbstractFileByPath(filepath);
+            if (!file || !(file instanceof TFile)) {
+                this.addMessage(`Mental model file not found: ${filepath}`, 'error');
+                return;
+            }
+            const content = await this.app.vault.cachedRead(file);
+            const filename = file.basename;
 
             this.currentMentalModel = content;
             this.currentMentalModelFilename = filename;
@@ -4571,11 +4532,37 @@ class StellaChatView extends ItemView {
     }
 
     showNameInput() {
+        // If no backing conversation exists, create one that preserves current state
+        if (!this.currentConversationId) {
+            const now = new Date();
+            const localDateStr = now.toLocaleDateString('en-CA');
+            const newConversation: Conversation = {
+                id: `conv_${Date.now()}`,
+                title: localDateStr,
+                messages: [...this.chatHistory],
+                systemPrompt: this.currentSystemPrompt || undefined,
+                systemPromptFilename: this.currentSystemPromptFilename || undefined,
+                mentalModel: this.currentMentalModel || undefined,
+                mentalModelFilename: this.currentMentalModelFilename || undefined,
+                createdAt: now.getTime(),
+                updatedAt: now.getTime()
+            };
+            this.plugin.settings.conversations.unshift(newConversation);
+            this.plugin.settings.currentConversationId = newConversation.id;
+            this.currentConversationId = newConversation.id;
+        }
+
+        const currentConversation = this.plugin.settings.conversations.find(c => c.id === this.currentConversationId);
+
+        if (!currentConversation) {
+            new Notice('No active conversation to rename');
+            return;
+        }
+
         const modal = new Modal(this.app);
         modal.setTitle('Rename Conversation');
 
-        const currentConversation = this.plugin.settings.conversations.find(c => c.id === this.currentConversationId);
-        const currentName = currentConversation ? currentConversation.title : '';
+        const currentName = currentConversation.title;
 
         const input = modal.contentEl.createEl('input', {
             type: 'text',
@@ -4616,13 +4603,15 @@ class StellaChatView extends ItemView {
         // Event handlers
         const saveName = async () => {
             const newName = input.value.trim();
-            if (newName && currentConversation) {
-                currentConversation.title = newName;
-                await this.plugin.saveSettings();
-                // Update the UI
-                this.conversationNameInput.value = newName;
-                modal.close();
+            if (!newName) {
+                new Notice('Please enter a name');
+                return;
             }
+            currentConversation.title = newName;
+            await this.plugin.saveSettings();
+            // Update the UI
+            this.conversationNameInput.value = newName;
+            modal.close();
         };
 
         cancelButton.addEventListener('click', () => modal.close());
@@ -4687,6 +4676,7 @@ class StellaSettingTab extends PluginSettingTab {
                 .addOption('ollama', 'Ollama (Local)')
                 .addOption('lmstudio', 'LM Studio (Local)')
                 .addOption('custom', 'Custom API')
+                .addOption('openclaw', 'OpenClaw (Robin)')
                 .setValue(this.plugin.settings.provider)
                 .onChange(async (value) => {
                     this.plugin.settings.provider = value;
@@ -4796,6 +4786,35 @@ class StellaSettingTab extends PluginSettingTab {
                         this.plugin.settings.customApiKey = value;
                         await this.plugin.saveSettings();
                     }));
+        }
+
+        if (this.plugin.settings.provider === 'openclaw') {
+            new Setting(containerEl)
+                .setName('Gateway URL')
+                .setDesc('OpenClaw Gateway WebSocket URL (e.g. ws://127.0.0.1:18789)')
+                .addText(text => text
+                    .setPlaceholder('ws://127.0.0.1:18789')
+                    .setValue(this.plugin.settings.customApiUrl)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customApiUrl = value;
+                        await this.plugin.saveSettings();
+                    }));
+
+            new Setting(containerEl)
+                .setName('Gateway Token')
+                .setDesc('Authentication token for the OpenClaw Gateway')
+                .addText(text => text
+                    .setPlaceholder('your-gateway-token')
+                    .setValue(this.plugin.settings.customApiKey)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customApiKey = value;
+                        await this.plugin.saveSettings();
+                    }));
+
+            containerEl.createEl('p', {
+                text: '🌙 OpenClaw connects via WebSocket for full agent integration — persistent session, native tools, memory, and MCP servers.',
+                cls: 'setting-item-description'
+            });
         }
 
         // Model selection - dynamically populated
@@ -5236,6 +5255,13 @@ class StellaSettingTab extends PluginSettingTab {
                     return await this.fetchOllamaModels();
                 case 'lmstudio':
                     return await this.fetchLMStudioModels();
+                case 'openclaw':
+                    // Auto-set model for OpenClaw (only one option)
+                    if (!this.plugin.settings.model || this.plugin.settings.model === '') {
+                        this.plugin.settings.model = 'openclaw:main';
+                        await this.plugin.saveSettings();
+                    }
+                    return ['openclaw:main'];
                 default:
                     return [];
             }

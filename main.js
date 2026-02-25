@@ -27,7 +27,7 @@ __export(main_exports, {
   default: () => StellaPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 
 // src/types/index.ts
 var DEFAULT_SETTINGS = {
@@ -856,20 +856,21 @@ var StellaModal = class extends import_obsidian.Modal {
 };
 
 // src/views/modals/file-selector.ts
+var import_obsidian2 = require("obsidian");
 var FileSelectorModal = class extends StellaModal {
   constructor(app, config, callbacks) {
     super(app, { title: config.title });
-    this.files = [];
+    this.matchedFiles = [];
     this.selectedIndex = 0;
     this.previewVisible = false;
-    this.directoryPath = config.directoryPath;
+    this.directoryPath = config.directoryPath.replace(/\/+$/, "");
     this.fileExtension = config.fileExtension || ".md";
     this.callbacks = callbacks;
     this.emptyMessage = config.emptyMessage || `No ${this.fileExtension} files found.`;
     this.notFoundMessage = config.notFoundMessage || "Directory not found.";
     this.previewHint = config.previewHint || "Select a file and press \u2192 to preview";
   }
-  buildContent() {
+  async buildContent() {
     if (!this.directoryPath) {
       this.contentEl.createEl("p", {
         text: "Directory path not configured. Please check settings."
@@ -877,16 +878,17 @@ var FileSelectorModal = class extends StellaModal {
       return;
     }
     try {
-      const fs = require("fs");
-      const path = require("path");
-      if (!fs.existsSync(this.directoryPath)) {
+      const abstractFile = this.app.vault.getAbstractFileByPath(this.directoryPath);
+      if (!(abstractFile instanceof import_obsidian2.TFolder)) {
         this.contentEl.createEl("p", {
           text: `${this.notFoundMessage}: ${this.directoryPath}`
         });
         return;
       }
-      this.files = fs.readdirSync(this.directoryPath).filter((file) => file.endsWith(this.fileExtension)).sort();
-      if (this.files.length === 0) {
+      this.matchedFiles = abstractFile.children.filter(
+        (child) => child instanceof import_obsidian2.TFile && child.name.endsWith(this.fileExtension)
+      ).sort((a, b) => a.name.localeCompare(b.name));
+      if (this.matchedFiles.length === 0) {
         this.contentEl.createEl("p", { text: this.emptyMessage });
         return;
       }
@@ -898,17 +900,15 @@ var FileSelectorModal = class extends StellaModal {
     }
   }
   buildFileList() {
-    const fs = require("fs");
-    const path = require("path");
     const { leftPanel, previewContent } = this.createTwoPanelLayout();
     previewContent.textContent = this.previewHint;
     const fileList = leftPanel.createDiv({ cls: "stella-system-prompts-list" });
     const items = [];
-    this.files.forEach((filename, index) => {
+    this.matchedFiles.forEach((file, index) => {
       const fileItem = fileList.createDiv({ cls: "stella-system-prompt-item" });
       items.push(fileItem);
       const titleEl = fileItem.createDiv({ cls: "stella-system-prompt-title" });
-      titleEl.textContent = filename.replace(this.fileExtension, "");
+      titleEl.textContent = file.basename;
       fileItem.addEventListener("click", () => {
         this.selectFile(index);
       });
@@ -941,22 +941,17 @@ var FileSelectorModal = class extends StellaModal {
   }
   async confirmSelection(index) {
     var _a, _b;
-    const path = require("path");
-    const filename = this.files[index];
-    const filePath = path.join(this.directoryPath, filename);
-    await this.callbacks.onSelect(filePath, filename);
+    const file = this.matchedFiles[index];
+    await this.callbacks.onSelect(file.path, file.name);
     this.close();
     (_b = (_a = this.callbacks).onClose) == null ? void 0 : _b.call(_a);
   }
-  showPreview(index, previewContent) {
-    const fs = require("fs");
-    const path = require("path");
+  async showPreview(index, previewContent) {
     try {
-      const filename = this.files[index];
-      const filePath = path.join(this.directoryPath, filename);
-      const content = fs.readFileSync(filePath, "utf-8");
+      const file = this.matchedFiles[index];
+      const content = await this.app.vault.cachedRead(file);
       previewContent.empty();
-      previewContent.createEl("h4", { text: filename.replace(this.fileExtension, "") });
+      previewContent.createEl("h4", { text: file.basename });
       previewContent.createEl("pre", {
         cls: "stella-preview-text",
         text: content.substring(0, 1e3) + (content.length > 1e3 ? "..." : "")
@@ -995,7 +990,7 @@ function createMentalModelModal(app, directoryPath, callbacks) {
 }
 
 // src/views/modals/note-selector.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 var NoteSelectorModal = class extends StellaModal {
   constructor(app, callbacks) {
     super(app, { title: "Add Note Context" });
@@ -1099,7 +1094,7 @@ var NoteSelectorModal = class extends StellaModal {
     try {
       const content = await this.app.vault.read(file);
       this.previewContent.empty();
-      await import_obsidian2.MarkdownRenderer.render(
+      await import_obsidian3.MarkdownRenderer.render(
         this.app,
         content.substring(0, 2e3) + (content.length > 2e3 ? "\n\n..." : ""),
         this.previewContent,
@@ -1458,11 +1453,11 @@ var ConversationHistoryModal = class extends StellaModal {
 };
 
 // src/views/modals/suggest-modals.ts
-var import_obsidian3 = require("obsidian");
-var FolderSuggestModal = class extends import_obsidian3.FuzzySuggestModal {
+var import_obsidian4 = require("obsidian");
+var FolderSuggestModal = class extends import_obsidian4.FuzzySuggestModal {
   constructor(app, folders, onChoose) {
     super(app);
-    this.folders = folders.filter((f) => f instanceof import_obsidian3.TFolder);
+    this.folders = folders.filter((f) => f instanceof import_obsidian4.TFolder);
     this.onChoose = onChoose;
     this.setPlaceholder("Type to search folders...");
   }
@@ -1476,7 +1471,7 @@ var FolderSuggestModal = class extends import_obsidian3.FuzzySuggestModal {
     this.onChoose(item);
   }
 };
-var FileSuggestModal = class extends import_obsidian3.FuzzySuggestModal {
+var FileSuggestModal = class extends import_obsidian4.FuzzySuggestModal {
   constructor(app, files, onChoose) {
     super(app);
     this.files = files;
@@ -2010,18 +2005,77 @@ var LMStudioProvider = class {
       })
     });
     if (!response.ok) {
-      throw new Error(`LM Studio API error: ${response.statusText}`);
+      const error = await response.text();
+      throw new Error(`LM Studio API error: ${error}`);
     }
     const data = await response.json();
     return data.choices[0].message.content;
   }
   async stream(context, callbacks) {
-    const response = await this.call(context);
-    const words = response.split(" ");
-    for (let i = 0; i < words.length; i++) {
-      const chunk = i === 0 ? words[i] : " " + words[i];
-      callbacks.onContent(chunk);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+    var _a, _b, _c, _d, _e, _f;
+    const { settings, messages } = context;
+    const response = await fetch(`${settings.lmStudioBaseUrl}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        messages,
+        max_tokens: settings.maxTokens,
+        temperature: settings.temperature,
+        stream: true
+      })
+    });
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`LM Studio API error: ${error}`);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done)
+          break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith("data: ")) {
+            const data = trimmed.slice(6);
+            if (data === "[DONE]") {
+              await callbacks.onComplete();
+              return;
+            }
+            try {
+              const parsed = JSON.parse(data);
+              const content = (_c = (_b = (_a = parsed.choices) == null ? void 0 : _a[0]) == null ? void 0 : _b.delta) == null ? void 0 : _c.content;
+              if (content) {
+                callbacks.onContent(content);
+              }
+            } catch (e) {
+            }
+          }
+        }
+      }
+      if (buffer.trim().startsWith("data: ")) {
+        const data = buffer.trim().slice(6);
+        if (data !== "[DONE]") {
+          try {
+            const parsed = JSON.parse(data);
+            const content = (_f = (_e = (_d = parsed.choices) == null ? void 0 : _d[0]) == null ? void 0 : _e.delta) == null ? void 0 : _f.content;
+            if (content) {
+              callbacks.onContent(content);
+            }
+          } catch (e) {
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
     }
     await callbacks.onComplete();
   }
@@ -2074,6 +2128,319 @@ var CustomAPIProvider = class {
   }
 };
 
+// src/providers/openclaw.ts
+function extractText(message) {
+  if (!message)
+    return null;
+  const content = message.content;
+  if (typeof content === "string") {
+    return content;
+  }
+  if (Array.isArray(content)) {
+    const texts = content.filter((p) => p && p.type === "text" && typeof p.text === "string").map((p) => p.text);
+    return texts.length > 0 ? texts.join("") : null;
+  }
+  return null;
+}
+var OpenClawProvider = class {
+  constructor() {
+    this.name = "openclaw";
+    this.ws = null;
+    this.connected = false;
+    this.connectNonce = null;
+    this.pendingRequests = /* @__PURE__ */ new Map();
+    this.eventListeners = /* @__PURE__ */ new Map();
+    this.requestCounter = 0;
+    this.sessionKey = "agent:main:main";
+    this.gatewayUrl = "";
+    this.authToken = "";
+    this._connectResolve = null;
+    this._connectReject = null;
+  }
+  isConfigured(settings) {
+    return !!settings.customApiUrl && !!settings.customApiKey;
+  }
+  getWsUrl(settings) {
+    let url = settings.customApiUrl.trim();
+    url = url.replace(/\/v1\/?$/, "").replace(/\/$/, "");
+    url = url.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+    if (!url.startsWith("ws://") && !url.startsWith("wss://")) {
+      url = "ws://" + url;
+    }
+    return url;
+  }
+  nextId() {
+    return `stella-${++this.requestCounter}`;
+  }
+  sendConnectFrame() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
+      return;
+    const connectId = this.nextId();
+    const connectFrame = {
+      type: "req",
+      id: connectId,
+      method: "connect",
+      params: {
+        minProtocol: 3,
+        maxProtocol: 3,
+        client: {
+          id: "gateway-client",
+          displayName: "Stella (Obsidian)",
+          version: "0.2.0",
+          platform: (navigator == null ? void 0 : navigator.platform) || "linux",
+          mode: "backend"
+        },
+        role: "operator",
+        scopes: ["operator.admin"],
+        auth: {
+          token: this.authToken
+        },
+        ...this.connectNonce ? { nonce: this.connectNonce } : {}
+      }
+    };
+    if (this._connectResolve) {
+      this.pendingRequests.set(connectId, {
+        resolve: this._connectResolve,
+        reject: this._connectReject
+      });
+    }
+    this.ws.send(JSON.stringify(connectFrame));
+  }
+  async connect(settings) {
+    var _a;
+    if (this.connected && ((_a = this.ws) == null ? void 0 : _a.readyState) === WebSocket.OPEN) {
+      return;
+    }
+    this.gatewayUrl = this.getWsUrl(settings);
+    this.authToken = settings.customApiKey;
+    return new Promise((resolve, reject) => {
+      try {
+        this.ws = new WebSocket(this.gatewayUrl);
+      } catch (err) {
+        reject(new Error(`Failed to create WebSocket: ${err}`));
+        return;
+      }
+      const connectTimeout = setTimeout(() => {
+        var _a2;
+        reject(new Error("OpenClaw connection timeout (10s)"));
+        (_a2 = this.ws) == null ? void 0 : _a2.close();
+      }, 1e4);
+      this._connectResolve = (payload) => {
+        clearTimeout(connectTimeout);
+        this.connected = true;
+        this._connectResolve = null;
+        this._connectReject = null;
+        console.log("OpenClaw: Connected to gateway");
+        resolve();
+      };
+      this._connectReject = (err) => {
+        clearTimeout(connectTimeout);
+        this._connectResolve = null;
+        this._connectReject = null;
+        reject(new Error(`OpenClaw connect failed: ${JSON.stringify(err)}`));
+      };
+      this.ws.onopen = () => {
+        this.sendConnectFrame();
+      };
+      this.ws.onmessage = (event) => {
+        try {
+          const frame = JSON.parse(String(event.data));
+          this.handleFrame(frame);
+        } catch (err) {
+          console.error("OpenClaw: Failed to parse frame:", err);
+        }
+      };
+      this.ws.onerror = () => {
+        clearTimeout(connectTimeout);
+        reject(new Error("OpenClaw WebSocket error"));
+      };
+      this.ws.onclose = (event) => {
+        this.connected = false;
+        for (const [, pending] of this.pendingRequests) {
+          pending.reject(new Error("Connection closed"));
+        }
+        this.pendingRequests.clear();
+      };
+    });
+  }
+  handleFrame(frame) {
+    var _a;
+    if (frame.type === "event" && frame.event === "connect.challenge") {
+      const nonce = (_a = frame.payload) == null ? void 0 : _a.nonce;
+      if (typeof nonce === "string") {
+        this.connectNonce = nonce;
+        this.sendConnectFrame();
+      }
+      return;
+    }
+    if (frame.type === "res") {
+      if (!frame.ok) {
+        console.error("OpenClaw error:", frame.error);
+      }
+      const pending = this.pendingRequests.get(frame.id);
+      if (pending) {
+        this.pendingRequests.delete(frame.id);
+        if (frame.ok) {
+          pending.resolve(frame.payload);
+        } else {
+          pending.reject(frame.error || "Unknown error");
+        }
+      }
+    } else if (frame.type === "event") {
+      const listeners = this.eventListeners.get(frame.event) || [];
+      for (const listener of listeners) {
+        listener(frame.payload);
+      }
+    }
+  }
+  async request(method, params = {}) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      throw new Error("Not connected to OpenClaw");
+    }
+    const id = this.nextId();
+    const frame = { type: "req", id, method, params };
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(id);
+        reject(new Error(`Request ${method} timed out (300s)`));
+      }, 3e5);
+      this.pendingRequests.set(id, {
+        resolve: (payload) => {
+          clearTimeout(timeout);
+          resolve(payload);
+        },
+        reject: (err) => {
+          clearTimeout(timeout);
+          reject(err);
+        }
+      });
+      this.ws.send(JSON.stringify(frame));
+    });
+  }
+  on(event, listener) {
+    if (!this.eventListeners.has(event)) {
+      this.eventListeners.set(event, []);
+    }
+    this.eventListeners.get(event).push(listener);
+  }
+  off(event, listener) {
+    const listeners = this.eventListeners.get(event);
+    if (listeners) {
+      const idx = listeners.indexOf(listener);
+      if (idx >= 0)
+        listeners.splice(idx, 1);
+    }
+  }
+  generateIdempotencyKey() {
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  async call(context) {
+    let fullResponse = "";
+    await this.stream(context, {
+      onContent: (text) => {
+        fullResponse += text;
+      },
+      onComplete: async () => {
+      }
+    });
+    return fullResponse;
+  }
+  async stream(context, callbacks) {
+    const { settings, messages } = context;
+    await this.connect(settings);
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage || lastMessage.role !== "user") {
+      throw new Error("No user message to send");
+    }
+    const idempotencyKey = this.generateIdempotencyKey();
+    let streamedText = "";
+    const runDone = new Promise((resolveRun) => {
+      const chatListener = (payload) => {
+        if (!payload)
+          return;
+        if (payload.sessionKey && payload.sessionKey !== this.sessionKey)
+          return;
+        if (payload.state === "delta") {
+          const fullText = extractText(payload.message);
+          if (fullText !== null && fullText.length > streamedText.length) {
+            const delta = fullText.slice(streamedText.length);
+            streamedText = fullText;
+            callbacks.onContent(delta);
+          }
+        } else if (payload.state === "final") {
+          const finalText = extractText(payload.message);
+          if (finalText !== null && finalText.length > streamedText.length) {
+            const delta = finalText.slice(streamedText.length);
+            streamedText = finalText;
+            callbacks.onContent(delta);
+          }
+          cleanup();
+          resolveRun();
+        } else if (payload.state === "aborted" || payload.state === "error") {
+          if (payload.state === "error" && payload.errorMessage) {
+            callbacks.onContent(`
+
+Error: ${payload.errorMessage}`);
+          }
+          cleanup();
+          resolveRun();
+        }
+      };
+      const cleanup = () => {
+        this.off("chat", chatListener);
+      };
+      this.on("chat", chatListener);
+      setTimeout(() => {
+        cleanup();
+        resolveRun();
+      }, 3e5);
+    });
+    await this.request("chat.send", {
+      sessionKey: this.sessionKey,
+      message: lastMessage.content,
+      deliver: false,
+      idempotencyKey
+    });
+    await runDone;
+    await callbacks.onComplete();
+  }
+  /**
+   * Fetch chat history from the gateway session
+   */
+  async getHistory(settings) {
+    await this.connect(settings);
+    const result = await this.request("chat.history", {
+      sessionKey: this.sessionKey,
+      limit: 200
+    });
+    return result.messages || [];
+  }
+  /**
+   * Abort the current agent run
+   */
+  async abort(settings) {
+    if (!this.connected)
+      return;
+    await this.request("chat.abort", {
+      sessionKey: this.sessionKey
+    });
+  }
+  /**
+   * Disconnect from the gateway
+   */
+  disconnect() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    this.connected = false;
+    this.pendingRequests.clear();
+    this.eventListeners.clear();
+  }
+};
+
 // src/providers/index.ts
 var providers = {
   openai: new OpenAIProvider(),
@@ -2081,14 +2448,15 @@ var providers = {
   google: new GoogleProvider(),
   ollama: new OllamaProvider(),
   lmstudio: new LMStudioProvider(),
-  custom: new CustomAPIProvider()
+  custom: new CustomAPIProvider(),
+  openclaw: new OpenClawProvider()
 };
 function getProvider(name) {
   return providers[name];
 }
 
 // main.ts
-var StellaPlugin = class extends import_obsidian4.Plugin {
+var StellaPlugin = class extends import_obsidian5.Plugin {
   get cache() {
     return this.cacheManager;
   }
@@ -2194,7 +2562,7 @@ var StellaPlugin = class extends import_obsidian4.Plugin {
   }
 };
 var CHAT_VIEW_TYPE = "stella-mcp-chat-view";
-var StellaChatView = class extends import_obsidian4.ItemView {
+var StellaChatView = class extends import_obsidian5.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.conversations = [];
@@ -2637,7 +3005,7 @@ var StellaChatView = class extends import_obsidian4.ItemView {
     });
   }
   showQuickAddContextMenu(event, selectedText) {
-    const menu = new import_obsidian4.Menu();
+    const menu = new import_obsidian5.Menu();
     this.plugin.settings.quickAddCommands.forEach((command) => {
       menu.addItem(
         (item) => item.setTitle(command.name).setIcon("plus-circle").onClick(() => {
@@ -2658,13 +3026,13 @@ var StellaChatView = class extends import_obsidian4.ItemView {
       const plugins = this.app.plugins;
       const quickAddPlugin = (_a = plugins == null ? void 0 : plugins.plugins) == null ? void 0 : _a["quickadd"];
       if (!quickAddPlugin) {
-        new import_obsidian4.Notice("QuickAdd plugin is not installed or enabled");
+        new import_obsidian5.Notice("QuickAdd plugin is not installed or enabled");
         return;
       }
       window.stellaSelectedText = selectedText;
       const commands = this.app.commands;
       if (!commands) {
-        new import_obsidian4.Notice("Commands system not available");
+        new import_obsidian5.Notice("Commands system not available");
         return;
       }
       const allCommands = commands.listCommands();
@@ -2690,7 +3058,7 @@ var StellaChatView = class extends import_obsidian4.ItemView {
           if (foundCommand) {
             console.log(`Found QuickAdd command: ${foundCommand.id} (${foundCommand.name})`);
             commands.executeCommandById(foundCommand.id);
-            new import_obsidian4.Notice(`Executed QuickAdd command: ${foundCommand.name}`);
+            new import_obsidian5.Notice(`Executed QuickAdd command: ${foundCommand.name}`);
             commandExecuted = true;
             break;
           }
@@ -2702,19 +3070,19 @@ var StellaChatView = class extends import_obsidian4.ItemView {
         const quickAddCommands = allCommands.filter((cmd) => cmd.id.includes("quickadd"));
         console.log("Available QuickAdd commands:", quickAddCommands.map((cmd) => ({ id: cmd.id, name: cmd.name })));
         if (quickAddCommands.length > 0) {
-          new import_obsidian4.Notice(`QuickAdd command '${commandId}' not found. Available commands: ${quickAddCommands.map((cmd) => cmd.name).join(", ")}`);
+          new import_obsidian5.Notice(`QuickAdd command '${commandId}' not found. Available commands: ${quickAddCommands.map((cmd) => cmd.name).join(", ")}`);
         } else {
-          new import_obsidian4.Notice("No QuickAdd commands found. Make sure QuickAdd is properly configured.");
+          new import_obsidian5.Notice("No QuickAdd commands found. Make sure QuickAdd is properly configured.");
         }
       }
     } catch (error) {
-      new import_obsidian4.Notice("Failed to execute QuickAdd command");
+      new import_obsidian5.Notice("Failed to execute QuickAdd command");
       console.error("QuickAdd execution error:", error);
     }
   }
   async renderMarkdown(container, content) {
     try {
-      await import_obsidian4.MarkdownRenderer.renderMarkdown(content, container, "", this);
+      await import_obsidian5.MarkdownRenderer.renderMarkdown(content, container, "", this);
     } catch (error) {
       console.error("Error rendering markdown:", error);
       container.textContent = content;
@@ -3897,15 +4265,10 @@ Assistant:`;
       if (exists) {
         this.loadConversation(currentId);
       } else {
-        this.plugin.settings.currentConversationId = null;
-        const now = new Date();
-        const localDateStr = now.toLocaleDateString("en-CA");
-        this.conversationNameInput.value = localDateStr;
+        this.startNewConversation();
       }
     } else {
-      const now = new Date();
-      const localDateStr = now.toLocaleDateString("en-CA");
-      this.conversationNameInput.value = localDateStr;
+      this.startNewConversation();
     }
   }
   initializeMessagePagination(messages) {
@@ -4134,14 +4497,14 @@ Assistant:`;
     modal.open();
   }
   async showSystemPromptSelector() {
-    const resolvedPath = this.resolveVaultPath(this.plugin.settings.systemPromptsPath);
-    if (!resolvedPath) {
-      new import_obsidian4.Notice("System prompts directory not configured. Please set it in plugin settings.");
+    const promptsPath = this.plugin.settings.systemPromptsPath;
+    if (!promptsPath) {
+      new import_obsidian5.Notice("System prompts directory not configured. Please set it in plugin settings.");
       return;
     }
     const modal = createSystemPromptModal(
       this.app,
-      resolvedPath,
+      promptsPath,
       {
         onSelect: async (filePath, _filename) => {
           await this.loadSystemPrompt(filePath);
@@ -4153,40 +4516,15 @@ Assistant:`;
     );
     modal.open();
   }
-  // Helper method to resolve vault-relative paths to absolute paths
-  resolveVaultPath(inputPath) {
-    if (!inputPath)
-      return null;
-    const isAbsolutePath = inputPath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(inputPath);
-    if (isAbsolutePath)
-      return inputPath;
-    const adapter = this.app.vault.adapter;
-    let vaultPath = null;
-    if (adapter.path) {
-      vaultPath = adapter.path;
-    } else if (adapter.basePath) {
-      vaultPath = adapter.basePath;
-    } else if (adapter.getBasePath) {
-      vaultPath = adapter.getBasePath();
-    }
-    if (vaultPath && typeof vaultPath === "string") {
-      const path = require("path");
-      return path.join(vaultPath, inputPath);
-    }
-    const vaultName = this.app.vault.getName();
-    if (vaultName) {
-      const path = require("path");
-      const process2 = require("process");
-      return path.join(process2.cwd(), vaultName, inputPath);
-    }
-    return null;
-  }
   async loadSystemPrompt(filepath) {
     try {
-      const fs = require("fs");
-      const path = require("path");
-      const content = fs.readFileSync(filepath, "utf8");
-      const filename = path.basename(filepath, path.extname(filepath));
+      const file = this.app.vault.getAbstractFileByPath(filepath);
+      if (!file || !(file instanceof import_obsidian5.TFile)) {
+        this.addMessage(`System prompt file not found: ${filepath}`, "error");
+        return;
+      }
+      const content = await this.app.vault.cachedRead(file);
+      const filename = file.basename;
       this.currentSystemPrompt = content;
       this.currentSystemPromptFilename = filename;
       console.log("System prompt loaded:", filename);
@@ -4257,7 +4595,7 @@ Assistant:`;
     }
   }
   showNoteContextManager() {
-    const modal = new import_obsidian4.Modal(this.app);
+    const modal = new import_obsidian5.Modal(this.app);
     modal.titleEl.setText("Manage Note Context");
     const container = modal.contentEl.createDiv({ cls: "stella-note-manager-container" });
     if (this.contextNotes.length === 0) {
@@ -4384,6 +4722,10 @@ ${notesList}`;
       if (systemMessage) {
         systemMessage += "\n\n";
       }
+      systemMessage += `## Active Mental Model: ${this.currentMentalModelFilename || "Mental Model"}
+
+`;
+      systemMessage += "The following is your active reasoning lens. Apply this framework to evaluate, analyze, and filter your responses. Do not merely reference it \u2014 actively think through it when forming your answers.\n\n";
       systemMessage += this.currentMentalModel;
     }
     if (this.contextNotes.length > 0) {
@@ -4566,14 +4908,14 @@ ${note.content}
     });
   }
   async showMentalModelSelector() {
-    const resolvedPath = this.resolveVaultPath(this.plugin.settings.mentalModelsPath);
-    if (!resolvedPath) {
-      new import_obsidian4.Notice("Mental models directory not configured. Please set it in plugin settings.");
+    const modelsPath = this.plugin.settings.mentalModelsPath;
+    if (!modelsPath) {
+      new import_obsidian5.Notice("Mental models directory not configured. Please set it in plugin settings.");
       return;
     }
     const modal = createMentalModelModal(
       this.app,
-      resolvedPath,
+      modelsPath,
       {
         onSelect: async (filePath, _filename) => {
           await this.loadMentalModel(filePath);
@@ -4587,10 +4929,13 @@ ${note.content}
   }
   async loadMentalModel(filepath) {
     try {
-      const fs = require("fs");
-      const path = require("path");
-      const content = fs.readFileSync(filepath, "utf8");
-      const filename = path.basename(filepath, path.extname(filepath));
+      const file = this.app.vault.getAbstractFileByPath(filepath);
+      if (!file || !(file instanceof import_obsidian5.TFile)) {
+        this.addMessage(`Mental model file not found: ${filepath}`, "error");
+        return;
+      }
+      const content = await this.app.vault.cachedRead(file);
+      const filename = file.basename;
       this.currentMentalModel = content;
       this.currentMentalModelFilename = filename;
       console.log("Mental model loaded:", filename);
@@ -4626,7 +4971,7 @@ ${note.content}
     this.updateMentalModelIndicator();
   }
   async showMCPSelector() {
-    const modal = new import_obsidian4.Modal(this.app);
+    const modal = new import_obsidian5.Modal(this.app);
     modal.titleEl.setText("MCP Servers");
     modal.modalEl.style.width = "70vw";
     modal.modalEl.style.height = "70vh";
@@ -5495,10 +5840,32 @@ ${prompt.description || ""}`;
     }
   }
   showNameInput() {
-    const modal = new import_obsidian4.Modal(this.app);
-    modal.setTitle("Rename Conversation");
+    if (!this.currentConversationId) {
+      const now = new Date();
+      const localDateStr = now.toLocaleDateString("en-CA");
+      const newConversation = {
+        id: `conv_${Date.now()}`,
+        title: localDateStr,
+        messages: [...this.chatHistory],
+        systemPrompt: this.currentSystemPrompt || void 0,
+        systemPromptFilename: this.currentSystemPromptFilename || void 0,
+        mentalModel: this.currentMentalModel || void 0,
+        mentalModelFilename: this.currentMentalModelFilename || void 0,
+        createdAt: now.getTime(),
+        updatedAt: now.getTime()
+      };
+      this.plugin.settings.conversations.unshift(newConversation);
+      this.plugin.settings.currentConversationId = newConversation.id;
+      this.currentConversationId = newConversation.id;
+    }
     const currentConversation = this.plugin.settings.conversations.find((c) => c.id === this.currentConversationId);
-    const currentName = currentConversation ? currentConversation.title : "";
+    if (!currentConversation) {
+      new import_obsidian5.Notice("No active conversation to rename");
+      return;
+    }
+    const modal = new import_obsidian5.Modal(this.app);
+    modal.setTitle("Rename Conversation");
+    const currentName = currentConversation.title;
     const input = modal.contentEl.createEl("input", {
       type: "text",
       placeholder: "Enter conversation name...",
@@ -5532,12 +5899,14 @@ ${prompt.description || ""}`;
     saveButton.style.cursor = "pointer";
     const saveName = async () => {
       const newName = input.value.trim();
-      if (newName && currentConversation) {
-        currentConversation.title = newName;
-        await this.plugin.saveSettings();
-        this.conversationNameInput.value = newName;
-        modal.close();
+      if (!newName) {
+        new import_obsidian5.Notice("Please enter a name");
+        return;
       }
+      currentConversation.title = newName;
+      await this.plugin.saveSettings();
+      this.conversationNameInput.value = newName;
+      modal.close();
     };
     cancelButton.addEventListener("click", () => modal.close());
     saveButton.addEventListener("click", saveName);
@@ -5567,7 +5936,7 @@ ${prompt.description || ""}`;
     }
   }
 };
-var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
+var StellaSettingTab = class extends import_obsidian5.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -5575,7 +5944,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian4.Setting(containerEl).setName("AI Provider").setDesc("Select your AI provider").addDropdown((dropdown) => dropdown.addOption("anthropic", "Anthropic (Claude)").addOption("openai", "OpenAI (GPT)").addOption("google", "Google (Gemini)").addOption("ollama", "Ollama (Local)").addOption("lmstudio", "LM Studio (Local)").addOption("custom", "Custom API").setValue(this.plugin.settings.provider).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("AI Provider").setDesc("Select your AI provider").addDropdown((dropdown) => dropdown.addOption("anthropic", "Anthropic (Claude)").addOption("openai", "OpenAI (GPT)").addOption("google", "Google (Gemini)").addOption("ollama", "Ollama (Local)").addOption("lmstudio", "LM Studio (Local)").addOption("custom", "Custom API").addOption("openclaw", "OpenClaw (Robin)").setValue(this.plugin.settings.provider).onChange(async (value) => {
       this.plugin.settings.provider = value;
       this.plugin.settings.model = "";
       await this.plugin.saveSettings();
@@ -5588,51 +5957,65 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
       this.display();
     }));
     if (this.plugin.settings.provider === "openai") {
-      new import_obsidian4.Setting(containerEl).setName("OpenAI API Key").setDesc("Enter your OpenAI API key").addText((text) => text.setPlaceholder("sk-...").setValue(this.plugin.settings.openaiApiKey).onChange(async (value) => {
+      new import_obsidian5.Setting(containerEl).setName("OpenAI API Key").setDesc("Enter your OpenAI API key").addText((text) => text.setPlaceholder("sk-...").setValue(this.plugin.settings.openaiApiKey).onChange(async (value) => {
         this.plugin.settings.openaiApiKey = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "anthropic") {
-      new import_obsidian4.Setting(containerEl).setName("Anthropic API Key").setDesc("Enter your Anthropic API key").addText((text) => text.setPlaceholder("sk-ant-...").setValue(this.plugin.settings.anthropicApiKey).onChange(async (value) => {
+      new import_obsidian5.Setting(containerEl).setName("Anthropic API Key").setDesc("Enter your Anthropic API key").addText((text) => text.setPlaceholder("sk-ant-...").setValue(this.plugin.settings.anthropicApiKey).onChange(async (value) => {
         this.plugin.settings.anthropicApiKey = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "google") {
-      new import_obsidian4.Setting(containerEl).setName("Google API Key").setDesc("Enter your Google AI API key").addText((text) => text.setPlaceholder("AI...").setValue(this.plugin.settings.googleApiKey).onChange(async (value) => {
+      new import_obsidian5.Setting(containerEl).setName("Google API Key").setDesc("Enter your Google AI API key").addText((text) => text.setPlaceholder("AI...").setValue(this.plugin.settings.googleApiKey).onChange(async (value) => {
         this.plugin.settings.googleApiKey = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "ollama") {
-      new import_obsidian4.Setting(containerEl).setName("Ollama Base URL").setDesc("Ollama server URL").addText((text) => text.setPlaceholder("http://localhost:11434").setValue(this.plugin.settings.ollamaBaseUrl).onChange(async (value) => {
+      new import_obsidian5.Setting(containerEl).setName("Ollama Base URL").setDesc("Ollama server URL").addText((text) => text.setPlaceholder("http://localhost:11434").setValue(this.plugin.settings.ollamaBaseUrl).onChange(async (value) => {
         this.plugin.settings.ollamaBaseUrl = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "lmstudio") {
-      new import_obsidian4.Setting(containerEl).setName("LM Studio Base URL").setDesc("LM Studio server URL").addText((text) => text.setPlaceholder("http://localhost:1234").setValue(this.plugin.settings.lmStudioBaseUrl).onChange(async (value) => {
+      new import_obsidian5.Setting(containerEl).setName("LM Studio Base URL").setDesc("LM Studio server URL").addText((text) => text.setPlaceholder("http://localhost:1234").setValue(this.plugin.settings.lmStudioBaseUrl).onChange(async (value) => {
         this.plugin.settings.lmStudioBaseUrl = value;
         await this.plugin.saveSettings();
         this.refreshModelDropdown();
       }));
     }
     if (this.plugin.settings.provider === "custom") {
-      new import_obsidian4.Setting(containerEl).setName("Custom API URL").setDesc("Your custom API endpoint URL").addText((text) => text.setPlaceholder("https://your-api.com/v1/chat/completions").setValue(this.plugin.settings.customApiUrl).onChange(async (value) => {
+      new import_obsidian5.Setting(containerEl).setName("Custom API URL").setDesc("Your custom API endpoint URL").addText((text) => text.setPlaceholder("https://your-api.com/v1/chat/completions").setValue(this.plugin.settings.customApiUrl).onChange(async (value) => {
         this.plugin.settings.customApiUrl = value;
         await this.plugin.saveSettings();
       }));
-      new import_obsidian4.Setting(containerEl).setName("Custom API Key").setDesc("API key for your custom endpoint (optional)").addText((text) => text.setPlaceholder("your-api-key").setValue(this.plugin.settings.customApiKey).onChange(async (value) => {
+      new import_obsidian5.Setting(containerEl).setName("Custom API Key").setDesc("API key for your custom endpoint (optional)").addText((text) => text.setPlaceholder("your-api-key").setValue(this.plugin.settings.customApiKey).onChange(async (value) => {
         this.plugin.settings.customApiKey = value;
         await this.plugin.saveSettings();
       }));
     }
-    this.modelSetting = new import_obsidian4.Setting(containerEl).setName("Model").setDesc("Select the model to use (fetched from API)").addButton((button) => button.setButtonText("Refresh Models").onClick(() => this.refreshModelDropdown()));
+    if (this.plugin.settings.provider === "openclaw") {
+      new import_obsidian5.Setting(containerEl).setName("Gateway URL").setDesc("OpenClaw Gateway WebSocket URL (e.g. ws://127.0.0.1:18789)").addText((text) => text.setPlaceholder("ws://127.0.0.1:18789").setValue(this.plugin.settings.customApiUrl).onChange(async (value) => {
+        this.plugin.settings.customApiUrl = value;
+        await this.plugin.saveSettings();
+      }));
+      new import_obsidian5.Setting(containerEl).setName("Gateway Token").setDesc("Authentication token for the OpenClaw Gateway").addText((text) => text.setPlaceholder("your-gateway-token").setValue(this.plugin.settings.customApiKey).onChange(async (value) => {
+        this.plugin.settings.customApiKey = value;
+        await this.plugin.saveSettings();
+      }));
+      containerEl.createEl("p", {
+        text: "\u{1F319} OpenClaw connects via WebSocket for full agent integration \u2014 persistent session, native tools, memory, and MCP servers.",
+        cls: "setting-item-description"
+      });
+    }
+    this.modelSetting = new import_obsidian5.Setting(containerEl).setName("Model").setDesc("Select the model to use (fetched from API)").addButton((button) => button.setButtonText("Refresh Models").onClick(() => this.refreshModelDropdown()));
     this.modelDropdown = this.modelSetting.addDropdown((dropdown) => {
       dropdown.setValue(this.plugin.settings.model);
       dropdown.onChange(async (value) => {
@@ -5651,15 +6034,15 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
       console.log("Settings tab displayed, refreshing model dropdown...");
       this.refreshModelDropdown();
     }, 100);
-    new import_obsidian4.Setting(containerEl).setName("Max Tokens").setDesc("Maximum tokens per response").addText((text) => text.setValue(this.plugin.settings.maxTokens.toString()).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("Max Tokens").setDesc("Maximum tokens per response").addText((text) => text.setValue(this.plugin.settings.maxTokens.toString()).onChange(async (value) => {
       this.plugin.settings.maxTokens = parseInt(value) || 4e3;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian4.Setting(containerEl).setName("Temperature").setDesc("Creativity level (0-1)").addText((text) => text.setValue(this.plugin.settings.temperature.toString()).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("Temperature").setDesc("Creativity level (0-1)").addText((text) => text.setValue(this.plugin.settings.temperature.toString()).onChange(async (value) => {
       this.plugin.settings.temperature = parseFloat(value) || 0.7;
       await this.plugin.saveSettings();
     }));
-    const systemPromptsPathSetting = new import_obsidian4.Setting(containerEl).setName("System Prompts Directory").setDesc("Path to directory containing your system prompt .md files (for /sys command)");
+    const systemPromptsPathSetting = new import_obsidian5.Setting(containerEl).setName("System Prompts Directory").setDesc("Path to directory containing your system prompt .md files (for /sys command)");
     let systemPromptsInput;
     systemPromptsPathSetting.addText((text) => {
       systemPromptsInput = text;
@@ -5677,7 +6060,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
       });
       modal.open();
     }));
-    const mentalModelsPathSetting = new import_obsidian4.Setting(containerEl).setName("Mental Models Directory").setDesc("Path to directory containing your mental model .md files (for /model command)");
+    const mentalModelsPathSetting = new import_obsidian5.Setting(containerEl).setName("Mental Models Directory").setDesc("Path to directory containing your mental model .md files (for /model command)");
     let mentalModelsInput;
     mentalModelsPathSetting.addText((text) => {
       mentalModelsInput = text;
@@ -5695,7 +6078,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
       });
       modal.open();
     }));
-    const backgroundImageSetting = new import_obsidian4.Setting(containerEl).setName("Background Image URL/Path").setDesc("URL or local file path to background image for chat area");
+    const backgroundImageSetting = new import_obsidian5.Setting(containerEl).setName("Background Image URL/Path").setDesc("URL or local file path to background image for chat area");
     let backgroundImageInput;
     backgroundImageSetting.addText((text) => {
       backgroundImageInput = text;
@@ -5714,7 +6097,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
       const imageExtensions = ["png", "jpg", "jpeg", "gif", "webp", "svg"];
       const files = this.app.vault.getFiles().filter((f) => imageExtensions.includes(f.extension.toLowerCase()));
       if (files.length === 0) {
-        new import_obsidian4.Notice("No image files found in your vault.");
+        new import_obsidian5.Notice("No image files found in your vault.");
         return;
       }
       const modal = new FileSuggestModal(this.app, files, async (file) => {
@@ -5730,7 +6113,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
       });
       modal.open();
     }));
-    new import_obsidian4.Setting(containerEl).setName("Background Display Mode").setDesc("How the background image should be displayed").addDropdown((dropdown) => dropdown.addOption("centered", "Centered").addOption("fill", "Fill").addOption("stretch", "Stretch").setValue(this.plugin.settings.backgroundMode).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("Background Display Mode").setDesc("How the background image should be displayed").addDropdown((dropdown) => dropdown.addOption("centered", "Centered").addOption("fill", "Fill").addOption("stretch", "Stretch").setValue(this.plugin.settings.backgroundMode).onChange(async (value) => {
       this.plugin.settings.backgroundMode = value;
       await this.plugin.saveSettings();
       this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
@@ -5740,7 +6123,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
         }
       });
     }));
-    new import_obsidian4.Setting(containerEl).setName("Background Opacity").setDesc("Opacity of the background image (0.0 to 1.0)").addSlider((slider) => slider.setLimits(0, 1, 0.05).setValue(this.plugin.settings.backgroundOpacity).setDynamicTooltip().onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("Background Opacity").setDesc("Opacity of the background image (0.0 to 1.0)").addSlider((slider) => slider.setLimits(0, 1, 0.05).setValue(this.plugin.settings.backgroundOpacity).setDynamicTooltip().onChange(async (value) => {
       this.plugin.settings.backgroundOpacity = value;
       await this.plugin.saveSettings();
       this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
@@ -5750,7 +6133,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
         }
       });
     }));
-    const loadingGifSetting = new import_obsidian4.Setting(containerEl).setName("Loading Animation GIF").setDesc("Custom GIF to display while waiting for AI response (leave empty for default)");
+    const loadingGifSetting = new import_obsidian5.Setting(containerEl).setName("Loading Animation GIF").setDesc("Custom GIF to display while waiting for AI response (leave empty for default)");
     let loadingGifInput;
     loadingGifSetting.addText((text) => {
       loadingGifInput = text;
@@ -5762,7 +6145,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
     loadingGifSetting.addButton((button) => button.setButtonText("Browse").onClick(async () => {
       const files = this.app.vault.getFiles().filter((f) => f.extension.toLowerCase() === "gif");
       if (files.length === 0) {
-        new import_obsidian4.Notice("No GIF files found in your vault. Add a .gif file to your vault first.");
+        new import_obsidian5.Notice("No GIF files found in your vault. Add a .gif file to your vault first.");
         return;
       }
       const modal = new FileSuggestModal(this.app, files, async (file) => {
@@ -5772,7 +6155,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
       });
       modal.open();
     }));
-    new import_obsidian4.Setting(containerEl).setName("Auto-hide header").setDesc("Automatically hide the header bar").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoHideHeader).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("Auto-hide header").setDesc("Automatically hide the header bar").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoHideHeader).onChange(async (value) => {
       this.plugin.settings.autoHideHeader = value;
       await this.plugin.saveSettings();
       this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).forEach((leaf) => {
@@ -5782,11 +6165,11 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
         }
       });
     }));
-    new import_obsidian4.Setting(containerEl).setName("Show Token Count").setDesc("Display estimated token usage during and after response generation").addToggle((toggle) => toggle.setValue(this.plugin.settings.showTokenCount).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("Show Token Count").setDesc("Display estimated token usage during and after response generation").addToggle((toggle) => toggle.setValue(this.plugin.settings.showTokenCount).onChange(async (value) => {
       this.plugin.settings.showTokenCount = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian4.Setting(containerEl).setName("QuickAdd Commands").setDesc("Configure right-click context menu options that trigger QuickAdd commands").addButton((button) => button.setButtonText("Show Available Commands").onClick(() => {
+    new import_obsidian5.Setting(containerEl).setName("QuickAdd Commands").setDesc("Configure right-click context menu options that trigger QuickAdd commands").addButton((button) => button.setButtonText("Show Available Commands").onClick(() => {
       this.showAvailableQuickAddCommands();
     })).addButton((button) => button.setButtonText("Add Command").onClick(() => {
       this.plugin.settings.quickAddCommands.push({
@@ -5799,7 +6182,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
     }));
     this.plugin.settings.quickAddCommands.forEach((command, index) => {
       const commandContainer = containerEl.createDiv("quickadd-command-item");
-      new import_obsidian4.Setting(commandContainer).setName(`Command ${index + 1}`).addText((text) => text.setPlaceholder("Command Name").setValue(command.name).onChange(async (value) => {
+      new import_obsidian5.Setting(commandContainer).setName(`Command ${index + 1}`).addText((text) => text.setPlaceholder("Command Name").setValue(command.name).onChange(async (value) => {
         this.plugin.settings.quickAddCommands[index].name = value;
         await this.plugin.saveSettings();
       })).addText((text) => text.setPlaceholder('QuickAdd Command ID (click "Show Available Commands" for help)').setValue(command.id).onChange(async (value) => {
@@ -5815,7 +6198,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
       }));
     });
     containerEl.createEl("h2", { text: "MCP (Model Context Protocol)" });
-    new import_obsidian4.Setting(containerEl).setName("Enable MCP").setDesc("Enable Model Context Protocol for connecting to external tools and data sources").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpEnabled).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("Enable MCP").setDesc("Enable Model Context Protocol for connecting to external tools and data sources").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpEnabled).onChange(async (value) => {
       this.plugin.settings.mcpEnabled = value;
       await this.plugin.saveSettings();
       if (value && this.plugin.settings.mcpServers.length > 0) {
@@ -5824,15 +6207,15 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
       this.display();
     }));
     if (this.plugin.settings.mcpEnabled) {
-      new import_obsidian4.Setting(containerEl).setName("Auto-discovery").setDesc("Automatically discover MCP servers on the network").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpAutoDiscovery).onChange(async (value) => {
+      new import_obsidian5.Setting(containerEl).setName("Auto-discovery").setDesc("Automatically discover MCP servers on the network").addToggle((toggle) => toggle.setValue(this.plugin.settings.mcpAutoDiscovery).onChange(async (value) => {
         this.plugin.settings.mcpAutoDiscovery = value;
         await this.plugin.saveSettings();
       }));
-      new import_obsidian4.Setting(containerEl).setName("Add MCP Server").setDesc("Configure connections to MCP servers").addButton((button) => button.setButtonText("Add Server").onClick(() => {
+      new import_obsidian5.Setting(containerEl).setName("Add MCP Server").setDesc("Configure connections to MCP servers").addButton((button) => button.setButtonText("Add Server").onClick(() => {
         this.showMCPServerModal();
       }));
       this.plugin.settings.mcpServers.forEach((server, index) => {
-        const serverSetting = new import_obsidian4.Setting(containerEl);
+        const serverSetting = new import_obsidian5.Setting(containerEl);
         const serverInfo = serverSetting.settingEl.createDiv("mcp-server-info");
         serverInfo.style.display = "flex";
         serverInfo.style.alignItems = "center";
@@ -5885,7 +6268,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
         const connectedServers = this.plugin.mcp.getConnectedServers();
         const totalTools = this.plugin.mcp.getAllTools().length;
         const totalResources = this.plugin.mcp.getAllResources().length;
-        const statusSetting = new import_obsidian4.Setting(containerEl);
+        const statusSetting = new import_obsidian5.Setting(containerEl);
         const statusDiv = statusSetting.settingEl.createDiv("mcp-status");
         statusDiv.innerHTML = `
                     <strong>MCP Status:</strong><br>
@@ -5909,6 +6292,12 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
           return await this.fetchOllamaModels();
         case "lmstudio":
           return await this.fetchLMStudioModels();
+        case "openclaw":
+          if (!this.plugin.settings.model || this.plugin.settings.model === "") {
+            this.plugin.settings.model = "openclaw:main";
+            await this.plugin.saveSettings();
+          }
+          return ["openclaw:main"];
         default:
           return [];
       }
@@ -6104,16 +6493,16 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
     try {
       const commands = this.app.commands;
       if (!commands) {
-        new import_obsidian4.Notice("Commands system not available");
+        new import_obsidian5.Notice("Commands system not available");
         return;
       }
       const allCommands = commands.listCommands();
       const quickAddCommands = allCommands.filter((cmd) => cmd.id.includes("quickadd"));
       if (quickAddCommands.length === 0) {
-        new import_obsidian4.Notice("No QuickAdd commands found. Make sure QuickAdd plugin is installed and configured.");
+        new import_obsidian5.Notice("No QuickAdd commands found. Make sure QuickAdd plugin is installed and configured.");
         return;
       }
-      const modal = new import_obsidian4.Modal(this.app);
+      const modal = new import_obsidian5.Modal(this.app);
       modal.titleEl.setText("Available QuickAdd Commands");
       const content = modal.contentEl;
       content.createEl("p", { text: "Copy the Command ID to use in Stella settings:" });
@@ -6134,7 +6523,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
         idEl.style.cursor = "pointer";
         idEl.addEventListener("click", () => {
           navigator.clipboard.writeText(cmd.id);
-          new import_obsidian4.Notice(`Copied: ${cmd.id}`);
+          new import_obsidian5.Notice(`Copied: ${cmd.id}`);
         });
       });
       const buttonContainer = content.createDiv();
@@ -6144,12 +6533,12 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
       closeBtn.onclick = () => modal.close();
       modal.open();
     } catch (error) {
-      new import_obsidian4.Notice("Failed to retrieve QuickAdd commands");
+      new import_obsidian5.Notice("Failed to retrieve QuickAdd commands");
       console.error("Error showing QuickAdd commands:", error);
     }
   }
   showMCPServerModal(server, index) {
-    const modal = new import_obsidian4.Modal(this.app);
+    const modal = new import_obsidian5.Modal(this.app);
     modal.titleEl.setText(server ? "Edit MCP Server" : "Add MCP Server");
     const content = modal.contentEl;
     let selectedTransport = (server == null ? void 0 : server.transport) || "stdio";
@@ -6295,7 +6684,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
     saveBtn.onclick = async () => {
       const name = nameInput.value.trim();
       if (!name) {
-        new import_obsidian4.Notice("Server name is required");
+        new import_obsidian5.Notice("Server name is required");
         return;
       }
       const newServer = {
@@ -6324,7 +6713,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
       } else {
         const endpoint = endpointInput.value.trim();
         if (!endpoint) {
-          new import_obsidian4.Notice("WebSocket endpoint is required");
+          new import_obsidian5.Notice("WebSocket endpoint is required");
           return;
         }
         newServer.endpoint = endpoint;
@@ -6339,18 +6728,18 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
         if (this.plugin.settings.mcpEnabled) {
           await this.plugin.mcp.addServer(newServer);
         }
-        new import_obsidian4.Notice(`MCP server ${server ? "updated" : "added"}: ${name}`);
+        new import_obsidian5.Notice(`MCP server ${server ? "updated" : "added"}: ${name}`);
         modal.close();
         this.display();
       } catch (error) {
-        new import_obsidian4.Notice(`Failed to ${server ? "update" : "add"} MCP server`);
+        new import_obsidian5.Notice(`Failed to ${server ? "update" : "add"} MCP server`);
         console.error("MCP server error:", error);
       }
     };
     modal.open();
   }
   showMCPTemplateConfigModal(template) {
-    const modal = new import_obsidian4.Modal(this.app);
+    const modal = new import_obsidian5.Modal(this.app);
     modal.titleEl.setText(`Configure ${template.name} Server`);
     const content = modal.contentEl;
     content.createEl("p", {
@@ -6397,7 +6786,7 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
     addBtn.onclick = async () => {
       for (const envVar of template.envVariables) {
         if (envVar.required && !envInputs[envVar.key].value.trim()) {
-          new import_obsidian4.Notice(`${envVar.description} is required`);
+          new import_obsidian5.Notice(`${envVar.description} is required`);
           return;
         }
       }
@@ -6425,11 +6814,11 @@ var StellaSettingTab = class extends import_obsidian4.PluginSettingTab {
         if (this.plugin.settings.mcpEnabled) {
           await this.plugin.mcp.addServer(newServer);
         }
-        new import_obsidian4.Notice(`Added ${template.name} MCP server`);
+        new import_obsidian5.Notice(`Added ${template.name} MCP server`);
         modal.close();
         this.display();
       } catch (error) {
-        new import_obsidian4.Notice(`Failed to add ${template.name} server`);
+        new import_obsidian5.Notice(`Failed to add ${template.name} server`);
         console.error("Template server error:", error);
       }
     };

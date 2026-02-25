@@ -29,7 +29,7 @@ export abstract class StellaModal extends Modal {
     }
 
     // Subclasses implement this to build their content
-    protected abstract buildContent(): void;
+    protected abstract buildContent(): void | Promise<void>;
 
     // Helper to create a two-panel layout (list + preview)
     protected createTwoPanelLayout(): {

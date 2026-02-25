@@ -1,4 +1,4 @@
-import { App } from 'obsidian';
+import { App, TFolder, TFile } from 'obsidian';
 import { StellaModal, FileSelectCallbacks } from './base';
 
 interface FileSelectorConfig {
@@ -18,13 +18,14 @@ export class FileSelectorModal extends StellaModal {
     private emptyMessage: string;
     private notFoundMessage: string;
     private previewHint: string;
-    private files: string[] = [];
+    private matchedFiles: TFile[] = [];
     private selectedIndex = 0;
     private previewVisible = false;
 
     constructor(app: App, config: FileSelectorConfig, callbacks: FileSelectCallbacks) {
         super(app, { title: config.title });
-        this.directoryPath = config.directoryPath;
+        // Normalize: strip trailing slashes
+        this.directoryPath = config.directoryPath.replace(/\/+$/, '');
         this.fileExtension = config.fileExtension || '.md';
         this.callbacks = callbacks;
         this.emptyMessage = config.emptyMessage || `No ${this.fileExtension} files found.`;
@@ -32,7 +33,7 @@ export class FileSelectorModal extends StellaModal {
         this.previewHint = config.previewHint || 'Select a file and press → to preview';
     }
 
-    protected buildContent(): void {
+    protected async buildContent(): Promise<void> {
         if (!this.directoryPath) {
             this.contentEl.createEl('p', {
                 text: 'Directory path not configured. Please check settings.'
@@ -41,21 +42,23 @@ export class FileSelectorModal extends StellaModal {
         }
 
         try {
-            const fs = require('fs');
-            const path = require('path');
-
-            if (!fs.existsSync(this.directoryPath)) {
+            // Look up the folder in the vault's file tree
+            const abstractFile = this.app.vault.getAbstractFileByPath(this.directoryPath);
+            if (!(abstractFile instanceof TFolder)) {
                 this.contentEl.createEl('p', {
                     text: `${this.notFoundMessage}: ${this.directoryPath}`
                 });
                 return;
             }
 
-            this.files = fs.readdirSync(this.directoryPath)
-                .filter((file: string) => file.endsWith(this.fileExtension))
-                .sort();
+            // Get direct children that match our extension
+            this.matchedFiles = abstractFile.children
+                .filter((child): child is TFile =>
+                    child instanceof TFile && child.name.endsWith(this.fileExtension)
+                )
+                .sort((a, b) => a.name.localeCompare(b.name));
 
-            if (this.files.length === 0) {
+            if (this.matchedFiles.length === 0) {
                 this.contentEl.createEl('p', { text: this.emptyMessage });
                 return;
             }
@@ -69,21 +72,18 @@ export class FileSelectorModal extends StellaModal {
     }
 
     private buildFileList(): void {
-        const fs = require('fs');
-        const path = require('path');
-
         const { leftPanel, previewContent } = this.createTwoPanelLayout();
         previewContent.textContent = this.previewHint;
 
         const fileList = leftPanel.createDiv({ cls: 'stella-system-prompts-list' });
         const items: HTMLElement[] = [];
 
-        this.files.forEach((filename, index) => {
+        this.matchedFiles.forEach((file, index) => {
             const fileItem = fileList.createDiv({ cls: 'stella-system-prompt-item' });
             items.push(fileItem);
 
             const titleEl = fileItem.createDiv({ cls: 'stella-system-prompt-title' });
-            titleEl.textContent = filename.replace(this.fileExtension, '');
+            titleEl.textContent = file.basename;
 
             fileItem.addEventListener('click', () => {
                 this.selectFile(index);
@@ -121,26 +121,19 @@ export class FileSelectorModal extends StellaModal {
     }
 
     private async confirmSelection(index: number): Promise<void> {
-        const path = require('path');
-        const filename = this.files[index];
-        const filePath = path.join(this.directoryPath, filename);
-
-        await this.callbacks.onSelect(filePath, filename);
+        const file = this.matchedFiles[index];
+        await this.callbacks.onSelect(file.path, file.name);
         this.close();
         this.callbacks.onClose?.();
     }
 
-    private showPreview(index: number, previewContent: HTMLElement): void {
-        const fs = require('fs');
-        const path = require('path');
-
+    private async showPreview(index: number, previewContent: HTMLElement): Promise<void> {
         try {
-            const filename = this.files[index];
-            const filePath = path.join(this.directoryPath, filename);
-            const content = fs.readFileSync(filePath, 'utf-8');
+            const file = this.matchedFiles[index];
+            const content = await this.app.vault.cachedRead(file);
 
             previewContent.empty();
-            previewContent.createEl('h4', { text: filename.replace(this.fileExtension, '') });
+            previewContent.createEl('h4', { text: file.basename });
             previewContent.createEl('pre', {
                 cls: 'stella-preview-text',
                 text: content.substring(0, 1000) + (content.length > 1000 ? '...' : '')

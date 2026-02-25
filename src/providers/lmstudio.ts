@@ -25,7 +25,8 @@ export class LMStudioProvider implements LLMProvider {
         });
 
         if (!response.ok) {
-            throw new Error(`LM Studio API error: ${response.statusText}`);
+            const error = await response.text();
+            throw new Error(`LM Studio API error: ${error}`);
         }
 
         const data = await response.json();
@@ -33,14 +34,81 @@ export class LMStudioProvider implements LLMProvider {
     }
 
     async stream(context: ProviderContext, callbacks: StreamCallbacks): Promise<void> {
-        // Fallback: simulate streaming from regular call
-        const response = await this.call(context);
-        const words = response.split(' ');
+        const { settings, messages } = context;
 
-        for (let i = 0; i < words.length; i++) {
-            const chunk = i === 0 ? words[i] : ' ' + words[i];
-            callbacks.onContent(chunk);
-            await new Promise(resolve => setTimeout(resolve, 50));
+        const response = await fetch(`${settings.lmStudioBaseUrl}/v1/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: settings.model,
+                messages: messages,
+                max_tokens: settings.maxTokens,
+                temperature: settings.temperature,
+                stream: true
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`LM Studio API error: ${error}`);
+        }
+
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+
+                // Keep the last incomplete line in the buffer
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('data: ')) {
+                        const data = trimmed.slice(6);
+                        if (data === '[DONE]') {
+                            await callbacks.onComplete();
+                            return;
+                        }
+
+                        try {
+                            const parsed = JSON.parse(data);
+                            const content = parsed.choices?.[0]?.delta?.content;
+                            if (content) {
+                                callbacks.onContent(content);
+                            }
+                        } catch (e) {
+                            // Skip malformed JSON
+                        }
+                    }
+                }
+            }
+
+            // Process any remaining data in buffer
+            if (buffer.trim().startsWith('data: ')) {
+                const data = buffer.trim().slice(6);
+                if (data !== '[DONE]') {
+                    try {
+                        const parsed = JSON.parse(data);
+                        const content = parsed.choices?.[0]?.delta?.content;
+                        if (content) {
+                            callbacks.onContent(content);
+                        }
+                    } catch (e) {
+                        // Skip malformed JSON
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
         }
 
         await callbacks.onComplete();
