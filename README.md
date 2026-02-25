@@ -4,12 +4,12 @@ An AI chat plugin for [Obsidian](https://obsidian.md) with multi-provider LLM su
 
 ## Features
 
-- **Multi-Provider Support** - Anthropic, OpenAI, Google, Ollama, LM Studio, or any OpenAI-compatible API
+- **Multi-Provider Support** - Anthropic, OpenAI, Google, Ollama, LM Studio, OpenClaw, or any OpenAI-compatible API
 - **MCP Integration** - Connect to Model Context Protocol servers for extended tool capabilities
 - **Vault Integration** - Add notes as context, click `[[wiki links]]` in chat to navigate
-- **System Prompts** - Load prompts from markdown files to customize AI behavior
-- **Mental Models** - Load thinking frameworks to guide AI reasoning
-- **Conversation Management** - Multiple threads, history, persistence
+- **System Prompts** - Load persona and behavior prompts from markdown files
+- **Mental Models** - Load reasoning frameworks that the LLM actively applies as an analytical lens, distinct from the system prompt
+- **Conversation Management** - Multiple threads, history, smart auto-save
 
 ## Installation
 
@@ -49,13 +49,27 @@ An AI chat plugin for [Obsidian](https://obsidian.md) with multi-provider LLM su
 | `/mcp` | Connect to MCP server |
 | `/mcpclear` | Disconnect MCP |
 | `/new` | New conversation |
+| `/del` | Delete current conversation |
+| `/name` | Rename current conversation |
 | `/history` | View conversation history |
+| `/clear` | Clear all context and start fresh |
+| `/settings` | Open plugin settings |
+| `/hide` | Toggle header visibility |
 | `/help` | Show all commands |
 
 ### Adding Context
 
 - Type `@` to search and add notes as context
-- Use `[[Note Name]]` in messages - click to add as context, Ctrl+click to open
+- Use `[[Note Name]]` in messages — click to add as context, Ctrl+click to open
+
+### System Prompts vs Mental Models
+
+Stella treats these as distinct concepts:
+
+- **System Prompt** (`/sys`) — Defines identity, persona, tone, and behavioral constraints. The LLM adopts this as its character.
+- **Mental Model** (`/model`) — A reasoning framework the LLM actively applies to evaluate and filter its responses. Injected with an explicit instruction to think through the framework, not just reference it.
+
+Both can be loaded simultaneously. The system prompt shapes *who* the LLM is; the mental model shapes *how* it thinks.
 
 ## Configuration
 
@@ -66,14 +80,15 @@ An AI chat plugin for [Obsidian](https://obsidian.md) with multi-provider LLM su
 
 ### Supported Providers
 
-| Provider | Models | Local |
-|----------|--------|-------|
-| Anthropic | Claude 3.5, Claude 3 | No |
-| OpenAI | GPT-4, GPT-3.5 | No |
-| Google | Gemini Pro, Gemini Flash | No |
-| Ollama | Llama, Mistral, etc. | Yes |
-| LM Studio | Any GGUF model | Yes |
-| Custom | OpenAI-compatible | Varies |
+| Provider | Local | Notes |
+|----------|-------|-------|
+| Anthropic | No | Claude models |
+| OpenAI | No | GPT models |
+| Google | No | Gemini models, native MCP support |
+| Ollama | Yes | Any Ollama-hosted model |
+| LM Studio | Yes | Any GGUF model |
+| OpenClaw | Yes | WebSocket gateway for local agent models |
+| Custom | Varies | Any OpenAI-compatible endpoint |
 
 ## Development
 
