@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "deploy": "npm run build && cp main.js ../Stella/main.js && echo '✓ Deployed to Stella/'",
+    "deploy": "npm run build && cp ../../KAI/.obsidian/plugins/Stella-dev/main.js ../../KAI/.obsidian/plugins/Stella/main.js && echo '✓ Deployed to vault Stella/'",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [],
