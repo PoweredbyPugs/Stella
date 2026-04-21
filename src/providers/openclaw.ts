@@ -114,8 +114,7 @@ export class OpenClawProvider implements LLMProvider {
                 scopes: ['operator.admin'],
                 auth: {
                     token: this.authToken
-                },
-                ...(this.connectNonce ? { nonce: this.connectNonce } : {})
+                }
             }
         };
 

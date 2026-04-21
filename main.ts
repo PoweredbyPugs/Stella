@@ -131,6 +131,33 @@ export default class StellaPlugin extends Plugin {
                 }
             });
         }, 1000);
+
+        // Four Winds integration: open Stella with seed note in a new conversation
+        const fourWindsRef = (this.app.workspace as any).on('four-winds:process-seed', async (data: any) => {
+            console.log('[Stella] four-winds:process-seed received', data);
+            // Ensure view exists without destroying it
+            let leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE);
+            if (leaves.length === 0) {
+                await this.app.workspace.getRightLeaf(false).setViewState({
+                    type: CHAT_VIEW_TYPE,
+                    active: true,
+                });
+                leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE);
+            }
+            if (leaves.length > 0) {
+                this.app.workspace.revealLeaf(leaves[0]);
+                const chatView = leaves[0].view as StellaChatView;
+                chatView.startNewConversation();
+                chatView.contextNotes = [];
+                const file = this.app.vault.getAbstractFileByPath(data.filePath);
+                console.log('[Stella] file resolved:', file?.path);
+                if (file && chatView?.addNoteToContext) {
+                    await chatView.addNoteToContext(file);
+                    console.log('[Stella] context notes:', chatView.contextNotes.length);
+                }
+            }
+        });
+        this.register(() => this.app.workspace.offref(fourWindsRef));
     }
 
     async onunload() {
