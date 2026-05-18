@@ -132,6 +132,26 @@ export default class StellaPlugin extends Plugin {
             });
         }, 1000);
 
+        // Right-click → "Send selection to new Stella chat". Appears in the
+        // editor context menu whenever there's non-empty selected text. Opens
+        // / reveals the chat view, starts a fresh conversation, pre-fills the
+        // input with the selection, and focuses the input so the user can add
+        // framing context ("explain this", "summarize", etc.) before sending.
+        this.registerEvent(
+            this.app.workspace.on('editor-menu', (menu, editor) => {
+                const selection = editor.getSelection();
+                if (!selection || !selection.trim()) return;
+                menu.addItem((item) => {
+                    item
+                        .setTitle('Send selection to new Stella chat')
+                        .setIcon('message-circle')
+                        .onClick(async () => {
+                            await this.sendSelectionToNewChat(selection);
+                        });
+                });
+            })
+        );
+
         // Four Winds integration: open Stella with seed note in a new conversation
         const fourWindsRef = (this.app.workspace as any).on('four-winds:process-seed', async (data: any) => {
             console.log('[Stella] four-winds:process-seed received', data);
@@ -215,6 +235,55 @@ export default class StellaPlugin extends Plugin {
         this.app.workspace.revealLeaf(
             this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)[0]
         );
+    }
+
+    /** Open / reveal the chat view, start a fresh conversation, and pre-fill
+     * the input with the supplied text. Focuses the input. Does NOT auto-send
+     * — the user usually wants to add framing ("summarize this", "explain", etc.)
+     * before hitting return. */
+    async sendSelectionToNewChat(selection: string) {
+        // Get or create the chat leaf without detaching existing leaves so any
+        // open conversation isn't yanked out from under the user. Mirrors the
+        // four-winds:process-seed pattern above.
+        let leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE);
+        if (leaves.length === 0) {
+            await this.app.workspace.getRightLeaf(false).setViewState({
+                type: CHAT_VIEW_TYPE,
+                active: true,
+            });
+            leaves = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE);
+        }
+        if (leaves.length === 0) {
+            new Notice('Could not open Stella chat view.');
+            return;
+        }
+        this.app.workspace.revealLeaf(leaves[0]);
+
+        const chatView = leaves[0].view as StellaChatView;
+        if (!chatView || typeof chatView.startNewConversation !== 'function') {
+            new Notice('Stella chat view is not ready yet — try again in a moment.');
+            return;
+        }
+        chatView.startNewConversation();
+
+        // Pre-fill the input. The StellaChatView constructor wires the
+        // textarea as `chatInput`; it may not be attached on the very first
+        // call after view creation, so retry briefly if needed.
+        const fill = () => {
+            if (chatView.chatInput) {
+                chatView.chatInput.value = selection;
+                chatView.chatInput.focus();
+                // Move caret to end so a follow-up keystroke appends rather
+                // than overwriting selected text.
+                const len = chatView.chatInput.value.length;
+                chatView.chatInput.setSelectionRange(len, len);
+                return true;
+            }
+            return false;
+        };
+        if (!fill()) {
+            setTimeout(() => { fill(); }, 150);
+        }
     }
 }
 
